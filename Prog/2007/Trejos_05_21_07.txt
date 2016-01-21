@@ -1,0 +1,71 @@
+REQUESTS/Trejos_05_21_07.sas:  NeighborhoodInfo DC                                            10:39 Monday, May 21, 2007   1
+
+                                                                                                  Owner-occ.
+                                                                                                        home
+                                                                                                    purchase
+                     Owner-occupied     Owner-occupied     Owner-occupied     Owner-occupied        loans to
+                     home purchase      home purchase      home purchase      home purchase       Asian/Pac.
+                      loans where      mortgage loans     mortgage loans     mortgage loans         Islander
+                     borrower race        to Black           to White          to Hispanic        borrowers,
+Washington, D.C.    is known, 2000     borrowers, 2000    borrowers, 2000    borrowers, 2000            2000
+
+Washington, D.C.            7,510              2,490              4,282                300               153
+
+                                                                                                  Owner-occ.
+                                                                                                        home
+                                                                                                    purchase
+                     Owner-occupied     Owner-occupied     Owner-occupied     Owner-occupied        loans to
+                     home purchase      home purchase      home purchase      home purchase       Asian/Pac.
+                      loans where      mortgage loans     mortgage loans     mortgage loans         Islander
+                     borrower race        to Black           to White          to Hispanic        borrowers,
+Washington, D.C.    is known, 2005     borrowers, 2005    borrowers, 2005    borrowers, 2005            2005
+
+Washington, D.C.           11,114              3,024              6,278                801               658
+REQUESTS/Trejos_05_21_07.sas:  NeighborhoodInfo DC                                            10:39 Monday, May 21, 2007   2
+
+                                                                                        Owner-occ.
+                                                                                              home
+                                                                                          purchase
+           Owner-occupied     Owner-occupied     Owner-occupied     Owner-occupied        loans to
+           home purchase      home purchase      home purchase      home purchase       Asian/Pac.
+            loans where      mortgage loans     mortgage loans     mortgage loans         Islander
+ Ward      borrower race        to Black           to White          to Hispanic        borrowers,
+(2002)    is known, 2000     borrowers, 2000    borrowers, 2000    borrowers, 2000            2000
+
+Ward 1            1,112                213                754                 87                20
+Ward 2            1,407                 80              1,154                 43                61
+Ward 3            1,396                 49              1,193                 40                36
+Ward 4              847                437                274                 90                14
+Ward 5              689                579                 74                 17                 5
+Ward 6            1,233                364                787                 22                16
+Ward 7              520                481                 29                  1                 0
+Ward 8              307                288                 17                  1                 1
+
+                                                                                        Owner-occ.
+                                                                                              home
+                                                                                          purchase
+           Owner-occupied     Owner-occupied     Owner-occupied     Owner-occupied        loans to
+           home purchase      home purchase      home purchase      home purchase       Asian/Pac.
+            loans where      mortgage loans     mortgage loans     mortgage loans         Islander
+ Ward      borrower race        to Black           to White          to Hispanic        borrowers,
+(2002)    is known, 2005     borrowers, 2005    borrowers, 2005    borrowers, 2005            2005
+
+Ward 1            1,700                254              1,151                139                92
+Ward 2            2,059                117              1,559                120               204
+Ward 3            1,494                 56              1,208                 61               105
+Ward 4            1,222                486                429                223                34
+Ward 5            1,204                640                405                 85                40
+Ward 6            2,082                327              1,420                 94               177
+Ward 7              844                694                 79                 59                 3
+Ward 8              508                450                 28                 21                 4
+
+
+
+
+
+
+
+
+
+
+Home Mortgage Disclosure Act data tabulated by NeighborhoodInfo DC (www.NeighborhoodInfoDC.org)

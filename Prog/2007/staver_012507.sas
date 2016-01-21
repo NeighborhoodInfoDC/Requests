@@ -1,0 +1,56 @@
+/**************************************************************************
+ Program:  windau_1_25_07.sas
+ Library:  Requests
+ Project:  NeighborhoodInfo DC
+ Author:   J. Comey
+ Created:  01/25/07
+ Version:  SAS 8.2
+ Environment:  Windows with SAS/Connect
+ 
+ Description:  Data request from Kent Staver. Wants number of HIV deaths by ward.
+ 
+ Modifications:
+**************************************************************************/
+
+
+** Pulling Vital stats/death data from Alpha**;
+
+%include "K:\Metro\PTatian\DCData\SAS\Inc\Stdhead.sas";
+%include "K:\Metro\PTatian\DCData\SAS\Inc\AlphaSignon.sas" /nosource2;
+
+** Define libraries **;
+%DCData_lib( vital )
+%DCData_lib( requests )
+libname request 'D:\DCData\Libraries\Requests'; 
+
+rsubmit;
+
+data HIVdeath ;/* creates a file on the alpha - temp */
+set vital.Deaths_sum_wd02    (keep= deaths_hiv_1998 deaths_hiv_1999 deaths_hiv_2000 deaths_hiv_2001
+		deaths_hiv_2002 deaths_hiv_2003 deaths_hiv_2004 deaths_hiv_f_2001 deaths_hiv_f_2002
+		deaths_hiv_f_2003  deaths_hiv_f_2004 deaths_hiv_m_2001 deaths_hiv_m_2002 
+		deaths_hiv_m_2003 deaths_hiv_m_2004);
+;
+
+proc download inlib=work outlib=request; /* download to PC */
+select HIVdeath ; 
+
+run;
+
+endrsubmit; 
+
+proc contents data=request.HIVdeath;
+run;                    
+
+**Exporting SAS file;
+
+filename fexport "K:\Metro\PTatian\DCData\Libraries\Requests\Raw\staver_012507.csv" lrecl=2000;
+
+proc export data=request.HIVdeath
+    outfile=fexport
+    dbms=csv replace;
+
+run;
+
+filename fexport clear;
+run;

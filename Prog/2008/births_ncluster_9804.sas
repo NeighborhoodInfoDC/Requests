@@ -1,0 +1,59 @@
+/**************************************************************************
+ Program:  DCData\Requests\Prog\2008\Births_ncluster.sas
+ Library:  DCData\Libraries\Vital
+ Project:  NeighborhoodInfo DC
+ Author:   Comey	
+ Created:  11/28/07
+ Updated:  03/11/08
+ Version:  SAS 8.2
+ Environment:  Windows with SAS/Connect
+ 
+ Description:  Program to calculate total number of births by neighborhood cluster from 1998-2005
+
+ Modifications:
+**************************************************************************/
+
+%include "K:\Metro\PTatian\DCData\SAS\Inc\Stdhead.sas";
+%include "K:\Metro\PTatian\DCData\SAS\Inc\AlphaSignon.sas" /nosource2;
+
+** Define libraries **;
+%DCData_lib( vital )
+libname requests 'D:\DCData\Libraries\Requests'; 
+rsubmit;
+
+data births_sum_cluster;/* creates a file on the alpha - temp */
+set vital.Births_sum_cltr00 (keep=cluster_tr2000  births_total_1998  births_total_1999 births_total_2000 births_total_2001
+births_total_2002 births_total_2003 births_total_2004 births_total_2005);
+
+
+proc download inlib=work outlib=requests; /* download to PC */
+select births_sum_cluster; 
+
+run;
+
+endrsubmit; 
+
+
+
+**********Create table of total number of births from 1998-2005*******************;
+
+proc print data=requests.births_sum_cluster;
+var births_total_1998  births_total_1999 births_total_2000 births_total_2001
+births_total_2002 births_total_2003 births_total_2004 births_total_2005;
+
+run;
+
+**********Export table of total number of births from 1998-2004*******************;
+
+filename fexport "K:\Metro\PTatian\DCData\Libraries\Requests\Raw\births_cluster_9805.csv" lrecl=2000;
+
+proc export data=Requests.births_sum_cluster
+    outfile=fexport
+    dbms=csv replace;
+
+run;
+
+filename fexport clear;
+run;
+
+signoff;
