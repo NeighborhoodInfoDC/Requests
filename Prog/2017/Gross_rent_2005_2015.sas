@@ -1,5 +1,5 @@
 /**************************************************************************
- Program:  Gross_rent_2005_2012.sas
+ Program:  Gross_rent_2005_2015.sas
  Library:  OCC
  Project:  NeighborhoodInfo DC
  Author:   P. Tatian
@@ -8,6 +8,10 @@
  Environment:  Windows
  
  Description:  Process gross rent ranges.
+
+ Data from ACS 1-year table B25063/GROSS RENT downloaded from American
+ Factfinder. 
+ Upper ranges for 2015 were collapsed into $2,000 or more.
 
  Modifications:
 **************************************************************************/
@@ -18,9 +22,9 @@
 %DCData_lib( OCC )
 
 %let START_YR = 2005;
-%let END_YR = 2012;
+%let END_YR = 2015;
 
-data Occ_r.Gross_rent_2005_2012;
+data Gross_rent_&START_YR._&END_YR.;
 
     infile datalines missover dlm='09'x;
 
@@ -33,6 +37,9 @@ data Occ_r.Gross_rent_2005_2012;
       Units2010
       Units2011
       Units2012
+      Units2013
+      Units2014
+      Units2015
       Low
       High
      ;
@@ -44,8 +51,8 @@ data Occ_r.Gross_rent_2005_2012;
    
    do i = &START_YR to &END_YR;
    
-     %dollar_convert( Low, a_low{i}, i, 2012, series=CUUR0000SA0L2 )
-     %dollar_convert( High, a_high{i}, i, 2012, series=CUUR0000SA0L2 )
+     %dollar_convert( Low, a_low{i}, i, &END_YR, series=CUUR0000SA0L2 )
+     %dollar_convert( High, a_high{i}, i, &END_YR, series=CUUR0000SA0L2 )
         
    end;
    
@@ -72,36 +79,36 @@ data Occ_r.Gross_rent_2005_2012;
       
    end;
    
-   drop i Low&START_YR-Low&END_YR High&START_YR-High&END_YR Carry&START_YR-Carry&END_YR;
+   *drop i Low&START_YR-Low&END_YR High&START_YR-High&END_YR Carry&START_YR-Carry&END_YR;
 
 datalines;
-2211	1616	1481	1972	1923	1364	745	1086	0	100
-2324	2744	1551	1504	874	1070	1268	1191	100	149
-3883	5436	3543	3828	3440	2999	2856	3218	150	199
-2563	2672	2725	2286	2169	2107	2810	2236	200	249
-2229	2210	1842	2361	3270	1891	2470	2596	250	299
-1919	2131	1273	2603	2262	2339	2802	1329	300	349
-2249	2579	1818	1071	1913	1413	1968	2007	350	399
-2978	1854	2695	1468	1001	1222	1970	1586	400	449
-4108	1907	2221	1347	1876	1967	1513	1954	450	499
-4119	4214	3283	3981	3149	2232	2033	2951	500	549
-6017	3812	4317	2922	1683	1988	2827	1765	550	599
-7504	4892	5957	3808	3035	2583	2196	2732	600	649
-7003	5448	5919	5284	3117	3017	3125	2360	650	699
-9488	6452	7215	4907	4698	4282	4137	3257	700	749
-7856	5495	6397	6582	4167	3222	3321	3766	750	799
-11569	11124	11688	12304	13519	11739	11811	11139	800	899
-13492	12249	10115	10060	9919	9882	10101	9769	900	999
-18437	21907	20368	22937	21710	18883	22200	22838	1000	1249
-11314	12332	13860	14350	16240	21077	22244	20226	1250	1499
-11767	11353	14381	16689	16373	22599	26570	27905	1500	1999
-7348	10110	12074	16365	17911	22618	25325	26934	2000	.
+2211	1616	1481	1972	1923	1364	745	1086	1148	1195	1152	0	100
+2324	2744	1551	1504	874	1070	1268	1191	1637	1010	709	100	149
+3883	5436	3543	3828	3440	2999	2856	3218	2132	1659	1095	150	199
+2563	2672	2725	2286	2169	2107	2810	2236	4649	3324	4641	200	249
+2229	2210	1842	2361	3270	1891	2470	2596	2892	3008	2230	250	299
+1919	2131	1273	2603	2262	2339	2802	1329	1562	2030	1870	300	349
+2249	2579	1818	1071	1913	1413	1968	2007	1150	1713	1828	350	399
+2978	1854	2695	1468	1001	1222	1970	1586	1160	1569	1703	400	449
+4108	1907	2221	1347	1876	1967	1513	1954	944	1641	2233	450	499
+4119	4214	3283	3981	3149	2232	2033	2951	1267	1329	1179	500	549
+6017	3812	4317	2922	1683	1988	2827	1765	1657	1493	1646	550	599
+7504	4892	5957	3808	3035	2583	2196	2732	1796	1203	2536	600	649
+7003	5448	5919	5284	3117	3017	3125	2360	2030	2021	1614	650	699
+9488	6452	7215	4907	4698	4282	4137	3257	2737	2394	2427	700	749
+7856	5495	6397	6582	4167	3222	3321	3766	4133	3121	2195	750	799
+11569	11124	11688	12304	13519	11739	11811	11139	9205	9874	7445	800	899
+13492	12249	10115	10060	9919	9882	10101	9769	10280	10542	9158	900	999
+18437	21907	20368	22937	21710	18883	22200	22838	23547	22928	23858	1000	1249
+11314	12332	13860	14350	16240	21077	22244	20226	19068	16401	18579	1250	1499
+11767	11353	14381	16689	16373	22599	26570	27905	28618	28183	34371	1500	1999
+7348	10110	12074	16365	17911	22618	25325	26934	34887	41867	41352	2000	.
 ;
 
 
 run;
 
-%File_info( data=Occ_r.Gross_rent_2005_2012, printobs=50 )
+%File_info( data=Gross_rent_&START_YR._&END_YR., printobs=50 )
 
 proc format;
   value rntrang
@@ -112,17 +119,42 @@ proc format;
     1000-1250 = '$1,00 to $1,499'
     1500-2000 = '$1,500 or more';
 run;
-    
-ods csvall body="L:\Libraries\OCC\Prog\Ch3\Gross_rent_2005_2012.csv";
 
-proc tabulate data=Occ_r.Gross_rent_2005_2012 format=comma10.0 noseps missing;
+proc tabulate data=Gross_rent_&START_YR._&END_YR. format=comma10.0 noseps missing;
   class low;
-  var UnitsAdj2005-UnitsAdj2012;
+  var Units&START_YR.-Units&END_YR.;
   table 
     /** Rows **/
     Low=' ' all='TOTAL',
     /** Columns **/
-    sum=' ' * ( UnitsAdj2005-UnitsAdj2012 )
+    sum=' ' * ( Units&START_YR.-Units&END_YR. )
+  ;
+  format low rntrang.;
+  label 
+    Units2005 = '2005'
+    Units2006 = '2006'
+    Units2007 = '2007'
+    Units2008 = '2008'
+    Units2009 = '2009'
+    Units2010 = '2010'
+    Units2011 = '2011'
+    Units2012 = '2012'
+    Units2013 = '2013'
+    Units2014 = '2014'
+    Units2015 = '2015';
+  title2 "Renter-Occupied Housing Units by Gross Rent (UNADJUSTED)";
+run;
+    
+ods csvall body="&_dcdata_default_path\Requests\Prog\2017\Gross_rent_&START_YR._&END_YR..csv";
+
+proc tabulate data=Gross_rent_&START_YR._&END_YR. format=comma10.0 noseps missing;
+  class low;
+  var UnitsAdj&START_YR.-UnitsAdj&END_YR.;
+  table 
+    /** Rows **/
+    Low=' ' all='TOTAL',
+    /** Columns **/
+    sum=' ' * ( UnitsAdj&START_YR.-UnitsAdj&END_YR. )
   ;
   format low rntrang.;
   label 
@@ -133,8 +165,11 @@ proc tabulate data=Occ_r.Gross_rent_2005_2012 format=comma10.0 noseps missing;
     UnitsAdj2009 = '2009'
     UnitsAdj2010 = '2010'
     UnitsAdj2011 = '2011'
-    UnitsAdj2012 = '2012';
-  title2 'Renter-Occupied Housing Units by Gross Rent (constant 2012 $)';
+    UnitsAdj2012 = '2012'
+    UnitsAdj2013 = '2013'
+    UnitsAdj2014 = '2014'
+    UnitsAdj2015 = '2015';
+  title2 "Renter-Occupied Housing Units by Gross Rent (constant &END_YR. $)";
 run;
 
 ods csvall close;
