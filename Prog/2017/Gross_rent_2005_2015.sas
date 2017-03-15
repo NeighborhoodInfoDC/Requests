@@ -16,8 +16,7 @@
  Modifications:
 **************************************************************************/
 
-/**%include "L:\SAS\Inc\StdLocal.sas";**/
-%include "C:\DCData\SAS\Inc\StdLocal.sas";
+%include "L:\SAS\Inc\StdLocal.sas";
 
 ** Define libraries **;
 %DCData_lib( Requests )
@@ -208,7 +207,7 @@ proc format;
     500-650 = '$500 to $699'
     700-750 = '$700 to $799'
     800-900 = '$800 to $999'
-    1000-1250 = '$1,00 to $1,499'
+    1000-1250 = '$1,000 to $1,499'
     1500-2000 = '$1,500 or more';
 run;
 
