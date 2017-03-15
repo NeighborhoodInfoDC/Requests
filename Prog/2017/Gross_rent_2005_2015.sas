@@ -25,7 +25,25 @@
 %let START_YR = 2005;
 %let END_YR = 2015;
 
-data A B;
+%macro rename_all( varA, varB );
+
+  %do i = &START_YR %to &END_YR;
+    &varA.&i=&varB.&i 
+  %end;
+  
+%mend rename_all;
+
+data 
+  Base
+    (keep=rcount_output low high Units&START_YR-Units&END_YR UnitsAdj&START_YR-UnitsAdj&END_YR
+     Low&START_YR-Low&END_YR High&START_YR-High&END_YR)
+  Carry_fwd
+    (keep=rcount_output Carry_fwd&START_YR-Carry_fwd&END_YR
+     rename=(%rename_all(Carry_fwd, UnitsAdj)))
+  Carry_bck
+    (keep=rcount_output Carry_bck&START_YR-Carry_bck&END_YR
+     rename=(%rename_all(Carry_bck, UnitsAdj)))
+  ;
 
     rcount_input + 1;
 
@@ -59,101 +77,58 @@ data A B;
         
    end;
    
-   retain Carry&START_YR-Carry&END_YR 0;
+   **retain Carry&START_YR-Carry&END_YR 0;
    
    array a_units{&START_YR:&END_YR} Units&START_YR-Units&END_YR;
    array a_unitsadj{&START_YR:&END_YR} UnitsAdj&START_YR-UnitsAdj&END_YR;
-   array a_carry{&START_YR:&END_YR} Carry&START_YR-Carry&END_YR;
+   array a_carry_fwd{&START_YR:&END_YR} Carry_fwd&START_YR-Carry_fwd&END_YR;
+   array a_carry_bck{&START_YR:&END_YR} Carry_bck&START_YR-Carry_bck&END_YR;
+   array a_rcount{&START_YR:&END_YR} Rcount&START_YR-Rcount&END_YR;
    
+   do i = &START_YR to &END_YR;
    
-     rcount_output = rcount_input;
-       
      if high = . then do;
      
-       if a_low{&END_YR} <= low then do;
+       if a_low{i} < low then do;
        
-         do i = &START_YR to &END_YR;
-           a_unitsadj{i} = a_units{i} * 0.5;
-         end;
-           
-         output A;
-           
-         rcount_output = rcount_output - 1;
-           
-         do i = &START_YR to &END_YR;
-           a_unitsadj{i} = a_units{i} * 0.5;
-         end;
-           
-         output B;
+         a_unitsadj{i} = a_units{i} * 0.5;
+         a_carry_bck{i} = a_units{i} * 0.5;
            
        end;
        else do;
        
-         do i = &START_YR to &END_YR;
-           a_unitsadj{i} = a_units{i};
-         end;
-         
-         output A;
+         a_unitsadj{i} = a_units{i};
          
        end;
      
      end;
-     else if a_high{&START_YR} > high then do;
+     else if a_high{i} > high then do;
      
-       do i = &START_YR to &END_YR;
-         a_unitsadj{i} = a_units{i} * ( ( a_high{i} - low ) / ( a_high{i} - a_low{i} ) );
-       end;
-       
-       output A;
-       
-       if rcount_output > 1 then do;
-       
-         rcount_output = rcount_output - 1;
+       a_unitsadj{i} = a_units{i} * ( ( high - a_low{i} ) / ( a_high{i} - a_low{i} ) );
+       a_carry_fwd{i} = a_units{i} * ( ( a_high{i} - high ) / ( a_high{i} - a_low{i} ) );
          
-         do i = &START_YR to &END_YR;
-           a_unitsadj{i} = a_units{i} * ( ( low - a_low{i} ) / ( a_high{i} - a_low{i} ) );
-         end;
-         
-         output B;
-         
-       end;
-       
      end;
-     else if a_high{&START_YR} <= high then do;
+     else if a_high{i} <= high then do;
      
-       do i = &START_YR to &END_YR;
-         a_unitsadj{i} = a_units{i} * ( ( high - a_low{i} ) / ( a_high{i} - a_low{i} ) );
-       end;
-       
-       output A;
-       
-       rcount_output = rcount_output + 1;
-       
-       do i = &START_YR to &END_YR;
-         a_unitsadj{i} = a_units{i} * ( ( a_high{i} - high ) / ( a_high{i} - a_low{i} ) );
-       end;
-       
-       output B;
-       
-     end;
-   
-   
-   /**************
-     if not missing( a_high{i} ) then do;
-     
-       a_unitsadj{i} = min( ( ( high - low ) / ( a_high{i} - a_low{i} ) ), 1 ) * a_units{i} + a_carry{i};
-       
-       a_carry{i} = ( 1 - min( ( ( high - low ) / ( a_high{i} - a_low{i} ) ), 1 ) ) * a_units{i}; 
-       
-     end;
-     else do;
-     
-       a_unitsadj{i} = a_units{i} + a_carry{i};
-       
-     end;
-   ********************/
-      
+       a_unitsadj{i} = a_units{i} * ( ( a_high(i) - low ) / ( a_high{i} - a_low{i} ) );
+       a_carry_bck{i} = a_units{i} * ( ( low - a_low{i} ) / ( a_high{i} - a_low{i} ) );
 
+     end;
+     
+   end;
+   
+   rcount_output = rcount_input;
+   output base;
+   
+   if rcount_input > 1 then do;
+     rcount_output = rcount_input - 1;
+     output carry_bck;
+   end;
+   
+   if high ~= . then do;
+     rcount_output = rcount_input + 1;
+     output carry_fwd;
+   end;
    
    *drop i Low&START_YR-Low&END_YR High&START_YR-High&END_YR Carry&START_YR-Carry&END_YR;
 
@@ -183,45 +158,47 @@ datalines;
 
 run;
 
+data All;
+
+  set Base Carry_fwd Carry_bck;
+  
+run;
+
+proc summary data=All nway;
+  class rcount_output;
+  id low high Units&START_YR-Units&END_YR;
+  var unitsadj: ;
+  output out=Gross_rent_&START_YR._&END_YR. sum=;
+run;
+
+/*** UNCOMMENT TO CHECK ***
+
 %let testyr = 2012;
 
-proc print data=A;
+proc print data=Base;
   id rcount_output;
-  var low high units&testyr;
+  var low high low&testyr high&testyr units&testyr unitsadj&testyr;
   sum units&testyr;
 run;
 
-proc print data=A;
-  id rcount_output;
-  var low&testyr high&testyr unitsadj&testyr ;
-run;
-
-proc print data=B;
+proc print data=Carry_fwd;
   id rcount_output;
   var unitsadj&testyr ;
 run;
 
-data C;
-
-  set A B (drop=low high);
-  
+proc print data=Carry_bck;
+  id rcount_output;
+  var unitsadj&testyr ;
 run;
 
-proc summary data=C nway;
-  class rcount_output;
-  id low high;
-  var unitsadj: ;
-  output out=C_sum sum=;
-run;
-
-proc print data=C_sum;
+proc print data=All_sum;
   id rcount_output low high;
   var unitsadj&testyr ;
   sum unitsadj&testyr ;
 run;
 
+/**********************************/
 
-ENDSAS;
 
 %File_info( data=Gross_rent_&START_YR._&END_YR., printobs=50 )
 
