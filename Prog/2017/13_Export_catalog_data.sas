@@ -144,12 +144,38 @@ options msglevel=n;
 ** Fill in the folder location where the export files should be saved **;
 %let out_folder = &_dcdata_r_path\Requests\Raw\2017\Catalog;
 
+** Reformat owner types with shorter labels **;
+
+proc format;
+  value $OwnCat
+    '010' = 'Homeowner'
+    '020' = 'Resident owner'
+    '030' = 'Other individuals'
+    '040' = 'DC government'
+    '050' = 'US government'
+    '060' = 'Foreign government'
+    '070' = 'Quasi-public'
+    '080' = 'Community organization'
+    '090' = 'Educational institution'
+    '100' = 'Religious organization'
+    '110' = 'Corporation/LLC'
+    '111' = 'Non-profit'
+    '115' = 'For-profit'
+    '120' = 'GSE'
+    '130' = 'Financial institution'
+  ;
+	
+run;
+    
+
 ** Export individual data sets **;
 %Export( data=PresCat.Project_category_view, out=Project, desc=%str(DC Preservation Catalog, Projects) )
 %Export( data=PresCat.Subsidy )
 %Export( data=PresCat.Parcel )
 %Export( data=PresCat.Reac_score ) 
 %Export( data=PresCat.Real_property )
+%Export( data=PresCat.Building_geocode )
+%Export( data=PresCat.Project_geocode )
 
 ** Create data dictionary **;
 %Dictionary()
