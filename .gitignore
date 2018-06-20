@@ -61,4 +61,5 @@ Prog/Temp/
 *.bak
 
 # Other
+*.bat
 Thumbs.db
