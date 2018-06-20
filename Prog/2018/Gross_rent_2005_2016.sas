@@ -235,7 +235,7 @@ proc tabulate data=Gross_rent_&START_YR._&END_YR. format=comma10.0 noseps missin
   label 
     %label_all( Units )
   ;
-  title2 "Renter-Occupied Housing Units by Gross Rent (UNADJUSTED)";
+  title2 "Renter-Occupied Housing Units by Gross Rent, District of Columbia (UNADJUSTED)";
 run;
     
 ods csvall body="&output_path\Gross_rent_&START_YR._&END_YR..csv";
@@ -253,7 +253,7 @@ proc tabulate data=Gross_rent_&START_YR._&END_YR. format=comma10.0 noseps missin
   label 
     %label_all( UnitsAdj )
   ;
-  title2 "Renter-Occupied Housing Units by Gross Rent (constant &END_YR. $)";
+  title2 "Renter-Occupied Housing Units by Gross Rent, District of Columbia (constant &END_YR. $)";
 run;
 
 ods csvall close;
