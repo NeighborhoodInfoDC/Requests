@@ -19,11 +19,51 @@
 
 libname bls "L:\Libraries\Requests\Data\washington region feature\BLS";
 
-data allyears;
-   set bls.County_1990 bls.County_1991 bls.County_1992 bls.County_1993 bls.County_1994 bls.County_1995 bls.County_1996 bls.County_1997
-       bls.County_1998 bls.County_1999 bls.County_2000 bls.County_2001 bls.County_2002 bls.County_2003 bls.County_2004 bls.County_2005 
-	   bls.County_2006 bls.County_2007 bls.County_2008 bls.County_2009 bls.County_2010 bls.County_2011 bls.County_2012 bls.County_2013
-	   bls.County_2014 bls.County_2015 bls.County_2016 bls.County_2017;
+%let keeplist = Area_Code Year Area_Type St_Name Area Industry Ownership Annual_Average_Employment;
 
-   keep Area_Code Year Area_Type St_Name Area Industry Ownership Annual_Average_Employment;
+%let countylist = "District of Columbia","Arlington County, Virginia","Alexandria City, Virginia" ; 
+
+
+
+data allyears;
+   set bls.County_1990 (keep = &keeplist.) 
+		bls.County_1991 (keep = &keeplist.) 
+		bls.County_1992 (keep = &keeplist.) 
+		bls.County_1993 (keep = &keeplist.)
+		bls.County_1994 (keep = &keeplist.)
+		bls.County_1995 (keep = &keeplist.)
+		bls.County_1996 (keep = &keeplist.)
+		bls.County_1997 (keep = &keeplist.)
+       	bls.County_1998 (keep = &keeplist.) 
+		bls.County_1999 (keep = &keeplist.) 
+		bls.County_2000 (keep = &keeplist.) 
+		bls.County_2001 (keep = &keeplist.) 
+		bls.County_2002 (keep = &keeplist.)
+		bls.County_2003 (keep = &keeplist.) 
+		bls.County_2004 (keep = &keeplist.) 
+		bls.County_2005 (keep = &keeplist.) 
+	   	bls.County_2006 (keep = &keeplist.) 
+		bls.County_2007 (keep = &keeplist.) 
+		bls.County_2008 (keep = &keeplist.) 
+		bls.County_2009 (keep = &keeplist.) 
+		bls.County_2010 (keep = &keeplist.) 
+		bls.County_2011 (keep = &keeplist.)
+		bls.County_2012 (keep = &keeplist.) 
+		bls.County_2013 (keep = &keeplist.)
+	   	bls.County_2014 (keep = &keeplist.) 
+		bls.County_2015 (keep = &keeplist.) 
+		bls.County_2016 (keep = &keeplist.) 
+		bls.County_2017 (keep = &keeplist.);
+
+		if area in (&countylist.);
+
+		if area_type = "County";
+		if ownership = "Total Covered";
+
+
+run;
+
+
+proc sort data = allyears;
+	by area year;
 run;
