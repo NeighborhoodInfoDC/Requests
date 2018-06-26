@@ -26,14 +26,14 @@ proc freq data=NCDBTravel;
 tables ucounty COUNTY;
 run;
 
-proc summary data = NCDBTravel;
+proc summary data = NCDBTravel(where=(metro15="47900"));
       var commut20 commut40 commutx0;
 	  by ucounty;
-      output out = msa_travel_2000 sum=;
+      output out = NCDB_msabycounty_travel_2000 sum=;
 run;
 
 proc export data=msa_travel_2000
-   outfile='L:\Libraries\Requests\Data\washington region feature\NCDB_msa_travel_2000.csv'
+   outfile='L:\Libraries\Requests\Data\washington region feature\NCDB_msabycounty_travel_2000.csv'
    dbms=csv
    replace;
 run;
@@ -88,8 +88,8 @@ proc summary data = ACSallstates (where=(metro15="47900"));
 	output out = ACS_MSAbycounty_travel_2016 sum = ;
 run;
 
-proc export data=ACS_innercounty_travel_2016
-   outfile='L:\Libraries\Requests\Data\washington region feature\ACS_MSAbycounty_2016.csv'
+proc export data=ACS_MSAbycounty_travel_2016 
+   outfile='L:\Libraries\Requests\Data\washington region feature\ACS_MSAbycounty_travel_2016 .csv'
    dbms=csv
    replace;
 run;

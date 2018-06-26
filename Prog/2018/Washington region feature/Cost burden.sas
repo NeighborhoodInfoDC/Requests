@@ -45,6 +45,26 @@ proc export data=ACS_MSACounty_rentburdened_2016
    replace;
 run;
 
+
+proc summary data = ACSallstates;
+    class metro15;
+	var numrentercostburden_2012_16 numrentseverecostburden_2012_16 rentcostburdendenom_2012_16 numownercostburden_2012_16 numownseverecostburden_2012_16 ownercostburdendenom_2012_16;
+    output out = ACS_MSAall_rentburdened_2016 sum = ;
+run;
+data ACS_MSAall_rentburdened_2016;
+    set ACS_MSAall_rentburdened_2016;
+	renterburdened = numrentercostburden_2012_16/rentcostburdendenom_2012_16;
+	rentersevereburdened = numrentseverecostburden_2012_16/rentcostburdendenom_2012_16;
+	ownerburdened = numownercostburden_2012_16/ownercostburdendenom_2012_16;
+	ownersevereburdened = numownseverecostburden_2012_16/ownercostburdendenom_2012_16;
+run;
+
+proc export data=ACS_MSACounty_rentburdened_2016
+   outfile='L:\Libraries\Requests\Data\washington region feature\ACS_MSAall_rentburdened_2016.csv'
+   dbms=csv
+   replace;
+run;
+
 data NCDBcostburden;
       set ncdb.ncdb_master_update ;
 	  m30pi0= spownoc0-m20pi0-M29PIy;
@@ -69,6 +89,25 @@ run;
 
 proc export data=NCDB_msabycounty_costburden_2000
    outfile='L:\Libraries\Requests\Data\washington region feature\NCDB_msabycounty_costburden_2000.csv'
+   dbms=csv
+   replace;
+run;
+
+proc summary data = NCDBcostburden;
+      class metro15;
+      var  m50pi0 m29pi0 m20pi0 spownoc0 R50Pi0 R20Pi0 R29Pi0 rntocc0 ;
+      output out = NCDB_msaall_costburden_2000 sum=;
+run;
+
+data NCDB_msaall_costburden_2000;
+  set NCDB_msaall_costburden_2000;
+      renterburdened = (rntocc0-R20Pi0-R29Pi0)/rntocc0;
+      rentersevereburdened = R50Pi0/rntocc0;
+      ownerburdened = (spownoc0-m29pi0-m20pi0)/spownoc0;
+	  ownersevereburdened = m50pi0/spownoc0;
+run;
+proc export data=NCDB_msaall_costburden_2000
+   outfile='L:\Libraries\Requests\Data\washington region feature\NCDB_msaall_costburden_2000.csv'
    dbms=csv
    replace;
 run;
