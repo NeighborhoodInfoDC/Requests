@@ -21,7 +21,12 @@ libname bls "L:\Libraries\Requests\Data\washington region feature\BLS";
 
 %let keeplist = Area_Code Year Area_Type St_Name Area Industry Ownership Annual_Average_Employment;
 
-%let countylist = "District of Columbia","Arlington County, Virginia","Alexandria City, Virginia" ; 
+%let countylist = "District of Columbia", "Calvert County, Maryland", "Charles County, Maryland", "Frederick County, Maryland", 
+                  "Montgomery County, Maryland", "Prince George's County, Maryland", "Arlington County, Virginia", "Clarke County, Virginia",
+				  "Culpeper County, Virginia", "Fairfax County, Virginia", "Fauquier County, Virginia", "Loudoun County, Virginia",
+				  "Prince William County, Virginia", "Rappahannock County, Virginia", "Spotsylvania County, Virginia", "Stafford County, Virginia",
+				  "Warren County, Virginia", "Alexandria City, Virginia", "Fairfax City, Virginia", "Falls Church City, Virginia", 
+				  "Fredericksburg City, Virginia", "Manassas City, Virginia", "Manassas Park City, Virginia", "Jefferson County, West Virginia" ; 
 
 
 
@@ -56,7 +61,6 @@ data allyears;
 		bls.County_2017 (keep = &keeplist.);
 
 		if area in (&countylist.);
-
 		if area_type = "County";
 		if ownership = "Total Covered";
 
@@ -66,4 +70,38 @@ run;
 
 proc sort data = allyears;
 	by area year;
+run;
+
+data allyears;
+	set allyears;
+    if area in ("District of Columbia","Montgomery County, Maryland","Prince George's County, Maryland","Arlington County, Virginia","Alexandria City, Virginia","Fairfax City, Virginia","Loudoun County, Virginia", "Fairfax County, Virginia") then innercounty = 1;
+run;
+
+proc sort data = allyears;
+	by year;
+run;
+
+
+proc summary data = allyears;
+      class year;
+      var Annual_Average_Employment;
+      output out = msa_employment sum=;
+run;
+
+proc export data=msa_employment
+   outfile='L:\Libraries\Requests\Data\washington region feature\BLS_msa_employment.csv'
+   dbms=csv
+   replace;
+run;
+
+proc summary data = allyears (where=(innercounty=1));
+      class year;
+      var Annual_Average_Employment;
+      output out = innercounty_employment sum=;
+run;
+
+proc export data=innercounty_employment
+   outfile='L:\Libraries\Requests\Data\washington region feature\BLS_innercouty_employment.csv'
+   dbms=csv
+   replace;
 run;

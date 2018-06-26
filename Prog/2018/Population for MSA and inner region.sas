@@ -29,12 +29,19 @@ proc summary data = NCDBMaster;
       output out = msa_pop sum=;
 run;
 
+proc export data=msa_pop
+   outfile='L:\Libraries\Requests\Data\washington region feature\NCDB_msa_pop.csv'
+   dbms=csv
+   replace;
+run;
 
 proc summary data = NCDBMaster (where=(innercounty=1));
       var trctpop7 trctpop8 trctpop9 trctpop0;
       output out = inner_pop sum=;
 run;
 
-proc freq data=ncdb.ncdb_master_update;
-tables ucounty;
+proc export data=inner_pop
+   outfile='L:\Libraries\Requests\Data\washington region feature\NCDB_inner_pop.csv'
+   dbms=csv
+   replace;
 run;
