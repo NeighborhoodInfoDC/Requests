@@ -40,7 +40,7 @@
                dsd
 			   firstobs=2
                truncover;
-		%IF '&qtr.' eq 'a' %THEN %DO;
+		%IF "&qtr." eq "a" %THEN %DO;
 	    	input area_fips $ 
 				own_code $ 
 				industry_code $ 
@@ -51,34 +51,7 @@
 				disclosure_code $ 
 				annual_avg_estabs
 				annual_avg_emplvl 
-				total_annual_wages
-				taxable_annual_wages
-				annual_contributions
-				annual_avg_wkly_wage
-				avg_annual_pay
-				lq_disclosure_code $
-				lq_annual_avg_estabs
-				lq_annual_avg_emplvl
-				lq_total_annual_wages
-				lq_taxable_annual_wages
-				lq_annual_contributions
-				lq_annual_avg_wkly_wage
-				lq_avg_annual_pay
-				oty_disclosure_code $
-				oty_annual_avg_estabs_chg
-				oty_annual_avg_estabs_pct_chg
-				oty_annual_avg_emplvl_chg
-				oty_annual_avg_emplvl_pct_chg
-				oty_total_annual_wages_chg
-				oty_total_annual_wages_pct_chg
-				oty_taxable_annual_wages_chg
-				oty_taxable_annual_wages_pct_chg
-				oty_annual_contributions_chg
-				oty_annual_contributions_pct_chg
-				oty_annual_avg_wkly_wage_chg
-				oty_annual_avg_wkly_wage_pct_chg
-				oty_avg_annual_pay_chg
-				oty_avg_annual_pay_pct_chg;
+
 		%END;
 		%ELSE %DO;
 			input area_fips $ 
@@ -126,13 +99,22 @@
  
 		%END;
 	run;
+
+data a&area.y&year.q&qtr._x;
+	set a&area.y&year.q&qtr.;
+	if agglvl_code = "70";
+run;
+
 %MEND qcewGetAreaData;
 
 
-%qcewGetAreaData(2015,a,26000);
+%qcewGetAreaData(2013,a,11001);
+%qcewGetAreaData(2014,a,11001);
+%qcewGetAreaData(2015,a,11001);
+%qcewGetAreaData(2016,a,11001);
+%qcewGetAreaData(2017,a,11001);
 
 
-
-
-
-
+data dc_empl;
+	set A11001y2013qa_x A11001y2014qa_x A11001y2015qa_x A11001y2016qa_x A11001y2017qa_x;
+run;
