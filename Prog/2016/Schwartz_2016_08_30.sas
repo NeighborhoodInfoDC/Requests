@@ -133,6 +133,18 @@ proc freq data = Schwartz_2016_08_30 (where=(mhome=1 and householder=1));
 	weight hhwt;
 run;
 
+proc freq data = Schwartz_2016_08_30 (where=(ownershp=1));
+	tables movedin newrace educd bpl newfamily ;
+	format movedin moved. newrace newrace. educd college. bpl nativity. newfamily family. ;
+	weight hhwt;
+run;
+
+proc freq data = Schwartz_2016_08_30 (where=(ownershp=2));
+	tables movedin newrace educd bpl newfamily ;
+	format movedin moved. newrace newrace. educd college. bpl nativity. newfamily family. ;
+	weight hhwt;
+run;
+
 
 /* Table 2: Median Indicators */
 proc means data = Schwartz_2016_08_30 (where=(householder=1)) n median mean ;
@@ -147,6 +159,18 @@ proc means data = Schwartz_2016_08_30 (where=(mhome=1 and householder=1)) n medi
 	output out = m_medians median=;
 run;
 
+proc means data = Schwartz_2016_08_30 (where=(ownershp=1)) n median mean ;
+	var hhincome age;
+	weight hhwt;
+	output out = m_medians median=;
+run;
+
+proc means data = Schwartz_2016_08_30 (where=(ownershp=2)) n median mean ;
+	var hhincome age;
+	weight hhwt;
+	output out = m_medians median=;
+run;
+
 
 /* Table 3: Occupation frequency of householder and spouse/partner */
 proc freq data = Schwartz_2016_08_30 (where=( householder in (1,2)));
@@ -156,6 +180,18 @@ proc freq data = Schwartz_2016_08_30 (where=( householder in (1,2)));
 run;
 
 proc freq data = Schwartz_2016_08_30 (where=(mhome=1 and householder in (1,2)));
+	tables occ;
+	format occ occ.;
+	weight perwt;
+run;
+
+proc freq data = Schwartz_2016_08_30 (where=(ownershp=1 and householder in (1,2)));
+	tables occ;
+	format occ occ.;
+	weight perwt;
+run;
+
+proc freq data = Schwartz_2016_08_30 (where=(ownershp=2 and householder in (1,2)));
 	tables occ;
 	format occ occ.;
 	weight perwt;
