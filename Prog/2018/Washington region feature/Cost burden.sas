@@ -67,18 +67,18 @@ run;
 proc summary data = ACSallstates;
     class innercounty;
 	var numrentercostburden_2012_16 numrentseverecostburden_2012_16 rentcostburdendenom_2012_16 numownercostburden_2012_16 numownseverecostburden_2012_16 ownercostburdendenom_2012_16;
-    output out = ACS_InnerRegionall_rentburdened_2016 sum = ;
+    output out = ACS_Innerall_rentburdened_2016 sum = ;
 run;
-data ACS_InnerRegionall_rentburdened_2016;
-    set ACS_InnerRegionall_rentburdened_2016;
+data ACS_Innerall_rentburdened_2016;
+    set ACS_Innerall_rentburdened_2016;
 	renterburdened = numrentercostburden_2012_16/rentcostburdendenom_2012_16;
 	rentersevereburdened = numrentseverecostburden_2012_16/rentcostburdendenom_2012_16;
 	ownerburdened = numownercostburden_2012_16/ownercostburdendenom_2012_16;
 	ownersevereburdened = numownseverecostburden_2012_16/ownercostburdendenom_2012_16;
 run;
 
-proc export data=ACS_InnerRegionall_rentburdened_2016
-   outfile='L:\Libraries\Requests\Data\washington region feature\ACS_InnerRegionall_rentburdened_2016.csv'
+proc export data=ACS_Innerall_rentburdened_2016
+   outfile='L:\Libraries\Requests\Data\washington region feature\ACS_Innerall_rentburdened_2016.csv'
    dbms=csv
    replace;
 run;
@@ -135,18 +135,18 @@ run;
 proc summary data = NCDBcostburden;
       class innercounty;
       var  m50pi0 m29pi0 m20pi0 spownoc0 R50Pi0 R20Pi0 R29Pi0 rntocc0 ;
-      output out = NCDB_innerregionall_costburden_2000 sum=;
+      output out = NCDB_innerall_costburden_2000 sum=;
 run;
 
-data NCDB_innerregionall_costburden_2000;
-  set NCDB_innerregionall_costburden_2000;
+data NCDB_innerall_costburden_2000;
+  set NCDB_innerall_costburden_2000;
       renterburdened = (rntocc0-R20Pi0-R29Pi0)/rntocc0;
       rentersevereburdened = R50Pi0/rntocc0;
       ownerburdened = (spownoc0-m29pi0-m20pi0)/spownoc0;
 	  ownersevereburdened = m50pi0/spownoc0;
 run;
-proc export data=NCDB_innerregionall_costburden_2000
-   outfile='L:\Libraries\Requests\Data\washington region feature\NCDB_innerregionall_costburden_2000.csv'
+proc export data=NCDB_innerall_costburden_2000
+   outfile='L:\Libraries\Requests\Data\washington region feature\NCDB_innerall_costburden_2000.csv'
    dbms=csv
    replace;
 run;
