@@ -1,4 +1,16 @@
+/**************************************************************************
+ Program:  ACS Population.sas
+ Library:  Requests
+ Project:  NeighborhoodInfo DC
+ Author:   Yipeng Su
+ Created:  6/26/18
+ Version:  SAS 9.4
+ Environment:  Local Windows session
+ 
+ Description:  Calculate population for DC MSA and Inner Region from Census population estimates
+               https://www.census.gov/data/datasets/2017/demo/popest/counties-total.html
 
+**************************************************************************/
 
 %include "L:\SAS\Inc\StdLocal.sas";
 
