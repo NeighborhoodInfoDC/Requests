@@ -1,3 +1,8 @@
+
+
+%include "L:\SAS\Inc\StdLocal.sas";
+
+
 proc import datafile="L:\Libraries\Requests\Data\washington region feature\PEP_2017_PEPANNRES\Population.csv"
  out=work.population
  dbms=csv
@@ -15,17 +20,21 @@ run;
 				  
 data pop1017;
    set population;
-   if Geography in (&countylist.);
+   ucounty = put(id2,z5.);
+
+   metro15 = put( ucounty, $ctym15f. );
+   if ucounty in ("11001","24031","24033","51013","51059","51107","51510","51600") then innercounty = 1;
 
 run;
 
 
-data pop1017;
+data pop1017_msa;
 	set pop1017;
-    if area in ("District of Columbia","Montgomery County, Maryland","Prince George's County, Maryland","Arlington County, Virginia","Alexandria City, Virginia","Fairfax City, Virginia","Loudoun County, Virginia", "Fairfax County, Virginia") then innercounty = 1;
+	if metro15 ^= " ";
 run;
 
-proc summary data = pop1017;
+
+proc summary data = pop1017_msa;
       var Pop_2010 Pop_2011 Pop_2012 Pop_2013 Pop_2014 Pop_2015 Pop_2016 Pop_2017;
       output out = msa_pop1017 sum=;
 run;
@@ -36,7 +45,7 @@ proc export data=msa_pop1017
    replace;
 run;
 
-proc summary data = allyears (where=(innercounty=1));
+proc summary data = pop1017_msa (where=(innercounty=1));
       var Pop_2010 Pop_2011 Pop_2012 Pop_2013 Pop_2014 Pop_2015 Pop_2016 Pop_2017;
       output out = innercounty_pop1017 sum=;
 run;
