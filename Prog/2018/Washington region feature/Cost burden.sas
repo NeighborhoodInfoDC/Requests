@@ -67,8 +67,8 @@ run;
 
 data NCDBcostburden;
       set ncdb.ncdb_master_update ;
-	  m30pi0= spownoc0-m20pi0-M29PIy;
-	  r30pi0= rntocc0-R20PIy0-R29PIy0;
+	  m30pi0= spownoc0-m20pi0-M29PI0;
+	  r30pi0= rntocc0-R20PI0-R29PI0;
       metro15 = put( ucounty, $ctym15f. );
       if ucounty in ("11001","24031","24033","51013","51059","51107","51510","51600") then innercounty = 1;
 run;
