@@ -25,31 +25,33 @@ data ACSallstates;
 	  morethan25lessthan44 = popemployedtravel_25_29_2012_16 + popemployedtravel_30_34_2012_16 + popemployedtravel_35_39_2012_16 + popemployedtravel_40_44_2012_16;
 	  morethan45lessthan59= popemployedtravel_45_59_2012_16 ;
 	  morethan60 = popemployedtravel_60_89_2012_16 + popemployedtravel_gt90_2012_16;
-      if county in ("11001","24031","24033","51013","51059","51107","51510","51600") then innercounty = 1;
+	  morethan45= popemployedtravel_45_59_2012_16 + popemployedtravel_60_89_2012_16 + popemployedtravel_gt90_2012_16;
+      if county in ("11001","24031","24033","51013","51059","51107","51510","51600","51610") then innercounty = 1;
 run;
+proc sort data=ACSallstates;
+by county;run;
 
-proc summary data = ACSallstates;
-	class innercounty ;
+proc summary data = ACSallstates (where=(innercounty=1));
 	var    popemployedtravel_lt5_2012_16  popemployedtravel_5_9_2012_16 popemployedtravel_10_14_2012_16 popemployedtravel_15_19_2012_16 
            popemployedtravel_20_24_2012_16 popemployedtravel_25_29_2012_16
            popemployedtravel_30_34_2012_16  popemployedtravel_35_39_2012_16 popemployedtravel_40_44_2012_16 popemployedtravel_45_59_2012_16
-           popemployedtravel_60_89_2012_16 popemployedtravel_gt90_2012_16 lessthan25 morethan25lessthan44 morethan45lessthan59 morethan60;
-	output out = ACS_msa_travel_2016 sum = ;
+           popemployedtravel_60_89_2012_16 popemployedtravel_gt90_2012_16 lessthan25 morethan25lessthan44 morethan45lessthan59 morethan60 morethan45;
+		   by county;
+	output out = ACS_innerbycounty_4_travel_2016 sum = ;
 run;
 
-proc export data=ACS_innerall_4cat_travel_2016
-   outfile='L:\Libraries\Requests\Data\washington region feature\ACS_innerall_4cat_travel_2016.csv'
+proc export data=ACS_innerbycounty_4_travel_2016
+   outfile='L:\Libraries\Requests\Data\washington region feature\ACS_innerbycounty_4_travel_2016.csv'
    dbms=csv
    replace;
 run;
 
 
 
-
 data NCDBTravel;
       set ncdb.ncdb_master_update;
       metro15 = put( ucounty, $ctym15f. );
-      if ucounty in ("11001","24031","24033","51013","51059","51107","51510","51600") then innercounty = 1;
+      if ucounty in ("11001","24031","24033","51013","51059","51107","51510","51600","51610") then innercounty = 1;
 run;
 proc freq data=NCDBTravel;
 tables ucounty COUNTY;
@@ -61,7 +63,7 @@ proc summary data = NCDBTravel(where=(metro15="47900"));
       output out = NCDB_msabycounty_travel_2000 sum=;
 run;
 
-proc export data=msa_travel_2000
+proc export data=NCDB_msabycounty_travel_2000
    outfile='L:\Libraries\Requests\Data\washington region feature\NCDB_msabycounty_travel_2000.csv'
    dbms=csv
    replace;
@@ -88,7 +90,7 @@ data ACSallstates;
 	  morethan25lessthan44 = popemployedtravel_25_29_2012_16 + popemployedtravel_30_34_2012_16 + popemployedtravel_35_39_2012_16 + popemployedtravel_40_44_2012_16;
 	  morethan45lessthan59= popemployedtravel_45_59_2012_16 ;
 	  morethan60 = popemployedtravel_60_89_2012_16 + popemployedtravel_gt90_2012_16
-      if county in ("11001","24031","24033","51013","51059","51107","51510","51600") then innercounty = 1;
+      if county in ("11001","24031","24033","51013","51059","51107","51510","51600","51610") then innercounty = 1;
 run;
 
 proc summary data = ACSallstates ;
