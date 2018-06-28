@@ -16,6 +16,35 @@
 ** Define libraries **;
 %DCData_lib( ACS )
 %DCData_lib( NCDB )
+/*create 4 category for travel time*/
+data ACSallstates;
+	  set acs.acs_2012_16_va_sum_regcnt_regcnt acs.acs_2012_16_dc_sum_regcnt_regcnt acs.acs_2012_16_md_sum_regcnt_regcnt acs.acs_2012_16_wv_sum_regcnt_regcnt;
+	  metro15 = put( county, $ctym15f. );
+	  lessthan25= popemployedtravel_lt5_2012_16+ popemployedtravel_5_9_2012_16+ popemployedtravel_10_14_2012_16+ popemployedtravel_15_19_2012_16 +
+                   popemployedtravel_20_24_2012_16;
+	  morethan25lessthan44 = popemployedtravel_25_29_2012_16 + popemployedtravel_30_34_2012_16 + popemployedtravel_35_39_2012_16 + popemployedtravel_40_44_2012_16;
+	  morethan45lessthan59= popemployedtravel_45_59_2012_16 ;
+	  morethan60 = popemployedtravel_60_89_2012_16 + popemployedtravel_gt90_2012_16;
+      if county in ("11001","24031","24033","51013","51059","51107","51510","51600") then innercounty = 1;
+run;
+
+proc summary data = ACSallstates;
+	class innercounty ;
+	var    popemployedtravel_lt5_2012_16  popemployedtravel_5_9_2012_16 popemployedtravel_10_14_2012_16 popemployedtravel_15_19_2012_16 
+           popemployedtravel_20_24_2012_16 popemployedtravel_25_29_2012_16
+           popemployedtravel_30_34_2012_16  popemployedtravel_35_39_2012_16 popemployedtravel_40_44_2012_16 popemployedtravel_45_59_2012_16
+           popemployedtravel_60_89_2012_16 popemployedtravel_gt90_2012_16 lessthan25 morethan25lessthan44 morethan45lessthan59 morethan60;
+	output out = ACS_msa_travel_2016 sum = ;
+run;
+
+proc export data=ACS_innerall_4cat_travel_2016
+   outfile='L:\Libraries\Requests\Data\washington region feature\ACS_innerall_4cat_travel_2016.csv'
+   dbms=csv
+   replace;
+run;
+
+
+
 
 data NCDBTravel;
       set ncdb.ncdb_master_update;
@@ -57,7 +86,8 @@ data ACSallstates;
 	  lessthan25= popemployedtravel_lt5_2012_16+ popemployedtravel_5_9_2012_16+ popemployedtravel_10_14_2012_16+ popemployedtravel_15_19_2012_16 +
                    popemployedtravel_20_24_2012_16;
 	  morethan25lessthan44 = popemployedtravel_25_29_2012_16 + popemployedtravel_30_34_2012_16 + popemployedtravel_35_39_2012_16 + popemployedtravel_40_44_2012_16;
-	  morethan45= popemployedtravel_45_59_2012_16 + popemployedtravel_60_89_2012_16 + popemployedtravel_gt90_2012_16 ;
+	  morethan45lessthan59= popemployedtravel_45_59_2012_16 ;
+	  morethan60 = popemployedtravel_60_89_2012_16 + popemployedtravel_gt90_2012_16
       if county in ("11001","24031","24033","51013","51059","51107","51510","51600") then innercounty = 1;
 run;
 
@@ -66,12 +96,12 @@ proc summary data = ACSallstates ;
 	var    popemployedtravel_lt5_2012_16  popemployedtravel_5_9_2012_16 popemployedtravel_10_14_2012_16 popemployedtravel_15_19_2012_16 
            popemployedtravel_20_24_2012_16 popemployedtravel_25_29_2012_16
            popemployedtravel_30_34_2012_16  popemployedtravel_35_39_2012_16 popemployedtravel_40_44_2012_16 popemployedtravel_45_59_2012_16
-           popemployedtravel_60_89_2012_16 popemployedtravel_gt90_2012_16 lessthan25 morethan25lessthan44 morethan45;
+           popemployedtravel_60_89_2012_16 popemployedtravel_gt90_2012_16 lessthan25 morethan25lessthan44 morethan45lessthan59 morethan60;
 	output out = ACS_msa_travel_2016 sum = ;
 run;
 
 proc export data=ACS_msa_travel_2016
-   outfile='L:\Libraries\Requests\Data\washington region feature\ACS_msa_travel_2016.csv'
+   outfile='L:\Libraries\Requests\Data\washington region feature\ACS_msa_travel_4cat_2016.csv'
    dbms=csv
    replace;
 run;
