@@ -83,6 +83,72 @@ proc export data=ACS_Innerall_rentburdened_2016
    replace;
 run;
 
+data ACSallstates_2010;
+	  set acs.acs_2006_10_va_sum_regcnt_regcnt acs.acs_2006_10_dc_sum_regcnt_regcnt acs.acs_2006_10_md_sum_regcnt_regcnt acs.acs_2006_10_wv_sum_regcnt_regcnt;
+	  metro15 = put( county, $ctym15f. );
+      if county in ("11001","24031","24033","51013","51059","51107","51510","51600", "51610") then innercounty = 1;
+run;
+proc sort data=ACSallstates_2010;
+by county;
+run;
+
+proc summary data = ACSallstates_2010 (where=(metro15="47900"));
+	var numrentercostburden_2006_10 numrentseverecostburden_2006_10 rentcostburdendenom_2006_10 numownercostburden_2006_10 numownseverecostburden_2006_10 ownercostburdendenom_2006_10;
+    by county;
+    output out = ACS_MSACounty_rentburdened_2010 sum = ;
+run;
+
+data ACS_MSACounty_rentburdened_2010;
+    set ACS_MSACounty_rentburdened_2010;
+	renterburdened = numrentercostburden_2006_10/rentcostburdendenom_2006_10;
+	rentersevereburdened = numrentseverecostburden_2006_10/rentcostburdendenom_2006_10;
+	ownerburdened = numownercostburden_2006_10/ownercostburdendenom_2006_10;
+	ownersevereburdened = numownseverecostburden_2006_10/ownercostburdendenom_2006_10;
+run;
+
+proc export data=ACS_MSACounty_rentburdened_2010
+   outfile='L:\Libraries\Requests\Data\washington region feature\ACS_MSACounty_rentburdened_2010.csv'
+   dbms=csv
+   replace;
+run;
+
+proc summary data = ACSallstates_2010;
+    class metro15;
+	var numrentercostburden_2006_10 numrentseverecostburden_2006_10 rentcostburdendenom_2006_10 numownercostburden_2006_10 numownseverecostburden_2006_10 ownercostburdendenom_2006_10;
+    output out = ACS_MSAall_rentburdened_2010 sum = ;
+run;
+data ACS_MSAall_rentburdened_2010;
+    set ACS_MSAall_rentburdened_2010;
+	renterburdened = numrentercostburden_2006_10/rentcostburdendenom_2006_10;
+	rentersevereburdened = numrentseverecostburden_2006_10/rentcostburdendenom_2006_10;
+	ownerburdened = numownercostburden_2006_10/ownercostburdendenom_2006_10;
+	ownersevereburdened = numownseverecostburden_2006_10/ownercostburdendenom_2006_10;
+run;
+
+proc export data=ACS_MSACounty_rentburdened_2010
+   outfile='L:\Libraries\Requests\Data\washington region feature\ACS_MSAall_rentburdened_2010.csv'
+   dbms=csv
+   replace;
+run;
+
+proc summary data = ACSallstates_2010;
+    class innercounty;
+	var numrentercostburden_2006_10 numrentseverecostburden_2006_10 rentcostburdendenom_2006_10 numownercostburden_2006_10 numownseverecostburden_2006_10 ownercostburdendenom_2006_10;
+    output out = ACS_Innerall_rentburdened_2010 sum = ;
+run;
+data ACS_Innerall_rentburdened_2010;
+    set ACS_Innerall_rentburdened_2010;
+	renterburdened = numrentercostburden_2006_10/rentcostburdendenom_2006_10;
+	rentersevereburdened = numrentseverecostburden_2006_10/rentcostburdendenom_2006_10;
+	ownerburdened = numownercostburden_2006_10/ownercostburdendenom_2006_10;
+	ownersevereburdened = numownseverecostburden_2006_10/ownercostburdendenom_2006_10;
+run;
+
+proc export data=ACS_Innerall_rentburdened_2010
+   outfile='L:\Libraries\Requests\Data\washington region feature\ACS_Innerall_rentburdened_2010.csv'
+   dbms=csv
+   replace;
+run;
 
 
 data NCDBcostburden;
