@@ -1,5 +1,5 @@
 /**************************************************************************
- Program:  Commuting time to work.sas
+ Program:  compile bls data.sas
  Library:  Requests
  Project:  NeighborhoodInfo DC
  Author:   Yipeng Su
@@ -16,6 +16,7 @@
 ** Define libraries **;
 %DCData_lib( ACS )
 %DCData_lib( NCDB )
+%dcdata_lib( requests )
 
 libname bls "L:\Libraries\Requests\Data\washington region feature\BLS";
 
@@ -30,51 +31,44 @@ libname bls "L:\Libraries\Requests\Data\washington region feature\BLS";
 
 
 
-data allyears;
-   set bls.County_1990 (keep = &keeplist.) 
-		bls.County_1991 (keep = &keeplist.) 
-		bls.County_1992 (keep = &keeplist.) 
-		bls.County_1993 (keep = &keeplist.)
-		bls.County_1994 (keep = &keeplist.)
-		bls.County_1995 (keep = &keeplist.)
-		bls.County_1996 (keep = &keeplist.)
-		bls.County_1997 (keep = &keeplist.)
-       	bls.County_1998 (keep = &keeplist.) 
-		bls.County_1999 (keep = &keeplist.) 
-		bls.County_2000 (keep = &keeplist.) 
-		bls.County_2001 (keep = &keeplist.) 
-		bls.County_2002 (keep = &keeplist.)
-		bls.County_2003 (keep = &keeplist.) 
-		bls.County_2004 (keep = &keeplist.) 
-		bls.County_2005 (keep = &keeplist.) 
-	   	bls.County_2006 (keep = &keeplist.) 
-		bls.County_2007 (keep = &keeplist.) 
-		bls.County_2008 (keep = &keeplist.) 
-		bls.County_2009 (keep = &keeplist.) 
-		bls.County_2010 (keep = &keeplist.) 
-		bls.County_2011 (keep = &keeplist.)
-		bls.County_2012 (keep = &keeplist.) 
-		bls.County_2013 (keep = &keeplist.)
-	   	bls.County_2014 (keep = &keeplist.) 
-		bls.County_2015 (keep = &keeplist.) 
-		bls.County_2016 (keep = &keeplist.) 
-		bls.County_2017 (keep = &keeplist.);
+data allyears (where=(metro15="47900"));
+   set bls.County_1990 (keep = &keeplist. rename=(area_code=ucounty)) 
+		bls.County_1991 (keep = &keeplist. rename=(area_code=ucounty)) 
+		bls.County_1992 (keep = &keeplist. rename=(area_code=ucounty)) 
+		bls.County_1993 (keep = &keeplist. rename=(area_code=ucounty))
+		bls.County_1994 (keep = &keeplist. rename=(area_code=ucounty))
+		bls.County_1995 (keep = &keeplist. rename=(area_code=ucounty))
+		bls.County_1996 (keep = &keeplist. rename=(area_code=ucounty))
+		bls.County_1997 (keep = &keeplist. rename=(area_code=ucounty))
+       	bls.County_1998 (keep = &keeplist. rename=(area_code=ucounty)) 
+		bls.County_1999 (keep = &keeplist. rename=(area_code=ucounty)) 
+		bls.County_2000 (keep = &keeplist. rename=(area_code=ucounty)) 
+		bls.County_2001 (keep = &keeplist. rename=(area_code=ucounty)) 
+		bls.County_2002 (keep = &keeplist. rename=(area_code=ucounty))
+		bls.County_2003 (keep = &keeplist. rename=(area_code=ucounty)) 
+		bls.County_2004 (keep = &keeplist. rename=(area_code=ucounty)) 
+		bls.County_2005 (keep = &keeplist. rename=(area_code=ucounty)) 
+	   	bls.County_2006 (keep = &keeplist. rename=(area_code=ucounty)) 
+		bls.County_2007 (keep = &keeplist. rename=(area_code=ucounty)) 
+		bls.County_2008 (keep = &keeplist. rename=(area_code=ucounty)) 
+		bls.County_2009 (keep = &keeplist. rename=(area_code=ucounty)) 
+		bls.County_2010 (keep = &keeplist. rename=(area_code=ucounty)) 
+		bls.County_2011 (keep = &keeplist. rename=(area_code=ucounty))
+		bls.County_2012 (keep = &keeplist. rename=(area_code=ucounty)) 
+		bls.County_2013 (keep = &keeplist. rename=(area_code=ucounty))
+	   	bls.County_2014 (keep = &keeplist. rename=(area_code=ucounty)) 
+		bls.County_2015 (keep = &keeplist. rename=(area_code=ucounty)) 
+		bls.County_2016 (keep = &keeplist. rename=(area_code=ucounty)) 
+		bls.County_2017 (keep = &keeplist. rename=(area_code=ucounty));
 
-		if area in (&countylist.);
-		if area_type = "County";
-		if ownership = "Total Covered";
+		metro15 = put( ucounty, $ctym15f. );
 
-
-run;
+		if ucounty in ("11001","24031","24033","51013","51059","51107","51510","51600","51610") then innercounty = 1;
 
 
-proc sort data = allyears;
-	by area year;
-run;
+	   if ownership = "Total Covered";
 
-data allyears;
-	set allyears;
-    if area in ("District of Columbia","Montgomery County, Maryland","Prince George's County, Maryland","Arlington County, Virginia","Alexandria City, Virginia","Fairfax City, Virginia","Loudoun County, Virginia", "Fairfax County, Virginia") then innercounty = 1;
+
 run;
 
 proc sort data = allyears;
