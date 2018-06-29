@@ -21,6 +21,7 @@ data NCDBMaster;
       set ncdb.ncdb_master_update;
       metro15 = put( ucounty, $ctym15f. );
       if ucounty in ("11001","24031","24033","51013","51059","51107","51510","51600") then innercounty = 1;
+    if metro15 = "47900";
 run;
 
 
@@ -29,12 +30,22 @@ proc summary data = NCDBMaster;
       output out = msa_pop sum=;
 run;
 
+proc print data=msa_pop;
+  title2 "MSA population";
+run;
 
 proc summary data = NCDBMaster (where=(innercounty=1));
       var trctpop7 trctpop8 trctpop9 trctpop0;
       output out = inner_pop sum=;
 run;
 
+proc print data=inner_pop;
+  title2 "Inner region population";
+run;
+
+title2;
+
 proc freq data=ncdb.ncdb_master_update;
 tables ucounty;
 run;
+
