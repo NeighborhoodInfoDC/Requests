@@ -131,8 +131,6 @@ data Cost_burden_20_metros;
   All_occ_total = Owner_occ_total + Renter_occ_total;
   All_occ_30p = Owner_occ_30p+ Renter_occ_30p;
   
-  Pct_all_occ_30p = 100 * All_occ_30p / All_occ_total;
-  
   if geo_id2 ~= '47900' then do;
     Renter_occ_total_no_was = Renter_occ_total;
     Renter_occ_30p_no_was = Renter_occ_30p;
@@ -152,7 +150,7 @@ run;
   ods tagsets.excelxp options( sheet_name="&varpre Top &select" );
   
   title2 " ";
-  title3 "Pct %lowcase(&varpre)-occupied housing units with cost burden (30%+), &select largest MSAs, 2012-16";
+  title3 "Pct %lowcase(&varpre) households with housing cost burden (30%+), &select largest MSAs, 2012-16";
   footnote1 "Source: American Community Survey";
 
   proc tabulate data=Cost_burden_20_metros format=comma12.1 noseps missing order=data;
@@ -171,6 +169,7 @@ run;
   run;
   
   title2;
+  footnote1;
 
 %mend Table;
 
