@@ -228,7 +228,7 @@ data washregion_acs_&yr. (where=(metro15="47900"));
 
 		length newname $4.;
 
-		newname=substr(_name_,6,9);
+		newname=substr(_name_,6,4);
 		
 	run;
 	%end; 
@@ -376,7 +376,7 @@ data washregion_sf3_2000 (where=(metro15="47900"));
 	run;
 
    proc export data=all_years 
-   outfile='D:\DCDATA\Libraries\Requests\Prog\2018\Washington region feature\tenure_by_hhinc.csv'
+   outfile="&_dcdata_default_path\Requests\Prog\2018\Washington region feature\tenure_by_hhinc.csv"
    dbms=csv
    replace;
 	run;

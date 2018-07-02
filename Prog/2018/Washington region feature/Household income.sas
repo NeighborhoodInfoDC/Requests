@@ -1,13 +1,14 @@
 /**************************************************************************
  Program:  Household income.sas
  Library:  Requests
- Project:  NeighborhoodInfo DC
+ Project:  Urban-Greater DC
  Author:   L. Hendey
  Created:  6/28/18
  Version:  SAS 9.4
  Environment:  Local Windows session
  
- Description:  
+ Description: Pull income distribution and agg hh income for ACS and NCDB for 
+ 	      Washington Affordable Housing feature. 
 
 **************************************************************************/
 %include "L:\SAS\Inc\StdLocal.sas";
@@ -30,7 +31,7 @@ proc summary data = ACSallstates;
 run;
 
 proc export data= ACS_msa_hhinc_2016
-   outfile='D:\DCDATA\Libraries\Requests\Prog\2018\Washington region feature\ACS_msa_hhinc_2016.csv'
+   outfile="&_dcdata_default_path\Requests\Prog\2018\Washington region feature\ACS_msa_hhinc_2016.csv"
    dbms=csv
    replace;
 run;
@@ -42,7 +43,7 @@ proc summary data = ACSallstates;
 run;
 
 proc export data= ACS_inner_hhinc_2016 
-   outfile='D:\DCDATA\Libraries\Requests\Prog\2018\Washington region feature\ACS_inner_hhinc_2016.csv'
+   outfile="&_dcdata_default_path\Requests\Prog\2018\Washington region feature\ACS_inner_hhinc_2016.csv"
    dbms=csv
    replace;
 run;
@@ -67,7 +68,7 @@ proc summary data = adjust ;
 run;
 
 proc export data= ACS_msa_hhinc_2010
-   outfile='D:\DCDATA\Libraries\Requests\Prog\2018\Washington region feature\ACS_msa_hhinc_2010.csv'
+   outfile="&_dcdata_default_path\Requests\Prog\2018\Washington region feature\ACS_msa_hhinc_2010.csv"
    dbms=csv
    replace;
 run;
@@ -79,7 +80,7 @@ proc summary data = adjust ;
 run;
 
 proc export data= ACS_inner_hhinc_2010 
-   outfile='D:\DCDATA\Libraries\Requests\Prog\2018\Washington region feature\ACS_inner_hhinc_2010.csv'
+   outfile="&_dcdata_default_path\\Requests\Prog\2018\Washington region feature\ACS_inner_hhinc_2010.csv"
    dbms=csv
    replace;
 run;
