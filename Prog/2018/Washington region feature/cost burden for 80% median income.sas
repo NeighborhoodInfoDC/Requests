@@ -26,13 +26,17 @@ run;
 
 data allstates2;
 set allstates;
-	if (numprec = 1 and hhincome <= 108600*0.8*0.7) or (numprec=2 and hhincome <= 108600*0.8*0.8) or  (numprec=3 and hhincome <= 108600*0.8*0.9)
+
+	/*if (numprec = 1 and hhincome <= 108600*0.8*0.7) or (numprec=2 and hhincome <= 108600*0.8*0.8) or  (numprec=3 and hhincome <= 108600*0.8*0.9)
        or (numprec=4 and hhincome <= 108600*0.8) or (numprec=5 and hhincome <= 108600*0.8*1.1) or (numprec=6 and hhincome <= 108600*0.8*1.2 ) 
        or (numprec=7 and hhincome <= 108600*0.8*1.3) or (numprec=8 and hhincome <= 108600*0.8*1.4) then income80=1;                                                                               
-	   else income80 = 0;
+	   else income80 = 0;*/
+
+    if hud_inc = 1 or hud_inc = 2 or hud_inc = 3 then income80=1;
+	   else income80=0;
 
 	** Keep only inner counties **;
-	  if innercounty = 1;
+    if innercounty = 1;
 
 	** No group quarters **;
 	if gq in (1,2);
