@@ -80,7 +80,7 @@ proc summary data = adjust ;
 run;
 
 proc export data= ACS_inner_hhinc_2010 
-   outfile="&_dcdata_default_path\\Requests\Prog\2018\Washington region feature\ACS_inner_hhinc_2010.csv"
+   outfile="&_dcdata_default_path\Requests\Prog\2018\Washington region feature\ACS_inner_hhinc_2010.csv"
    dbms=csv
    replace;
 run;
