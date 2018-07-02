@@ -42,13 +42,13 @@ set allstates;
 	if gq in (1,2);
 
     if ownershp = 2 then do;
-		if rent*12> HHINCOME*0.3 then rentburdened=1;
-	    else rentburdened=0;
+		if rentgrs*12>= HHINCOME*0.3 then rentburdened=1;
+	    else if HHIncome~=. then rentburdened=0;
 	end;
 
     if ownershp = 1 then do;
-		if owncost*12> HHINCOME*0.3 then ownerburdened=1;
-	    else ownerburdened=0;
+		if owncost*12>= HHINCOME*0.3 then ownerburdened=1;
+	    else if HHIncome~=. then ownerburdened=0;
 	end;
 
 	tothh = 1;
@@ -59,8 +59,8 @@ set allstates;
 run;
 
 proc summary data = allstates2 (where=(ownershp = 2));
-	class income80 ;
-	var rentburdened tothh ;
+	class income80;
+	var rentburdened tothh;
 	weight hhwt;
 	output out = IPUMS_rentburdened_inner_2016 sum=;
 run;
@@ -73,13 +73,13 @@ proc summary data = allstates2 (where=(ownershp = 1));
 run;
 
 proc export data = IPUMS_rentburdened_inner_2016
-   outfile='L:\Libraries\Requests\Data\washington region feature\IPUMS_rentburdened_inner_2016.csv'
+   outfile="&_dcdata_default_path\Requests\Prog\2018\washington region feature\IPUMS_rentburdened_inner_2016.csv"
    dbms=csv
    replace;
 run;
 
 proc export data = IPUMS_ownerburdened_inner_2016
-   outfile='L:\Libraries\Requests\Data\washington region feature\IPUMS_ownerburdened_inner_2016.csv'
+   outfile="&_dcdata_default_path\Requests\Prog\2018\washington region feature\IPUMS_ownerburdened_inner_2016.csv"
    dbms=csv
    replace;
 run;
