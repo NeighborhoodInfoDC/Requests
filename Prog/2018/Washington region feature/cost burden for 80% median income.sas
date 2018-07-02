@@ -26,8 +26,7 @@ run;
 
 data allstates;
 	set ipums.acs_2012_16_dc ipums.Acs_2012_16_md ipums.Acs_2012_16_va ipums.Acs_2012_16_wv ;
-	metro15 = put( county, $ctym15f. );
-	if county in ("11001","24031","24033","51013","51059","51107","51510","51600", "51610") then innercounty = 1;
+	if puma in (101,102,103,104,105,1001,1002,1003,1004,1005,1006,1007,1101,1102,1103,1104,1105,1106,1107,1301,1302,10701,10702,10703,51255,59301,59302,59303,59304,59305,59306,59307,59308,59309) then innercounty = 1;
 run;
 
 data allstates;
@@ -37,16 +36,39 @@ set allstates;
        or (numprec=7 and hhincome <= 108600*0.8*1.3) or (numprec=8 and hhincome <= 108600*0.8*1.4) then income80=1;                                                                               
 	   else income80 = 0;
 
-    if ownershp = 2 and rent> HHINCOME*0.3 then rentburdened=1;
+    if ownershp = 2 and rent*12> HHINCOME*0.3 then rentburdened=1;
 	   else rentburdened=0;
 
-    if ownershp = 1 and 
-    
+    if ownershp = 1 and owncost*12> HHINCOME*0.3 then ownerburdened=1;
+	   else ownerburdened=0;
 
 run;
 
+proc summary data = allstates (where=(ownershp = 2));
+	class innercounty;
+	var ownerburdened_inner_2016  income80;
+	weight hhwt;
+	output out = IPUMS_rentburdened_inner_2016 sum=;
+run;
 
+proc summary data = allstates (where=(ownershp = 1));
+	class innercounty;
+	var ownerburdened income80;
+	weight hhwt;
+	output out = IPUMS_ownerburdened_inner_2016  sum=;
+run;
 
+proc export data = IPUMS_rentburdened_inner_2016
+   outfile='L:\Libraries\Requests\Data\washington region feature\IPUMS_rentburdened_inner_2016.csv'
+   dbms=csv
+   replace;
+run;
+
+proc export data = IPUMS_ownerburdened_inner_2016
+   outfile='L:\Libraries\Requests\Data\washington region feature\IPUMS_ownerburdened_inner_2016.csv'
+   dbms=csv
+   replace;
+run;
 
 
 
