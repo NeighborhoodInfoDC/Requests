@@ -38,6 +38,7 @@ data raw_address;
 	unit $
 	zip $ ;
 
+	/* Fix random misspellings and typos */
 	if id = "na_2406" then address = "4545 MacArthur blvd nw";
 	if id = "na_2450" then address = "4800 c st se";
 	if id = "na_2493" then address = "4455 Connecticut Ave NW";
