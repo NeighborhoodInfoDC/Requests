@@ -50,10 +50,10 @@ run;
 
 data ACS_&geosuf;
 merge ACS violentcrime ;
-by &geo
+by &geo;
 run; 
 
-proc export data=mobility_acs_&geosuf
+proc export data=ACS_&geosuf
 	outfile="&_dcdata_default_path.\Requests\Prog\2018\ACS_data_&geosuf..csv"
 	dbms=csv replace;
 	run;
