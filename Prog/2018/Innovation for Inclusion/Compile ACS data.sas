@@ -51,6 +51,7 @@ run;
 data ACS_&geosuf;
 merge ACS violentcrime ;
 by &geo;
+geoid= &geo;
 run; 
 
 proc export data=ACS_&geosuf
