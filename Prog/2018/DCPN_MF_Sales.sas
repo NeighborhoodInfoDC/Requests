@@ -51,12 +51,11 @@ data DCPN_MF_sales;
   
   ** Filter for multifamily properties, exclude duplexes **;
   
-  if 
-    Units_mar > 2 or 
-    Num_units > 2 or
-    usecode in ( '021', '022', '023', '025', '026', '027', '028', '029' );
-
   Units_combined = max( units_mar, num_units );
+
+  if 
+    Units_combined > 2 or 
+    ( Units_combined in ( ., 0 ) and usecode in ( '021', '022', '025', '026', '027', '028', '029' ) );
 
   retain total 1;
 
