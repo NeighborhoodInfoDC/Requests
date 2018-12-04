@@ -7,7 +7,8 @@
  Version:  SAS 9.4
  Environment:  Local Windows session (desktop)
  
- Description:  Request from Yari to geocode a list of addresses to Ward.
+ Description:  Request from LISC for data on rental properties with 4-20 units
+			   by ward and neighborhood cluster. 
 
  Modifications:
 **************************************************************************/
@@ -16,78 +17,35 @@
 
 ** Define libraries **;
 %DCData_lib( Requests )
-%DCData_lib( Mar )
+%DCData_lib( ACS )
 
-/* Import raw addresses */
-%let rawpath = &_dcdata_default_path.\Requests\Prog\2018\;
-%let filename = addresses_yari.csv;
 
-filename fimport "&rawpath.&filename." lrecl=2000;
-data raw_address;
+%macro rtunits (geo,geosuf);
+data rtunits_&geosuf.;
+	set acs.acs_2012_16_dc_sum_tr_&geosuf.;
 
-  infile FIMPORT delimiter = ',' MISSOVER DSD lrecl=32767 firstobs=2 ;
+	keep &geo. NumRtOHU5to19u_2012_16 mNumRtOHU5to19u_2012_16;
 
-	informat ID $7.;
-	informat address $50.;
-	informat unit $20.;
-	informat zip $5.;
+	/* Combined 5-9 and 10-19 vars */
+	NumRtOHU5to19u_2012_16 = sum(of NumRtOHU5to9u_2012_16  NumRtOHU10to19u_2012_16);
 
-	input  
-	ID $
-	address $
-	unit $
-	zip $ ;
+	/* Calculate new MOE */
+	mNumRtOHU5to19u_2012_16 = %moe_sum( var=mNumRtOHU5to9u_2012_16  mNumRtOHU10to19u_2012_16 );
 
-	/* Fix random misspellings and typos */
-	if id = "na_2406" then address = "4545 MacArthur blvd nw";
-	if id = "na_2450" then address = "4800 c st se";
-	if id = "na_2493" then address = "4455 Connecticut Ave NW";
-	if id = "na_2511" then address = "2710 knox st se";
-	if id = "na_2515" then address = "560 n st sw";
-	if id = "na_2535" then address = "306 oklahoma ave ne";
-	if id = "na_2541" then address = "5543 chillum pl ne";
-	if id = "na_2545" then address = "2819 12th st ne";
-	if id = "na_2546" then address = "3911 garrison st nw";
+	label NumRtOHU5to19u_2012_16 = "Renter-occupied housing units in structure: 5 to 19 units, 2012-16"
+		  mNumRtOHU5to19u_2012_16 = "Renter-occupied housing units in structure: 5 to 19 units, 2012-16, MOE";
 
 run;
 
-
-%DC_mar_geocode(
-  debug=n,
-  listunmatched=N,
-  data = raw_address,
-  staddr = Address,
-  zip = zip,
-  out = geocoded
-);
-
-
-data finalgeo;
-	set geocoded;
-	if Ward2012 = " " then do;
-		if zip = "20001" then Ward2012 = "6";
-		if zip = "20005" then Ward2012 = "2";
-		if zip = "20006" then Ward2012 = "2";
-		if zip = "20011" then Ward2012 = "5";
-		if zip = "20016" then Ward2012 = "3";
-		if zip = "20017" then Ward2012 = "5";
-		if zip = "20019" then Ward2012 = "7";
-		if zip = "20024" then Ward2012 = "6";
-		if zip = "20032" then Ward2012 = "8";
-		geocoded = 0;
-	end; 
-
-	if id = "na_2491"  then geocoded = 0;
-	if geocoded ^= 0 then geocoded = 1;
-
-	keep id address unit zip ward2012 geocoded;
-
-run;
-
-proc export data = finalgeo
-	outfile = "&_dcdata_default_path.\Requests\Prog\2018\yari_geocoded.csv"
+proc export data = rtunits_&geosuf.
+	outfile = "&_dcdata_default_path.\Requests\Prog\2018\lisc_units_&geosuf..csv"
 	dbms = csv replace;
 run;
+
+%mend rtunits;
+%rtunits (cluster2017,cl17);
+%rtunits (ward2012,wd12);
+
 
 
 /* End of Program */
