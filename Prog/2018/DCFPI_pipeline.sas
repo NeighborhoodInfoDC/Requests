@@ -74,6 +74,8 @@ data DCFPI_pipeline;
   
   if missing( ID ) then delete;
   
+  OtherPublic = sum( TCE, HOPWA, CIP, NSP, CDBG, HOME, DBH, 0 );
+  
   ** Manual address fixes **;
   
   length address_geo $ 160;
@@ -131,7 +133,11 @@ run;
 
 proc sql noprint;
   create table Pipeline_nlihc_id as
-  select coalesce( Catalog.bldg_address_id, Pipeline.address_id ) as address_id, Pipeline.*, Catalog.*
+  select coalesce( Catalog.bldg_address_id, Pipeline.address_id ) as address_id, Pipeline.*, Catalog.*,
+    case 
+    when not( missing( Catalog.nlihc_id ) ) or Pipeline.ProjectType not in ( 'New Construction', '' ) then 1
+    else 0
+    end as IsPreservation
   from (
     select coalesce( Building.Nlihc_id, Project.Nlihc_id ) as Nlihc_id, Building.bldg_address_id, 
       Project.proj_name as Catalog_name, Project.category_code as Catalog_category,
@@ -142,6 +148,7 @@ proc sql noprint;
     left join
     PresCat.Project_category_view as Project
     on Building.Nlihc_id = Project.Nlihc_id 
+    where Building.nlihc_id ~= 'NL000202'  /** Duplicate match for Mayfair Mansions **/
   ) as Catalog
   right join 
   DCFPI_pipeline_geo as Pipeline
@@ -169,10 +176,9 @@ ods tagsets.excelxp file="&_dcdata_default_path\Requests\Prog\2018\DCFPI_pipelin
 ods tagsets.excelxp options( sheet_name="DCFPI_pipeline_catalog" );
 
 proc print data=Pipeline_nlihc_id;
-  where nlihc_id ~= 'NL000202';  /** Duplicate match for Mayfair Mansions **/
   id id;
   var 
-    ProjectName Address Developer DeveloperType NewRowAdded
+    ProjectName Address Ward2012 Developer DeveloperType NewRowAdded
     InfoVerified WhoEdited AppFiscalYear SelectionFiscalYear
     ApplicationType TOPA PADD Tenure ProjectType pctAMIUnits30
     pctAMIUnits50 pctAMIUnits60 pctAMIUnits80 pctAMIUnits81 PSHUnits
@@ -180,11 +186,42 @@ proc print data=Pipeline_nlihc_id;
     AffordableUnits2pBdrm TotalDevelopmentCost
     HPTFLoanGrantAmount TCE HOPWA CIP NSP CDBG HOME DBH
     TotalLoanGrantAmount LIHTCAllocation LIHTCType LoanStatus
-    ClosingDate ClosingFiscalYear
-    nlihc_id Catalog_: ;
+    ClosingDate ClosingFiscalYear 
+    nlihc_id Catalog_: IsPreservation;
 run;
 
 ods tagsets.excelxp close;
 ods listing;
 
 
+** Summary of preserved units & investments **;
+
+%fdate()
+
+options missing='0';
+options nodate nonumber;
+
+ods rtf file="&_dcdata_default_path\Requests\Prog\2018\DCFPI_pipeline.rtf" style=Styles.Rtf_arial_9pt;
+
+footnote1 height=9pt "Data compiled by DC Fiscal Policy Institute from DC government and other sources, tabulated by Urban-Greater DC (greaterdc.urban.org), &fdate..";
+footnote2 height=9pt j=r '{Page}\~{\field{\*\fldinst{\pard\b\i0\chcbpat8\qc\f1\fs19\cf1{PAGE }\cf0\chcbpat0}}}';
+
+proc tabulate data=Pipeline_nlihc_id format=comma12.0 noseps missing;
+  where IsPreservation and ClosingFiscalYear in ( '2015', '2016', '2017', '2018' );
+  var AffordableUnits HPTFLoanGrantAmount OtherPublic LIHTCAllocation;
+  class ClosingFiscalYear;
+  class Ward2012 / preloadfmt;
+  table 
+    /** Pages **/
+    AffordableUnits='Affordable housing units (at or below 80% AMI)' 
+    HPTFLoanGrantAmount='HPTF loan/grant amount ($)' 
+    OtherPublic='Other public investment amount ($)' 
+    LIHTCAllocation='LIHTC allocation ($)',
+    /** Rows **/
+    all='Total' Ward2012=' ',
+    /** Columns **/
+    sum=' ' * ClosingFiscalYear='By Actual or Projected Fiscal Year Closing'
+    / condense printmiss;
+run;
+
+ods rtf close;
