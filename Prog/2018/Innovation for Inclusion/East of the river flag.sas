@@ -20,8 +20,9 @@
 
 data EOSflag;
 set ACS.Acs_2012_16_dc_sum_tr_tr10;
-keep geo2010 EOR_tracts;
+keep geo2010 geoid EOR_tracts;
 EOR_tracts = put( geo2010, $Tr1eor. );
+geoid = geo2010;
 run;
 
 proc export data=EOSflag
