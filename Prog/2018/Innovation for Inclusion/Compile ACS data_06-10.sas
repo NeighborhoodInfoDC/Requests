@@ -25,7 +25,7 @@
 data ACS;
 length indicator $80;
 set ACS.Acs_2006_10_dc_sum_tr_&geosuf;
-keep &geo popaloneb_&_years. popaloneh_2012_16 popalonew_2012_16 popasianpinonhispbridge_2012_16 unemploymentrate PctCol Tothousing ownership pctfamover75K familyhhtot_&_years. pctabovepov pctearningover75K pctchildabovepov pctcostburden commuteunder45 ;
+keep &geo popwithrace_&_years. popaloneb_&_years. popaloneh_&_years. popalonew_&_years. popasianpinonhispbridge_&_years. unemploymentrate PctCol Tothousing ownership pctfamover75K familyhhtot_&_years. pctabovepov pctearningover75K pctchildabovepov pctcostburden commuteunder45 ;
 unemploymentrate = popunemployed_&_years./popincivlaborforce_&_years.;
 PctCol = pop25andoverwcollege_&_years. / pop25andoveryears_&_years.;
 Tothousing= numowneroccupiedhsgunits_&_years.+ numrenteroccupiedhu_&_years.;
