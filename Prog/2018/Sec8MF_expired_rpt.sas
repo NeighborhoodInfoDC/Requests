@@ -71,6 +71,20 @@ run;
 
 ** Compile data **;
 
+%Create_s8_history( data=Hud.sec8mf_2005_01_dc )
+%Create_s8_history( data=Hud.sec8mf_2005_05_dc )
+%Create_s8_history( data=Hud.sec8mf_2005_07_dc )
+%Create_s8_history( data=Hud.sec8mf_2006_02_dc )
+%Create_s8_history( data=Hud.sec8mf_2006_07_dc )
+%Create_s8_history( data=Hud.sec8mf_2006_09_dc )
+%Create_s8_history( data=Hud.sec8mf_2007_01_dc )
+%Create_s8_history( data=Hud.sec8mf_2007_02_dc )
+%Create_s8_history( data=Hud.sec8mf_2007_07_dc )
+%Create_s8_history( data=Hud.sec8mf_2007_09_dc )
+%Create_s8_history( data=Hud.sec8mf_2007_12_dc )
+%Create_s8_history( data=Hud.sec8mf_2013_09_dc )
+%Create_s8_history( data=Hud.sec8mf_2014_10_dc )
+%Create_s8_history( data=Hud.sec8mf_2014_11_dc )
 %Create_s8_history( data=Hud.sec8mf_2015_05_dc )
 %Create_s8_history( data=Hud.sec8mf_2015_08_dc )
 %Create_s8_history( data=Hud.sec8mf_2015_10_dc )
@@ -103,9 +117,10 @@ run;
 
 
 proc print data=S8_history;
-  where LostS8 and 2015 <= year( cur_expiration_date ) <= 2018;
+  where LostS8 and 2005 <= year( cur_expiration_date ) <= 2018;
   id extract_date contract_number;
-  var InLastUpdate cur_expiration_date tracs_status tracs_overall_expiration_date assisted_units_count;
+  var property_name_text InLastUpdate cur_expiration_date tracs_status tracs_overall_expiration_date assisted_units_count;
+  sum assisted_units_count;
 run;
 
 ** Match with Catalog **;
@@ -117,7 +132,7 @@ proc sql;
   (
     select Rpt.*, Subsidy.nlihc_id, Subsidy.program, Subsidy.rent_to_fmr_description from S8_history as Rpt left join PresCat.Subsidy as Subsidy
     on Rpt.contract_number = Subsidy.contract_number
-    where Rpt.LostS8 and 2015 <= year( Rpt.cur_expiration_date ) <= 2018 and Subsidy.subsidy_info_source = 'HUD/MFA'
+    where Rpt.LostS8 and 2005 <= year( Rpt.cur_expiration_date ) <= 2018 and Subsidy.subsidy_info_source = 'HUD/MFA'
   ) as Nlihc_id
   left join
   PresCat.Project_category_view as Project
@@ -141,4 +156,27 @@ run;
 
 ods tagsets.excelxp close;
 ods listing;
+
+
+** 2005 - 2015 losses **;
+
+proc means data=Hud.sec8mf_2005_01_dc n nmiss sum;
+  where tracs_status not in ( 'T', 'X' );
+  var assisted_units_count;
+  title2 'Jan 2005';
+run;
+
+proc means data=Hud.sec8mf_2016_01_dc n nmiss sum;
+  where tracs_status not in ( 'T', 'X' );
+  var assisted_units_count;
+  title2 'Jan 2016';
+run;
+
+proc print data=S8_history;
+  where LostS8 and 2005 <= year( cur_expiration_date ) <= 2015;
+  id extract_date contract_number;
+  var property_name_text zip_code InLastUpdate cur_expiration_date tracs_status tracs_overall_expiration_date assisted_units_count;
+  sum assisted_units_count;
+  title2 'Losses 2005 - 2015';
+run;
 
