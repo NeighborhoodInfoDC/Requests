@@ -22,9 +22,9 @@
 %DCData_lib( RealProp )
 %DCData_lib( MAR )
 
-proc freq data=Dhcd.Rcasd_2018;
-  tables notice_type;
-run;
+
+** Join RCASD notice data with real property and MAR info **;
+** Limit to residential/mixed properties with 5+ residential units **;
 
 proc sql noprint;
   create table Notices as
@@ -43,6 +43,8 @@ proc sql noprint;
   order by Rcasd.Notice_type, Rcasd.Address_id, Rcasd.address, Rcasd.Notice_date, Rcasd.Source_file;
 quit;
 
+** Filter out last notice of a given type by address (removes duplicate notices across RCASD reports) **;
+
 proc sort data=Notices;
   by Notice_type Address_id Notice_date Source_file Address;
 run;
@@ -52,14 +54,18 @@ data Notices_res_nodup;
   set Notices;
   by Notice_type Address_id Notice_date;
 
-  if first.Notice_date;
+  if last.Address_id;
+
+  retain Total 1;
+
+  label Total = 'Notice count';
 
 run;
 
-** START HERE: SELECT MOST RECENT VERSION OF NOTICE FROM ABOVE **;
+/** Uncomment for checking selection process **
 
 ods listing close;
-ods tagsets.excelxp file="D:\DCData\Libraries\Requests\Prog\2018\Topa_notice_counts.xls" style=Normal options(sheet_interval='Bygroup' );
+ods tagsets.excelxp file="D:\DCData\Libraries\Requests\Prog\2018\Topa_notice_counts_temp.xls" style=Normal options(sheet_interval='Bygroup' );
 
 proc print data=notices;
   by notice_type;
@@ -70,11 +76,77 @@ run;
 ods tagsets.excelxp close;
 ods listing;
 
+***********************************/
+
+** Remove multiple addresses for same notice (reduce to single record per notice) **;
+
+proc sort data=Notices_res_nodup out=Notices_res_nodup_b nodupkey;
+  by notice_type Nidc_rcasd_id;
+run; 
 
 
-/*
-proc sort data=Notices out=Notices_res_nodup nodupkey;
-  where res_type in ( 'M', 'R' ) and active_res_occupancy_count >= 5;
-  by nidc_rcasd_id;
+** Table with notice counts by ward **;
+
+%fdate()
+
+options nodate nonumber;
+options missing='-';
+options orientation=landscape;
+
+ods listing close;
+ods rtf file="&_dcdata_default_path\Requests\Prog\2018\Topa_notice_counts.rtf" style=Styles.Rtf_arial_9pt;
+
+title1 "TOPA notice filings, District of Columbia, 2018";
+title2 "Notices filed at properties with 5+ residential units";
+
+footnote1 height=9pt "Prepared by Urban-Greater DC (greaterdc.urban.org), &fdate..";
+footnote2 height=9pt j=r '{Page}\~{\field{\*\fldinst{\pard\b\i0\chcbpat8\qc\f1\fs19\cf1{PAGE }\cf0\chcbpat0}}}';
+
+proc tabulate data=Notices_res_nodup_b  format=comma12.0 noseps missing;
+  class Notice_type Ward2012;
+  var Total;
+  table 
+    /** Rows **/
+    all='Total' Notice_type=' ',
+    /** Columns **/
+    Total * sum=' ' * ( all='Total' Ward2012=' ' )
+  ;
+  format Notice_date mmyyd7.;
 run;
-*/
+
+title1;
+footnote1;
+
+ods rtf close;
+ods listing;
+
+** Output final list of deduplicated notices **;
+
+ods listing close;
+ods tagsets.excelxp file="&_dcdata_default_path\Requests\Prog\2018\Topa_notice_counts_list.xls" style=Normal options(sheet_interval='Bygroup' );
+
+title1 "TOPA notice filings, District of Columbia, 2018";
+footnote1 "Prepared by Urban-Greater DC (greaterdc.urban.org), &fdate..";
+
+proc print data=Notices_res_nodup_b label n;
+  by notice_type;
+  id orig_address;
+  var
+    Notice_date Num_units Sale_price Notes
+    Source_file Nidc_rcasd_id Anc2012 Geo2010 Psa2012 SSL
+    Ward2012 cluster2017 Y X ACTIVE_RES_OCCUPANCY_COUNT Res_type
+    ui_proptype;
+  label
+    Nidc_rcasd_id = 'Urban notice ID'
+    Y = 'Latitude'
+    X = 'Longitude'
+    ACTIVE_RES_OCCUPANCY_COUNT = 'MAR housing unit count'
+    Res_type = 'MAR property type';
+run;
+
+ods tagsets.excelxp close;
+ods listing;
+
+title1;
+footnote1;
+
