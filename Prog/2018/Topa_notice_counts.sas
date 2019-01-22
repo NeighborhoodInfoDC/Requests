@@ -65,7 +65,7 @@ run;
 /** Uncomment for checking selection process **
 
 ods listing close;
-ods tagsets.excelxp file="D:\DCData\Libraries\Requests\Prog\2018\Topa_notice_counts_temp.xls" style=Normal options(sheet_interval='Bygroup' );
+ods tagsets.excelxp file="D:\DCData\Libraries\Requests\Prog\2018\Topa_notice_counts_2018_temp.xls" style=Normal options(sheet_interval='Bygroup' );
 
 proc print data=notices;
   by notice_type;
@@ -94,13 +94,12 @@ options missing='-';
 options orientation=landscape;
 
 ods listing close;
-ods rtf file="&_dcdata_default_path\Requests\Prog\2018\Topa_notice_counts.rtf" style=Styles.Rtf_arial_9pt;
+ods rtf file="&_dcdata_default_path\Requests\Prog\2018\Topa_notice_counts_2018.rtf" style=Styles.Rtf_arial_9pt bodytitle;
 
 title1 "TOPA notice filings, District of Columbia, 2018";
 title2 "Notices filed at properties with 5+ residential units";
 
 footnote1 height=9pt "Prepared by Urban-Greater DC (greaterdc.urban.org), &fdate..";
-footnote2 height=9pt j=r '{Page}\~{\field{\*\fldinst{\pard\b\i0\chcbpat8\qc\f1\fs19\cf1{PAGE }\cf0\chcbpat0}}}';
 
 proc tabulate data=Notices_res_nodup_b  format=comma12.0 noseps missing;
   class Notice_type Ward2012;
@@ -123,7 +122,7 @@ ods listing;
 ** Output final list of deduplicated notices **;
 
 ods listing close;
-ods tagsets.excelxp file="&_dcdata_default_path\Requests\Prog\2018\Topa_notice_counts_list.xls" style=Normal options(sheet_interval='Bygroup' );
+ods tagsets.excelxp file="&_dcdata_default_path\Requests\Prog\2018\Topa_notice_counts_2018_list.xls" style=Normal options(sheet_interval='Bygroup' );
 
 title1 "TOPA notice filings, District of Columbia, 2018";
 footnote1 "Prepared by Urban-Greater DC (greaterdc.urban.org), &fdate..";
