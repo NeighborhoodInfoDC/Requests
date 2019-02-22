@@ -110,7 +110,7 @@ ods listing close;
 %Table( varpre=B19001D, label=Asian )
 
 ** Only include footnote after last table **;
-footnote1 "Prepared by Urban-Greater DC (greaterdc.urban.org), &fdate..";
+footnote1 "Source: ACS 5-year summary tabulations, 2013-17, converted to 2000 tracts by Urban-Greater DC (greaterdc.urban.org), &fdate..";
 
 %Table( varpre=B19001I, label=Hispanic )
 
