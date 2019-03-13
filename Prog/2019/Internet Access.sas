@@ -121,9 +121,8 @@ tothhdemom= hshldinc100000plus_2013_17+ hshldincunder15000_2013_17+ hshldinc1500
 
 run;
 
-
 proc export data=Accessbytract2
-   outfile='&_dcdata_default_path\Requests\Data\Internet_access_tract.csv'
+   outfile='&_dcdata_default_path\Requests\Prog\2019\Internet_access_tract.csv'
    dbms=csv
    replace;
 run;
