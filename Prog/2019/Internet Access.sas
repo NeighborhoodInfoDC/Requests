@@ -38,19 +38,26 @@ run;
 data InternetAcccess ;
 	  set acs.Acs_2013_17_va_sum_tr_tr10 acs.Acs_2013_17_dc_sum_tr_tr10 acs.Acs_2013_17_md_sum_tr_tr10 acs.Acs_2013_17_wv_sum_tr_tr10;
 	      
-	  keep geo2010 totpop_&year. medfamincm_&year. popalonew_&year. popaloneb_&year. popaloneh_&year. popalonea_&year. numpopbroadbandtot
+	  keep geo2010 geoid totpop_&year. medfamincm_&year. popalonew_&year. popaloneb_&year. popaloneh_&year. popalonea_&year. popaloneaiom_&year. numpopbroadbandtot
 	       numpopbroadbanda_&year. numpopbroadbandiom_&year. numpopbroadbandb_&year. numpopbroadbandh_&year. numpopbroadbandw_&year.
 	       hshldinc100000plus_2013_17 hshldincunder15000_2013_17 hshldinc15000to34999_2013_17 hshldinc35000to49999_2013_17
            hshldinc50000to74999_2013_17 hshldinc75000to99999_2013_17 percent100Kplus percentunder15K percent15to50K percent50to75K  percent75Kto100K
-           county metro15 Jurisdiction;
+           pctbroadband pctbroadbanda pctbroadbandb pctbroadbandh pctbroadbandw pctbroadbandiom county metro15 Jurisdiction ;
 
       county= substr(geo2010, 1,5);
 	  ucounty=county;
+	  geoid= geo2010;
 
 %ucounty_jurisdiction
 
 	  metro15 = put( county, $ctym15f. );
       numpopbroadbandtot= numpopbroadbanda_2013_17 + numpopbroadbandiom_2013_17+ numpopbroadbandb_2013_17+ numpopbroadbandh_2013_17+ numpopbroadbandw_2013_17;
+      pctbroadband= numpopbroadbandtot/totpop_&year.;
+	  pctbroadbanda= numpopbroadbanda_&year./popalonea_&year.;
+	  pctbroadbandb= numpopbroadbandb_&year./popaloneb_&year.;
+      pctbroadbandh= numpopbroadbandh_&year. /popaloneh_&year.;
+      pctbroadbandw= numpopbroadbandw_&year. /popalonew_&year.;
+      pctbroadbandiom= numpopbroadbandiom_&year./popaloneaiom_&year.;
       tothhdemom= hshldinc100000plus_2013_17+ hshldincunder15000_2013_17+ hshldinc15000to34999_2013_17+ hshldinc35000to49999_2013_17+
            hshldinc50000to74999_2013_17+ hshldinc75000to99999_2013_17 ;
       percent100Kplus= hshldinc100000plus_2013_17/tothhdemom;
@@ -61,6 +68,12 @@ data InternetAcccess ;
 
 	  format Jurisdiction Jurisdiction. ;
 run;
+proc export data= InternetAcccess
+   outfile="&_dcdata_default_path\Requests\Prog\2019\Internet_access_tract.csv"
+   dbms=csv
+   replace;
+run;
+
 proc sort data=InternetAcccess;
 by metro15;run;
 
