@@ -1,0 +1,231 @@
+---
+title: "Blog ideas"
+subtitle: 
+author: "Yipeng Su"
+output:
+  html_document:
+    number_sections: FALSE
+    self_contained: TRUE
+    code_folding: show
+    toc: TRUE
+    toc_float: TRUE
+    css: ../www/web_report.css
+    editor_options:
+      chunk_output_type: console
+---
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato" />
+
+Library: Request
+
+Project: blog
+
+Author: Yipeng Su
+
+Version: R 3.5.1, RStudio 1.1.423
+
+Last updated `r format(Sys.time(), '%B %d, %Y')`
+
+Environment: Local Windows session (desktop)
+
+```{r rmarkdown-setup, echo = FALSE}
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+# knitr::opts_chunk$set(eval = FALSE)
+```
+
+## Internet/Broadband Access by geography and demographics
+
+The first idea is internet and broadband access very by geography, and also by demographics. 
+
+```{r setup}
+library(tidyverse)
+library(urbnthemes)
+library(sf)
+
+set_urbn_defaults("print")
+
+library(tidyverse)
+library(DescTools)
+library(purrr)
+library(colorspace)
+library(ggplot2)
+
+#### Create directory for data exports on local computer
+
+if (!dir.exists("../Data")) {
+  dir.create("../Data")
+}
+
+jdir <- "D:/DCData/Libraries/Requests/Prog/2019/"
+
+library(dplyr)
+
+#### Load in region shapefile
+library(rgdal)
+
+library(sf)
+shp= "L:/Libraries/General/Maps/DCMetroArea2015_tr10.shp"
+Metro_sf <- read_sf(dsn=shp,layer= basename(strsplit(shp, "\\.")[[1]])[1])
+
+countyshp= "L:/Libraries/General/Maps/DMVCounties.shp"
+
+county_sf <- read_sf(dsn= countyshp, layer= "DMVCounties")
+
+
+# load in typology dataset output from SAS program
+
+InternetAccess <- read.csv(paste0(jdir,"Internet_access_tract.csv")) 
+
+Access_df <- InternetAccess  %>% 
+         mutate(GEOID=as.character(geoid))
+
+BroadbandAccess <- read.csv(paste0(jdir,"Broadband_access_tract.csv")) 
+
+Broadband_df <- BroadbandAccess %>% 
+  mutate(GEOID=as.character(geoid))
+  
+
+#spatial join
+InternetAccessmap <- left_join (Metro_sf, Access_df, by = c("GEOID"="GEOID")) 
+BroadbandAccessmap <- left_join (Metro_sf, Broadband_df, by = c("GEOID"="GEOID")) 
+
+#You need to install these if the library after these don't exist'
+#install.packages("colorspace")
+#install.packages("devtools")
+#devtools::install_github("UI-Research/urbnthemes")
+
+
+boundary <- ggplot()+
+  geom_sf(county_sf, mapping=aes(), fill=NA, color="#0a4c6a", size=0.5)+
+  theme_urbn_map() +
+  coord_sf(crs = 4269, datum = NA)
+
+WV <- InternetAccessmap %>% 
+  filter(STATEFP=="54") 
+
+DC <- InternetAccessmap %>% 
+  filter(STATEFP=="11") 
+
+```
+
+Map the overall internet access
+```{r make-map, echo=FALSE}
+ggplot() +
+  geom_sf(InternetAccessmap ,mapping = aes(),
+          fill = NA, color = "red", size = .1) +
+  geom_sf(InternetAccessmap, mapping=aes(fill=pctnointernet)) +
+  theme_urbn_map() +
+  scale_colour_gradient (limits=c(0,10), low = "red", high = "blue", na.value = "grey50", aesthetics = "colour")+
+  scale_fill_gradientn(labels = scales::percent) +
+  labs(fill = "Percent no internet access", color = NULL) +
+  labs(title = "Percentage household that don't have access to internet") + 
+  theme(legend.position ="bottom", legend.direction = "vertical", legend.text = element_text(size=8)) +
+  coord_sf(crs = 4269, datum = NA)
+
+```
+Since the region is large compared to DC, it is hard to see as a whole on the map. For illustrating the point, histogram and frequency plot works better in illustrating the relationship between 
+```{r scatter, echo=FALSE}
+ggplot(data=InternetAccessmap, mapping= aes(y= pctinternet, x= percentunder15K))+ geom_point(alpha=3/10)+
+  labs(title = "Internet Access Increase with Income",
+       subtitle = "Percent population earning less than 15K and percent having internet access",
+       caption = "Urban Institute",
+       x = "Percent population with earning under 15K",
+       y = "Percent household with access to internet"
+  )
+
+ggplot(data=InternetAccessmap, mapping= aes(y= pctinternet, x=((TotPop_2013_17-PopAloneW_2013_17)/TotPop_2013_17) , size = TotPop_2013_17))+ geom_point(alpha=5/10)+
+  scale_size_continuous(range = c(.1, 10)) +
+  labs(title = "Internet Access Decrease with percent non white",
+       subtitle = "Community of color tend to be more likely to have lower access of internet",
+       caption = "Urban Institute",
+       x = "Percent population that is non white",
+       y = "Percent household with access to internet"
+  )
+
+```
+## Distribution of demographics and broadband
+```{r reshape}
+
+Broadband_long <- BroadbandAccessmap %>%
+  mutate(pctwhite= PopAloneW_2013_17/TotPop_2013_17) %>% 
+  select(GEOID, Jurisdiction, metro15, geometry, pctbroadband, pctinternet, percent100Kplus, pctwhite) %>% 
+  gather(key, value, -GEOID, -Jurisdiction, -metro15, -geometry)
+
+Broadband_state <- BroadbandAccessmap %>%
+  mutate(pctwhite= PopAloneW_2013_17/TotPop_2013_17) %>% 
+  mutate(state= str_sub(geoid, 1,2 )) %>% 
+  select(state, Jurisdiction, metro15, geometry, pctbroadband, pctinternet, percent100Kplus, pctwhite) 
+
+
+DC <- Broadband_state %>% 
+  filter(state== "11")
+
+MD <- Broadband_state %>% 
+  filter(state== "24")
+
+VA <- Broadband_state %>% 
+  filter(state== "51")
+
+WV <- Broadband_state %>% 
+  filter(state== "54")
+
+```
+
+```{r broadband and demographics}
+
+ggplot(data=Broadband_long, mapping= aes(x=value))+ geom_freqpoly(mapping= aes(color= key), binwidth= 0.1)
+
+
+```
+## Urban Rural comparison
+
+By mapping broadband access by state, there really is not a strong case for lack of access in more rural counties in the region. DC actually have more tracts that lack access to broadband. 
+```{r braodband by state, echo=FALSE}
+
+ggplot() +
+    geom_sf(DC, mapping=aes(fill=(1-pctbroadband)), size = .05) +
+    theme_urbn_map() +
+    scale_colour_gradient (limits=c(0,10), low = "red", high = "blue", na.value = "grey50", aesthetics = "colour")+
+    scale_fill_gradientn(limits=c(0,1.5), labels = scales::percent) +
+    labs(fill = "No Access to Internet and broadband", color = NULL) +
+    labs(title = "Percentage of population that don't have access to broadband internet") + 
+    theme(legend.position ="right", legend.direction = "vertical", legend.text = element_text(size=8)) +
+    coord_sf(crs = 4269, datum = NA)+
+    ggsave("D:/DCData/Libraries/Requests/Prog/2019/Broadbandaccess_DC.pdf", device = cairo_pdf)
+
+ggplot() +
+    geom_sf(MD, mapping=aes(fill=(1-pctbroadband)), size = .05) +
+    theme_urbn_map() +
+    scale_colour_gradient (limits=c(0,10), low = "red", high = "blue", na.value = "grey50", aesthetics = "colour")+
+    scale_fill_gradientn(limits=c(0,1.5), labels = scales::percent) +
+    labs(fill = "No Access to Internet and broadband", color = NULL) +
+    labs(title = "Percentage of population that don't have access to broadband internet") + 
+    theme(legend.position ="right", legend.direction = "vertical", legend.text = element_text(size=8)) +
+    coord_sf(crs = 4269, datum = NA)+
+    ggsave("D:/DCData/Libraries/Requests/Prog/2019/Broadbandaccess_MD.pdf", device = cairo_pdf)
+
+ggplot() +
+    geom_sf(VA, mapping=aes(fill=(1-pctbroadband)), size = .05) +
+    theme_urbn_map() +
+    scale_colour_gradient (limits=c(0,10), low = "red", high = "blue", na.value = "grey50", aesthetics = "colour")+
+    scale_fill_gradientn(limits=c(0,1), labels = scales::percent) +
+    labs(fill = "No Access to Internet and broadband", color = NULL) +
+    labs(title = "Percentage of population that don't have access to broadband internet") + 
+    theme(legend.position ="right", legend.direction = "vertical", legend.text = element_text(size=8)) +
+    coord_sf(crs = 4269, datum = NA)+
+    ggsave("D:/DCData/Libraries/Requests/Prog/2019/Broadbandaccess_VA.pdf", device = cairo_pdf)
+
+ggplot() +
+    geom_sf(WV, mapping=aes(fill=(1-pctbroadband)), size = .05) +
+    theme_urbn_map() +
+    scale_fill_gradientn(limits=c(0,1), labels = scales::percent) +
+    labs(fill = "No Access to Internet and broadband", color = NULL) +
+    labs(title = "Percentage of population that don't have access to broadband internet") + 
+    theme(legend.position ="right", legend.direction = "vertical", legend.text = element_text(size=8)) +
+    coord_sf(crs = 4269, datum = NA)+
+    ggsave("D:/DCData/Libraries/Requests/Prog/2019/Broadbandaccess_WV.pdf", device = cairo_pdf)
+
+
+
+```
