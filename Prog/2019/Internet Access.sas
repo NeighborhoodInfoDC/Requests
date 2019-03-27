@@ -51,15 +51,15 @@ data InternetAcccess ;
 %ucounty_jurisdiction
 
 	  metro15 = put( county, $ctym15f. );
-      pctinternet= (tothhdemom - Numnointernet_&year.)/tothhdemom;
-	  pctnointernet= Numnointernet_&year./tothhdemom;
       tothhdemom= hshldinc100000plus_2013_17+ hshldincunder15000_2013_17+ hshldinc15000to34999_2013_17+ hshldinc35000to49999_2013_17+
-           hshldinc50000to74999_2013_17+ hshldinc75000to99999_2013_17 ;
+      hshldinc50000to74999_2013_17+ hshldinc75000to99999_2013_17;
       percent100Kplus= hshldinc100000plus_2013_17/tothhdemom;
 	  percentunder15K= hshldincunder15000_2013_17/tothhdemom;
 	  percent15to50K= (hshldinc15000to34999_2013_17+ hshldinc35000to49999_2013_17)/tothhdemom;
 	  percent50to75K= hshldinc50000to74999_2013_17/tothhdemom;
       percent75Kto100K= hshldinc75000to99999_2013_17/tothhdemom;
+	  pctinternet= (tothhdemom - Numnointernet_&year.)/tothhdemom;
+	  pctnointernet= Numnointernet_&year./tothhdemom;
 
 	  format Jurisdiction Jurisdiction. ;
 run;
@@ -77,7 +77,7 @@ data BroadbandAcccess ;
 	       numpopbroadbanda_&year. numpopbroadbandiom_&year. numpopbroadbandb_&year. numpopbroadbandh_&year. numpopbroadbandw_&year.
 	       hshldinc100000plus_2013_17 hshldincunder15000_2013_17 hshldinc15000to34999_2013_17 hshldinc35000to49999_2013_17
            hshldinc50000to74999_2013_17 hshldinc75000to99999_2013_17 percent100Kplus percentunder15K percent15to50K percent50to75K  percent75Kto100K
-           pctbroadband pctbroadbanda pctbroadbandb pctbroadbandh pctbroadbandw pctbroadbandiom county metro15 Jurisdiction ;
+           pctbroadband pctbroadbanda pctbroadbandb pctbroadbandh pctbroadbandw pctbroadbandiom  Numnointernet_&year. pctinternet pctnointernetcounty metro15 Jurisdiction ;
 
       county= substr(geo2010, 1,5);
 	  ucounty=county;
@@ -94,12 +94,14 @@ data BroadbandAcccess ;
       pctbroadbandw= numpopbroadbandw_&year. /popalonew_&year.;
       pctbroadbandiom= numpopbroadbandiom_&year./popaloneaiom_&year.;
       tothhdemom= hshldinc100000plus_2013_17+ hshldincunder15000_2013_17+ hshldinc15000to34999_2013_17+ hshldinc35000to49999_2013_17+
-           hshldinc50000to74999_2013_17+ hshldinc75000to99999_2013_17 ;
+      hshldinc50000to74999_2013_17+ hshldinc75000to99999_2013_17 ;
       percent100Kplus= hshldinc100000plus_2013_17/tothhdemom;
 	  percentunder15K= hshldincunder15000_2013_17/tothhdemom;
 	  percent15to50K= (hshldinc15000to34999_2013_17+ hshldinc35000to49999_2013_17)/tothhdemom;
 	  percent50to75K= hshldinc50000to74999_2013_17/tothhdemom;
       percent75Kto100K= hshldinc75000to99999_2013_17/tothhdemom;
+	  pctinternet= (tothhdemom - Numnointernet_&year.)/tothhdemom;
+	  pctnointernet= Numnointernet_&year./tothhdemom;
 
 	  format Jurisdiction Jurisdiction. ;
 run;
