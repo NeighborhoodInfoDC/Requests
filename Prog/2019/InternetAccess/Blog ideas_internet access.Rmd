@@ -78,12 +78,15 @@ county_sf <- read_sf(dsn= countyshp, layer= "DMVCounties")
 InternetAccess <- read.csv(paste0(jdir,"Internet_access_tract.csv")) 
 
 Access_df <- InternetAccess  %>% 
-         mutate(GEOID=as.character(geoid))
+         mutate(GEOID=as.character(geoid)) %>% 
+         filter(TotPop_2013_17 >= 100 ) 
+
 
 BroadbandAccess <- read.csv(paste0(jdir,"Broadband_access_tract.csv")) 
 
 Broadband_df <- BroadbandAccess %>% 
-  mutate(GEOID=as.character(geoid))
+  mutate(GEOID=as.character(geoid)) %>% 
+  filter(TotPop_2013_17 >= 100 )
   
 
 #spatial join
@@ -142,6 +145,17 @@ ggplot(data=InternetAccessmap, mapping= aes(y= pctinternet, x=((TotPop_2013_17-P
        x = "Percent population that is non white",
        y = "Percent household with access to internet"
   )
+
+InternetAccessmap <- InternetAccessmap %>% 
+  mutate(pctwhite=PopAloneW_2013_17/TotPop_2013_17 ) %>% 
+  mutate(quartile=ntile(pctwhite,4)) %>% 
+  mutate(group= case_when(quartile==1~"group 1",
+                          quartile==2~"group 2",
+                          quartile==3~"group 3",
+                          quartile==4~"group 4")) 
+
+
+ggplot(data=InternetAccessmap, mapping= aes(x=pctinternet))+ geom_freqpoly(mapping= aes(color= group), binwidth= 0.1)
 
 ```
 ## Distribution of demographics and broadband
