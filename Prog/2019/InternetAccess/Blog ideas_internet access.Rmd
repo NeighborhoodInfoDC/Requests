@@ -112,32 +112,35 @@ DC <- InternetAccessmap %>%
 
 ```
 
-Map the overall internet access
+Map the overall internet access. Note the categories in the internet access table are not mutually exclusive and causing the Internet access percentage to be more than 1 in some cases.
+
 ```{r make-map, echo=FALSE}
+#question:  how to change color scale for urban style?
 ggplot() +
-  geom_sf(InternetAccessmap ,mapping = aes(),
+  geom_sf(BroadbandAccessmap,mapping = aes(),
           fill = NA, color = "red", size = .1) +
-  geom_sf(InternetAccessmap, mapping=aes(fill=pctnointernet)) +
+  geom_sf(BroadbandAccessmap, mapping=aes(fill=pctbroadband)) +
   theme_urbn_map() +
-  scale_colour_gradient (limits=c(0,10), low = "red", high = "blue", na.value = "grey50", aesthetics = "colour")+
-  scale_fill_gradientn(labels = scales::percent) +
-  labs(fill = "Percent no internet access", color = NULL) +
-  labs(title = "Percentage household that don't have access to internet") + 
+    scale_fill_gradient2(limits=c(0,.7), low= "#fdbf11", high= "#1696d2", midpoint = 0.3, na.value = "grey50", labels = scales::percent, aesthetics = "fill")+
+  labs(fill = "Percent broadband access", color = NULL) +
+  labs(title = "Percentage population with braodband internet access") + 
   theme(legend.position ="bottom", legend.direction = "vertical", legend.text = element_text(size=8)) +
   coord_sf(crs = 4269, datum = NA)
 
 ```
 Since the region is large compared to DC, it is hard to see as a whole on the map. For illustrating the point, histogram and frequency plot works better in illustrating the relationship between 
 ```{r scatter, echo=FALSE}
-ggplot(data=InternetAccessmap, mapping= aes(y= pctinternet, x= percentunder15K))+ geom_point(alpha=3/10)+
+
+
+ggplot(data=BroadbandAccessmap, mapping= aes(y= pctbroadband, x= percentunder15K))+ geom_point(alpha=3/10)+
   labs(title = "Internet Access Increase with Income",
-       subtitle = "Percent population earning less than 15K and percent having internet access",
+       subtitle = "Percent population earning less than 15K and percent having broadband internet access",
        caption = "Urban Institute",
        x = "Percent population with earning under 15K",
-       y = "Percent household with access to internet"
+       y = "Percent population with access to broadband internet"
   )
 
-ggplot(data=InternetAccessmap, mapping= aes(y= pctinternet, x=((TotPop_2013_17-PopAloneW_2013_17)/TotPop_2013_17) , size = TotPop_2013_17))+ geom_point(alpha=5/10)+
+ggplot(data=BroadbandAccessmap, mapping= aes(y= pctbroadband, x=((TotPop_2013_17-PopAloneW_2013_17)/TotPop_2013_17) , size = TotPop_2013_17))+ geom_point(alpha=5/10)+
   scale_size_continuous(range = c(.1, 10)) +
   labs(title = "Internet Access Decrease with percent non white",
        subtitle = "Community of color tend to be more likely to have lower access of internet",
@@ -146,16 +149,67 @@ ggplot(data=InternetAccessmap, mapping= aes(y= pctinternet, x=((TotPop_2013_17-P
        y = "Percent household with access to internet"
   )
 
-InternetAccessmap <- InternetAccessmap %>% 
-  mutate(pctwhite=PopAloneW_2013_17/TotPop_2013_17 ) %>% 
-  mutate(quartile=ntile(pctwhite,4)) %>% 
-  mutate(group= case_when(quartile==1~"group 1",
-                          quartile==2~"group 2",
-                          quartile==3~"group 3",
-                          quartile==4~"group 4")) 
+BroadbandAccessmap <- BroadbandAccessmap %>% 
+  mutate(pctwhite=PopAloneW_2013_17/TotPop_2013_17) %>% 
+  mutate(quartile=ntile(pctwhite,4),
+         incquartile= ntile(percentunder15K,4)) %>% 
+  mutate(racegroup= case_when(quartile==1~"race group 1",
+                          quartile==2~"race group 2",
+                          quartile==3~"race group 3",
+                          quartile==4~"race group 4")) %>% 
+  mutate(incgroup = case_when(incquartile==1 ~ "incgroup 1",
+                             incquartile==2 ~ "incgroup 2",
+                             incquartile==3 ~ "incgroup 3",
+                             incquartile==4 ~ "incgroup 4"))
 
 
-ggplot(data=InternetAccessmap, mapping= aes(x=pctinternet))+ geom_freqpoly(mapping= aes(color= group), binwidth= 0.1)
+BroadbandAccessmap2 <- BroadbandAccessmap %>% 
+  group_by(incgroup) %>% 
+  summarize(averagebroadband= mean(pctbroadband),
+            averageinternet= mean(pctinternet)) %>% 
+  ungroup() 
+
+```
+
+As the bar chart shows, there isn't much variation in broadband access by income and race. 
+
+```{r barchart for broadband}
+ggplot(data=BroadbandAccessmap, mapping= aes(x=pctbroadband))+ geom_freqpoly(mapping= aes(color= racegroup), binwidth= 0.1)+
+  labs(title = "Broadband Access distribution by race",
+       caption = "Urban Institute",
+       x = "count",
+       y = "Percent population with access to broadband internet"
+  )
+
+ggplot(data=BroadbandAccessmap, mapping= aes(x=pctbroadband))+ geom_freqpoly(mapping= aes(color= incgroup), binwidth= 0.1)
+  labs(title = "Broadband Access distribution by income",
+       caption = "Urban Institute",
+       x = "Count",
+       y = "Percent population with access to broadband internet"
+  )
+
+ggplot(data=BroadbandAccessmap2, mapping= aes(incgroup, averagebroadband))+ geom_col()
+
+```
+
+Try plotting internet access as well
+
+```{r barchart for internet}
+ggplot(data=BroadbandAccessmap, mapping= aes(x=pctinternet))+ geom_freqpoly(mapping= aes(color= racegroup), binwidth= 0.1)+
+  labs(title = "Internet Access distribution by race",
+       caption = "Urban Institute",
+       x = "count",
+       y = "Percent household with access to internet"
+  )
+
+ggplot(data=BroadbandAccessmap, mapping= aes(x=pctinternet))+ geom_freqpoly(mapping= aes(color= incgroup), binwidth= 0.1)
+  labs(title = "Broadband Access distribution by income",
+       caption = "Urban Institute",
+       x = "Count",
+       y = "Percent household with access to internet"
+  )
+
+ggplot(data=BroadbandAccessmap2, mapping= aes(incgroup, averageinternet))+ geom_col()
 
 ```
 ## Distribution of demographics and broadband
@@ -166,6 +220,7 @@ Broadband_long <- BroadbandAccessmap %>%
   select(GEOID, Jurisdiction, metro15, geometry, pctbroadband, pctinternet, percent100Kplus, pctwhite) %>% 
   gather(key, value, -GEOID, -Jurisdiction, -metro15, -geometry)
 
+
 Broadband_state <- BroadbandAccessmap %>%
   mutate(pctwhite= PopAloneW_2013_17/TotPop_2013_17) %>% 
   mutate(state= str_sub(geoid, 1,2 )) %>% 
@@ -173,36 +228,50 @@ Broadband_state <- BroadbandAccessmap %>%
 
 
 DC <- Broadband_state %>% 
-  filter(state== "11")
+  filter(state== "11") 
+
+DCmedian <- DC %>% 
+  mutate(median= median(pctbroadband))
+
 
 MD <- Broadband_state %>% 
   filter(state== "24")
 
+MDmedian <- MD %>% 
+  mutate(median= median(pctbroadband))
+
 VA <- Broadband_state %>% 
   filter(state== "51")
 
+VAmedian <- VA %>% 
+  mutate(median= median(pctbroadband))
+
 WV <- Broadband_state %>% 
   filter(state== "54")
+
+WVmedian <- WV %>% 
+  mutate(median= median(pctbroadband))
+
 
 ```
 
 ```{r broadband and demographics}
 
+#note pctinternet exceeds 1 because the categories are not mutually exclusive 
 ggplot(data=Broadband_long, mapping= aes(x=value))+ geom_freqpoly(mapping= aes(color= key), binwidth= 0.1)
 
 
 ```
 ## Urban Rural comparison
 
-By mapping broadband access by state, there really is not a strong case for lack of access in more rural counties in the region. DC actually have more tracts that lack access to broadband. 
+By mapping broadband access by state, there really is not a strong case for lack of access in more rural counties in the region. DC actually have more tracts that lack access to broadband compared to DC median. 
 ```{r braodband by state, echo=FALSE}
 
 ggplot() +
     geom_sf(DC, mapping=aes(fill=(1-pctbroadband)), size = .05) +
     theme_urbn_map() +
-    scale_colour_gradient (limits=c(0,10), low = "red", high = "blue", na.value = "grey50", aesthetics = "colour")+
-    scale_fill_gradientn(limits=c(0,1.5), labels = scales::percent) +
-    labs(fill = "No Access to Internet and broadband", color = NULL) +
+    scale_fill_gradient2(limits=c(0.4,1), low= "#73bfe2", high= "#ca5800", midpoint=0.72, na.value = "grey50", labels = scales::percent, aesthetics = "fill")+
+    labs(fill = "No Access to broadband Internet", color = NULL) +
     labs(title = "Percentage of population that don't have access to broadband internet") + 
     theme(legend.position ="right", legend.direction = "vertical", legend.text = element_text(size=8)) +
     coord_sf(crs = 4269, datum = NA)+
@@ -211,9 +280,8 @@ ggplot() +
 ggplot() +
     geom_sf(MD, mapping=aes(fill=(1-pctbroadband)), size = .05) +
     theme_urbn_map() +
-    scale_colour_gradient (limits=c(0,10), low = "red", high = "blue", na.value = "grey50", aesthetics = "colour")+
-    scale_fill_gradientn(limits=c(0,1.5), labels = scales::percent) +
-    labs(fill = "No Access to Internet and broadband", color = NULL) +
+    scale_fill_gradient2(limits=c(0.4,1), low= "#73bfe2", high= "#ca5800", midpoint=0.72,na.value = "grey50", labels = scales::percent, aesthetics = "fill")+
+    labs(fill = "No Access to broadband Internet", color = NULL) +
     labs(title = "Percentage of population that don't have access to broadband internet") + 
     theme(legend.position ="right", legend.direction = "vertical", legend.text = element_text(size=8)) +
     coord_sf(crs = 4269, datum = NA)+
@@ -222,9 +290,8 @@ ggplot() +
 ggplot() +
     geom_sf(VA, mapping=aes(fill=(1-pctbroadband)), size = .05) +
     theme_urbn_map() +
-    scale_colour_gradient (limits=c(0,10), low = "red", high = "blue", na.value = "grey50", aesthetics = "colour")+
-    scale_fill_gradientn(limits=c(0,1), labels = scales::percent) +
-    labs(fill = "No Access to Internet and broadband", color = NULL) +
+    scale_fill_gradient2(limits=c(0,1), low= "#73bfe2", high= "#ca5800", midpoint=0.71,na.value = "grey50", labels = scales::percent, aesthetics = "fill")+
+    labs(fill = "No Access to broadband Internet", color = NULL) +
     labs(title = "Percentage of population that don't have access to broadband internet") + 
     theme(legend.position ="right", legend.direction = "vertical", legend.text = element_text(size=8)) +
     coord_sf(crs = 4269, datum = NA)+
@@ -233,8 +300,8 @@ ggplot() +
 ggplot() +
     geom_sf(WV, mapping=aes(fill=(1-pctbroadband)), size = .05) +
     theme_urbn_map() +
-    scale_fill_gradientn(limits=c(0,1), labels = scales::percent) +
-    labs(fill = "No Access to Internet and broadband", color = NULL) +
+    scale_fill_gradient2(limits=c(0,1), low= "#73bfe2", high= "#ca5800", midpoint=0.74,na.value = "grey50", labels = scales::percent, aesthetics = "fill")+
+    labs(fill = "No Access to broadband Internet", color = NULL) +
     labs(title = "Percentage of population that don't have access to broadband internet") + 
     theme(legend.position ="right", legend.direction = "vertical", legend.text = element_text(size=8)) +
     coord_sf(crs = 4269, datum = NA)+
