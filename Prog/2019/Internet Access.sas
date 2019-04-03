@@ -59,7 +59,7 @@ data InternetAcccess ;
 	  percent50to75K= hshldinc50000to74999_2013_17/tothhdemom;
       percent75Kto100K= hshldinc75000to99999_2013_17/tothhdemom;
 	  internetdenom= Numdialup_&year. + Numbroadbandall_&year. + Numcellular_&year. + Numcellularonly_&year. + Numbroadband_&year. + Numbroadbandonly_&year. + Numsatellite_&year.+ 
-           Numsatelliteonly_&year. + Numotheronly_&year. + Numaccesswosub_&year. + Numnointernet_&year.;
+                     Numsatelliteonly_&year. + Numotheronly_&year. + Numaccesswosub_&year. + Numnointernet_&year.;
 	  pctinternet= (internetdenom- Numnointernet_&year.)/internetdenom;
 	  pctnointernet= 1- pctinternet;
 
