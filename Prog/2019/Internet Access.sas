@@ -17,7 +17,7 @@
 %DCData_lib( ACS )
 %DCData_lib (RegHsg);
 
-%let year= &year.;
+%let year= 2013_17;
 
 proc format;
   value Jurisdiction
