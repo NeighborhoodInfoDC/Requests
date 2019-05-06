@@ -14,7 +14,7 @@
 %include "L:\SAS\Inc\StdLocal.sas";
 
 ** Define libraries **;
-%DCData_lib( ACS )
+%DCData_lib( ACS );
 %DCData_lib (RegHsg);
 
 %let year= 2013_17;
