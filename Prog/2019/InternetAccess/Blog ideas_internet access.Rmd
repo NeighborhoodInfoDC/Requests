@@ -210,11 +210,32 @@ ggplot(data=BroadbandAccessmap2, mapping= aes(as.factor(county), medianinternetw
 fairfax <- BraodbandAccessmap_quantile %>% 
   filter(county== "51059")
 
-ggplot(data= fairfax, mapping = aes(), )+
-  geom_col()+
-  xlab()+
-  ylab()+
-  labs()
+ggplot(data=fairfax, mapping= aes(x=broadband_quantile))+
+    geom_histogram()
+
+p <- BraodbandAccessmap_quantile
+
+ggplot(data= BraodbandAccessmap_quantile, mapping = aes(x= factor(county),
+                                                        y= (..count..),
+                                                        fill= factor(broadband_quantile)))+
+  geom_bar(position="fill")+
+  scale_y_continuous(expand = c(0, 0),labels = scales::percent) +
+  xlab("county")+
+  ylab("count")+
+  labs("")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+ggplot(data= BraodbandAccessmap_quantile, mapping = aes(x= factor(county),
+                                                        y= (..count..),
+                                                        fill= factor(broadband_quantile)))+
+  geom_bar(position="dodge")+
+  scale_y_continuous(expand = c(0, 0),limits=c(100), labels = scales::comma) +
+  xlab("county")+
+  ylab("count")+
+  labs("")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
 
 ```
 
