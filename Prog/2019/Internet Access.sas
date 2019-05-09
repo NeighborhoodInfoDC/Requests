@@ -37,7 +37,7 @@ run;
 
 data ACSall;
 set acs.Acs_&year._va_sum_tr_tr10 acs.Acs_&year._dc_sum_tr_tr10 acs.Acs_&year._md_sum_tr_tr10 acs.Acs_&year._wv_sum_tr_tr10;
-	  keep geo2010 geoid totpop_&year. medfamincm_&year. popalonew_&year. popaloneb_&year. popaloneh_&year. popalonea_&year. popaloneaiom_&year. 
+	  keep geo2010 geoid totpop_&year. medhhincm_&year. popalonew_&year. popaloneb_&year. popaloneh_&year. popalonea_&year. popaloneaiom_&year. 
 	       Numdialup_&year. Numbroadbandall_&year. Numcellular_&year. Numcellularonly_&year. Numbroadband_&year. Numbroadbandonly_&year. Numsatellite_&year.
            Numsatelliteonly_&year. Numotheronly_&year. Numaccesswosub_&year. Numnointernet_&year. Numwithinternet_&year. 
            county Jurisdiction hshldinc100000plus_&year. hshldincunder15000_&year. hshldinc15000to34999_&year. hshldinc35000to49999_&year.
@@ -113,7 +113,7 @@ proc sort data= BroadbandAcccess ;
 by metro15;run;
 
 proc summary data = BroadbandAcccess;
-	var    Numhhdefined_&year. medfamincm_&year. NumPopdialupA_&year. NumPopbroadbandA_&year. NumPopnointernetA_&year. NumPopnocomputerA_&year.
+	var    Numhhdefined_&year. medhhincm_&year. NumPopdialupA_&year. NumPopbroadbandA_&year. NumPopnointernetA_&year. NumPopnocomputerA_&year.
 	       NumPopdialupB_&year. NumPopbroadbandB_&year. NumPopnointernetB_&year. NumPopnocomputerB_&year. NumPopdialupH_&year. NumPopbroadbandH_&year. NumPopnointernetH_&year. NumPopnocomputerH_&year.
            NumPopdialupW_&year. NumPopbroadbandW_&year. NumPopnointernetW_&year. NumPopnocomputerW_&year. NumPopdialupIOM_&year. NumPopbroadbandIOM_&year. NumPopnointernetIOM_&year. NumPopnocomputerIOM_&year. Numbroadband_&year.
 	       numpopbroadbanda_&year. numpopbroadbandiom_&year. numpopbroadbandb_&year. numpopbroadbandh_&year. numpopbroadbandw_&year.
@@ -125,7 +125,7 @@ run;
 proc sort data= BroadbandAcccess;
 by Jurisdiction;run;
 proc summary data = BroadbandAcccess (where=(metro15= "47900"));
-	var    Numhhdefined_&year. medfamincm_&year. Numbroadband_&year.
+	var    Numhhdefined_&year. medhhincm_&year. Numbroadband_&year.
 	       numpopbroadbanda_&year. numpopbroadbandiom_&year. numpopbroadbandb_&year. numpopbroadbandh_&year. numpopbroadbandw_&year.
 	       hshldinc100000plus_&year. hshldincunder15000_&year. hshldinc15000to34999_&year. hshldinc35000to49999_&year.
            hshldinc50000to74999_&year. hshldinc75000to99999_&year.;
@@ -143,12 +143,11 @@ set Accessbycounty;
 
 run;
 
-
 proc sort data=BroadbandAcccess;
 by geo2010;run;
 
 proc summary data = BroadbandAcccess (where=(metro15= "47900"));
-	var  Numbroadband_&year. medfamincm_&year. popalonew_&year. popaloneb_&year. popaloneh_&year. popalonea_&year. 
+	var  Numbroadband_&year. medhhincm_&year. popalonew_&year. popaloneb_&year. popaloneh_&year. popalonea_&year. 
 	       numpopbroadbanda_&year. numpopbroadbandiom_&year. numpopbroadbandb_&year. numpopbroadbandh_&year. numpopbroadbandw_&year.
 	       hshldinc100000plus_&year. hshldincunder15000_&year. hshldinc15000to34999_&year. hshldinc35000to49999_&year.
            hshldinc50000to74999_&year. hshldinc75000to99999_&year. Numhhdefined_&year. Numwithinternet_&year. Numaccesswosub_&year. Numnointernet_&year. ;
