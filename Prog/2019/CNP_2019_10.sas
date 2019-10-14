@@ -19,27 +19,31 @@
 %DCData_lib( ACS )
 
 %let ziplist = "20019","20020","20032";
+%let cllist = "28","29","30","31","32","33","34","35","36","37","38","39","43";
 
 /* Permits */
 data permits_cnp;
-	set dcra.permits_sum_city dcra.permits_sum_zip;
-	keep zip permits_2010 permits_2011 permits_2012 permits_2013 permits_2014 permits_2015 permits_2016 permits_2017 permits_2018;
+	set dcra.permits_sum_city dcra.permits_sum_zip dcra.permits_sum_cl17;
+	keep zip cluster2017 permits_2010 permits_2011 permits_2012 permits_2013 permits_2014 permits_2015 permits_2016 permits_2017 permits_2018;
 	if zip in ("",&ziplist.);
+	if cluster2017 in ("",&cllist.);
 run;
 
 
 /* Home prices */
 data realprop_cnp;
-	set realprop.sales_sum_city realprop.sales_sum_zip;
+	set realprop.sales_sum_city realprop.sales_sum_zip realprop.sales_sum_cl17;
 	keep zip mprice_tot_2008 mprice_tot_2009 mprice_tot_2010 mprice_tot_2011 mprice_tot_2012 mprice_tot_2013 mprice_tot_2014 mprice_tot_2015 mprice_tot_2016;
 	if zip in ("",&ziplist.);
+	if cluster2017 in ("",&cllist.);
 run;
 
 
 /* Demographics */
 data acs_cnp;
-	set acs.acs_2013_17_dc_sum_regcnt_regcnt acs.acs_2013_17_dc_sum_tr_zip;
+	set acs.acs_2013_17_dc_sum_regcnt_regcnt acs.acs_2013_17_dc_sum_tr_zip acs.acs_2013_17_dc_sum_tr_cl17;
 	if zip in ("",&ziplist.);
+	if cluster2017 in ("",&cllist.);
 	keep zip totpop_2013_17 
 		popnonenglish_2013_17 pcteng pctnongen	
 		popunder18years_2013_17	pop25_64years_2013_17 pop65andoveryears_2013_17	pctunder18 pct25_64 pct65over
