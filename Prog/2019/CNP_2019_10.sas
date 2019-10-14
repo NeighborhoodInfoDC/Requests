@@ -29,13 +29,23 @@ data permits_cnp;
 	if cluster2017 in ("",&cllist.);
 run;
 
+proc export data=permits_cnp dbms=csv
+	outfile="&_dcdata_l_path.\Requests\Prog\2019\permits_cnp.csv"
+	replace;
+run;
+
 
 /* Home prices */
 data realprop_cnp;
 	set realprop.sales_sum_city realprop.sales_sum_zip realprop.sales_sum_cl17;
-	keep zip mprice_tot_2008 mprice_tot_2009 mprice_tot_2010 mprice_tot_2011 mprice_tot_2012 mprice_tot_2013 mprice_tot_2014 mprice_tot_2015 mprice_tot_2016;
+	keep zip cluster2017 mprice_tot_2008 mprice_tot_2009 mprice_tot_2010 mprice_tot_2011 mprice_tot_2012 mprice_tot_2013 mprice_tot_2014 mprice_tot_2015 mprice_tot_2016;
 	if zip in ("",&ziplist.);
 	if cluster2017 in ("",&cllist.);
+run;
+
+proc export data=realprop_cnp dbms=csv
+	outfile="&_dcdata_l_path.\Requests\Prog\2019\realprop_cnp.csv"
+	replace;
 run;
 
 
@@ -44,11 +54,12 @@ data acs_cnp;
 	set acs.acs_2013_17_dc_sum_regcnt_regcnt acs.acs_2013_17_dc_sum_tr_zip acs.acs_2013_17_dc_sum_tr_cl17;
 	if zip in ("",&ziplist.);
 	if cluster2017 in ("",&cllist.);
-	keep zip totpop_2013_17 
+	keep zip cluster2017 
+		totpop_2013_17 
 		popnonenglish_2013_17 pcteng pctnongen	
 		popunder18years_2013_17	pop25_64years_2013_17 pop65andoveryears_2013_17	pctunder18 pct25_64 pct65over
 		popwithrace_2013_17 popwhitenonhispbridge_2013_17 popblacknonhispbridge_2013_17	pophisp_2013_17	pctwhite pctblk pcthisp pctoth
-		medfamincm_2013_17	
+		medfamincm_2013_17		
 	;
 
 	pctnongen = popnonenglish_2013_17 / totpop_2013_17;
@@ -66,3 +77,9 @@ data acs_cnp;
 
 run;
 
+proc export data=acs_cnp dbms=csv
+	outfile="&_dcdata_l_path.\Requests\Prog\2019\acs_cnp.csv"
+	replace;
+run;
+
+/* End of program */
