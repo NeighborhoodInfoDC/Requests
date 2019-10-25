@@ -67,7 +67,7 @@ data
 
     rcount_input + 1;
 
-    infile datalines missover /*dlm='09'x*/;
+    infile datalines missover dlm='09'x;
 
     input
       %enum_all( Units )
