@@ -35,12 +35,14 @@ data selectJuris;
 where fipscodestatecounty in ("11001" "24031" "51013" "51059"); 
 
 	run;
-
 proc freq data=selectJuris;
-tables taxexemptioncodes*fipscodestatecounty;
+tables assesseeownernametype;
+run; 
+proc freq data=selectJuris;
+tables fipscodestatecounty standardizedlandusecode*fipscodestatecounty;
 run;
 
-%let RegExpFile=&_dcdata_default_path\RealProp\Prog\Updates\Owner type codes reg expr.txt;
+%let RegExpFile=L:\Libraries\RealProp\Prog\Updates\Owner type codes reg expr.txt;
 %let   MaxExp=3000; 
 *
 %macro Parcel_base_who_owns( 
@@ -143,18 +145,18 @@ run;
 
 	** Assign codes for special cases **;
     
-/*      if ownername_full ~= '' then do;
+  if ownername_full ~= '' then do;
     
         ** Owner-occupied Single Family, Condo, and multifamily rental **;
     
-       * if ui_proptype='10' and OwnerCat in ( '', '030' ) and owner_occ_sale then Ownercat= '010';
+	 if standardizedlandusecode in (1000 1001  1002 1003 1006 1007 1008 1009 1015 1999) and OwnerCat in ( '', '030' ) and owneroccupiedresidential="Y" then Ownercat= '010';
     
-       *  if ui_proptype in ( '11', '13' ) and OwnerCat in ( '', '030' ) and owner_occ_sale then Ownercat= '020';
+      if standardizedlandusecode in ( 1004, 1010, 1100, 1101, 1104, 1106, 1107, 1108, 1110, 1111, 1112, 1113 ) and OwnerCat in ( '', '030' ) and owneroccupiedresidential="Y" then Ownercat= '020';
     
         ** Cooperatives are owner-occupied (OwnerCat=20), unless special owner **;
         ** NOTE: PROBABLY NEED TO CHANGE THIS, MAYBE CREATE A SEPARATE OWNER CATEGORY FOR COOPS **;
     
-        else if ui_proptype = '12' and OwnerCat in ( '', '030', '110' ) then do;
+        else if standardizedlandusecode = 1005 and OwnerCat in ( '', '030', '110' ) then do;
           OwnerCat = '020';
         end;
     
@@ -188,7 +190,7 @@ run;
   run;
   Quit;
 proc freq data=DMV_who_owns;
-tables ownerCat*fipscodestatecounty;
+tables ownerCat*fipscodestatecounty /nopercent;
 run;
 
   **** Diagnostics ****;
@@ -199,7 +201,7 @@ run;
   run;
 
   ods listing close;
-  ods tagsets.excelxp file="&_dcdata_default_path\Requests\Prog\Church_who_owns_diagnostic.xls" style=Minimal options(sheet_interval='Bygroup' );
+  ods tagsets.excelxp file="&_dcdata_default_path\Requests\Prog\2019\Church_who_owns_diagnostic.xls" style=Minimal options(sheet_interval='Bygroup' );
 
   proc freq data=DMV_who_owns_diagnostic;
     by OwnerCat;
@@ -208,6 +210,19 @@ run;
 
   ods tagsets.excelxp close;
   ods listing;
+
+  data DMV_who_owns_church;
+  	set DMV_who_owns;
+
+	where ownercat="100";
+
+	run;
+proc export data=dmv_who_owns_church 
+	outfile="&_dcdata_default_path\Requests\Prog\2019\dmv_who_owns_church.csv" 
+	dbms=csv
+	replace;
+	run; 
+
  /*
   %if %mparam_is_yes( &finalize ) %then %do;
   
