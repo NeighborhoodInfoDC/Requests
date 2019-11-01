@@ -1,0 +1,47 @@
+---
+title: "Land owned by faith-based institutions"
+author: ""
+output:
+  html_document:
+    number_sections: FALSE
+    self_contained: TRUE
+    code_folding: show
+    toc: TRUE
+    toc_float: TRUE
+    editor_options:
+      chunk_output_type: console
+---
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato" />
+
+Library: Requests
+
+Author: Sarah Strochak
+
+Version: R 3.6.1
+
+Last updated `r format(Sys.time(), '%B %d, %Y')`
+
+Environment: Local Windows session (desktop)
+
+```{r rmarkdown-setup, echo = FALSE}
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+```
+
+```{r setup}
+options(scipen = 999)
+
+library(tidyverse)
+```
+
+## Read in church-owned parcels
+
+```{r read-churches}
+
+
+```
+
+Subset by county to merge with zoning codes
+
+```{r subset}
