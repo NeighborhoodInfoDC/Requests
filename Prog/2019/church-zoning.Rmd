@@ -39,9 +39,87 @@ library(tidyverse)
 
 ```{r read-churches}
 
+churches <- read_csv("L:/Libraries/Requests/Raw/2019/dmv_who_owns_church.csv") %>% 
+  mutate(fipscodestatecounty = as.character(fipscodestatecounty))
+
+# Merge on county names
+churches <- urbnmapr::get_urbn_map(map = "counties", sf = TRUE) %>% 
+  sf::st_drop_geometry() %>% 
+  select(county_name, county_fips) %>% 
+  right_join(churches, by = c("county_fips" = "fipscodestatecounty"))
 
 ```
 
 Subset by county to merge with zoning codes
 
 ```{r subset}
+
+arl <- churches %>% 
+  filter(county_name == "Arlington County")
+  
+mont <- churches %>% 
+  filter(county_name == "Montgomery County")
+
+ff <- churches %>% 
+  filter(county_name == "Fairfax County")
+
+dc <- churches %>% 
+  filter(county_name == "District of Columbia")
+
+```
+
+## Read in zoning codes
+
+
+```{r read-zoning}
+
+arl_zoning <- read_csv("L:/Libraries/RegHsg/Doc/zoning-codes/arlington-zoning-code.csv") %>% 
+  mutate(county_name = "Arlington County",
+         residential = 1) %>% 
+  select(zoning_code = Code, county_name, residential) %>% 
+  distinct()
+
+ff_zoning <- read_csv("L:/Libraries/RegHsg/Doc/zoning-codes/fairfax-zoning-code.csv") %>% 
+  mutate(county_name = "Fairfax County",
+         residential = 1) %>% 
+  rename(zoning_code = code) %>% 
+  select(zoning_code, county_name, residential) %>% 
+  distinct()
+
+dc_zoning <- read_csv("L:/Libraries/RegHsg/Doc/zoning-codes/DC Zoning code.csv") %>% 
+  mutate(county_name = "District of Columbia",
+         residential = 1) %>% 
+  rename(zoning_code = Code) %>% 
+  select(zoning_code, county_name, residential) %>% 
+  distinct()
+
+zoning <- bind_rows(arl_zoning, ff_zoning, dc_zoning)
+
+```
+
+## Merge on zoning codes
+
+```{r merge-zoning}
+
+arl <- arl %>% 
+  mutate(zoning_code = case_when(
+    zoning == "RC" ~ "R-C",
+    zoning == "C-0 Crystal City" ~ "C-O Crystal City",
+    zoning %in% c("C-O-ROSSLYN", "C-O-ROSS") ~ "C-O Rosslyn",
+    zoning == "RA-H-3.2" ~ "RA-H 3.2",
+    zoning == "C-1-O" ~ "C-1-0",
+    TRUE ~ zoning
+  ))
+
+arl1 <- arl %>% 
+  left_join(arl_zoning, by = c("zoning_code", "county_name")) %>% 
+  mutate(residential = ifelse(is.na(residential),
+                              0,
+                              residential))
+
+arl1 %>% 
+  filter(residential == 0) %>% 
+  count(zoning_code)
+  
+  
+```
