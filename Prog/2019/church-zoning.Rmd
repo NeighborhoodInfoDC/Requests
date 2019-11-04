@@ -70,6 +70,7 @@ dc <- churches %>%
 
 ## Read in zoning codes
 
+For each county, choose only one record per zoning code. It only matters if residential is allowed, not the specific speculations of the zoning code.
 
 ```{r read-zoning}
 
@@ -99,6 +100,7 @@ zoning <- bind_rows(arl_zoning, ff_zoning, dc_zoning)
 
 ## Merge on zoning codes
 
+
 ```{r merge-zoning}
 
 arl <- arl %>% 
@@ -116,10 +118,77 @@ arl1 <- arl %>%
   mutate(residential = ifelse(is.na(residential),
                               0,
                               residential))
+```
+
+Count which zoning codes are non-residential.
+
+```{r}
 
 arl1 %>% 
   filter(residential == 0) %>% 
   count(zoning_code)
   
   
+```
+
+Since all of these are dual zoning codes, reclassify to residential.
+
+```{r}
+arl1 <- arl1 %>% 
+  mutate(residential = ifelse(residential == 0,
+                              1,
+                              residential))
+```
+
+## Classify vacant vs. non-vacant
+
+
+```{r}
+
+arl1 %>% 
+  group_by(countylandusedescription) %>% 
+  summarize(parcels = n(),
+            lotsize_missing = sum(is.na(lotsizeorarea)),
+            lotsize_0 = sum(lotsizeorarea == 0),
+            building_missing = sum(is.na(buildingarea)),
+            building_0 = sum(buildingarea == 0),
+            share_buildingarea_0 = building_0 / parcels) %>% 
+  arrange(desc(share_buildingarea_0))
+
+vac_codes <- c("VACANT COMMERCIAL",
+               "VACANT RESIDENTIAL",
+               "RESIDENTIAL COST-VAL - VAC/SF & TW",
+               "GEN COMM VAC-LAND/NO SITE PLAN")
+
+arl1 <- arl1 %>% 
+  mutate(vacant = ifelse(countylandusedescription %in% vac_codes,
+                         "Vacant",
+                         "Non-vacant"))
+
+arl1 %>% 
+  group_by(vacant) %>% 
+  summarize(parcels = n(),
+            lotsize_missing = sum(is.na(lotsizeorarea)),
+            lotsize_0 = sum(lotsizeorarea == 0),
+            building_missing = sum(is.na(buildingarea)),
+            building_0 = sum(buildingarea == 0))
+```
+
+Calculate land owned by faith-based institutions in Arlington.
+
+```{r}
+arl1 %>% 
+  mutate(lotsize_sqfeet = ifelse(lotsizeareaunit == "SF",
+                               lotsizeorarea,
+                               lotsizeorarea * 43560),
+         free_site = lotsize_sqfeet - buildingarea) %>% 
+  summarize(parcels = n(),
+            average_lot = mean(lotsize_sqfeet, na.rm = TRUE),
+            average_empty = mean(lotsize_sqfeet[buildingarea == 0]),
+            average_unused = mean(free_site, na.rm = TRUE),
+            total_lot = sum(lotsize_sqfeet, na.rm = TRUE),
+            empty_lot = sum(lotsize_sqfeet[buildingarea == 0]),
+            unused_lot = sum(free_site, na.rm = TRUE))
+
+
 ```
