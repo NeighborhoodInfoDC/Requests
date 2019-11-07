@@ -378,7 +378,8 @@ churches &lt;- urbnmapr::get_urbn_map(map = &quot;counties&quot;, sf = TRUE) %&g
     arrange(county_name, residential)
   
 
-write_csv(all, here::here(&quot;Data&quot;, str_glue(&quot;church-lots_{floors}floors_empty.csv&quot;)))
+write_csv(all, here::here(&quot;Prog&quot;, &quot;2019&quot;,
+                          str_glue(&quot;church-lots_{floors}floors_empty.csv&quot;)))
   
 
 }
@@ -428,7 +429,7 @@ walk(c(1, 2, 4, 5), ~ calc_units(floors = .))</code></pre>
     arrange(county_name, residential)
   
   
-write_csv(all, here::here(&quot;Data&quot;, 
+write_csv(all, here::here(&quot;Prog&quot;, &quot;2019&quot;, 
                           str_glue(&quot;church-lots_{floors}floors_empty_vacant.csv&quot;)))
   
 

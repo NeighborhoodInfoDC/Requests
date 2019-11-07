@@ -142,7 +142,8 @@ calc_units <- function(floors = 1,
     arrange(county_name, residential)
   
 
-write_csv(all, here::here("Data", str_glue("church-lots_{floors}floors_empty.csv")))
+write_csv(all, here::here("Prog", "2019",
+                          str_glue("church-lots_{floors}floors_empty.csv")))
   
 
 }
@@ -197,7 +198,7 @@ calc_units_vacant <- function(floors = 1,
     arrange(county_name, residential)
   
   
-write_csv(all, here::here("Data", 
+write_csv(all, here::here("Prog", "2019", 
                           str_glue("church-lots_{floors}floors_empty_vacant.csv")))
   
 
