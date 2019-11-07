@@ -229,6 +229,9 @@ churches1 <- churches %>%
                          0),
          vacant = ifelse(str_detect(countylandusedescription, "PARKING") == TRUE,
                          1,
+                         vacant),
+          vacant = ifelse(str_detect(countylandusedescription, "VAC") == TRUE,
+                         1,
                          vacant)) %>% 
   mutate(lotsize_sqfeet = ifelse(lotsizeareaunit == "SF",
                                  lotsizeorarea,
@@ -246,6 +249,7 @@ churches1 <- churches %>%
          units_base = floor((free_site * .75) / 950))
 
 
+
 calc_units <- function(floors = 1,
                        sq_feet = 950) {
   
@@ -253,6 +257,7 @@ calc_units <- function(floors = 1,
   mutate(units = units_base * floors) %>% 
   group_by(county_name) %>% 
   summarize(parcels = n(),
+            total_area = sum(lotsize_sqfeet, na.rm = TRUE),
             empty_parcels = sum(buildingarea == 0, na.rm = TRUE),
             average_empty = mean(lotsize_sqfeet[buildingarea == 0], na.rm = TRUE),
             total_empty_lot = sum(lotsize_sqfeet[buildingarea == 0], na.rm = TRUE),
@@ -265,6 +270,7 @@ all <- churches1 %>%
   mutate(units = units_base * floors) %>% 
   group_by(county_name, residential) %>% 
   summarize(parcels = n(),
+            total_area = sum(lotsize_sqfeet, na.rm = TRUE),
             empty_parcels = sum(buildingarea == 0, na.rm = TRUE),
             average_empty = mean(lotsize_sqfeet[buildingarea == 0], na.rm = TRUE),
             total_empty_lot = sum(lotsize_sqfeet[buildingarea == 0], na.rm = TRUE),
@@ -286,6 +292,14 @@ walk(c(1, 2, 4, 5), ~ calc_units(floors = .))
 calc_units_vacant <- function(floors = 1,
                        sq_feet = 950) {
   
+  
+  total_area <- churches1 %>% 
+    group_by(county_name) %>% 
+    summarize(total_area = sum(lotsize_sqfeet, na.rm = TRUE)) %>% 
+    mutate(residential = "Total") %>% 
+    bind_rows(churches1 %>% 
+    group_by(county_name, residential) %>% 
+    summarize(total_area = sum(lotsize_sqfeet, na.rm = TRUE)))
   
   totals <- churches1 %>% 
     filter(vacant == 1) %>% 
@@ -311,6 +325,7 @@ all <- churches1 %>%
             avg_units = mean(units[buildingarea == 0], na.rm = TRUE),
             units = sum(units[buildingarea == 0], na.rm = TRUE)) %>% 
   bind_rows(totals) %>% 
+  left_join(total_area, by = c("residential", "county_name")) %>% 
   arrange(county_name, residential)
 
 
@@ -320,7 +335,7 @@ write_csv(all, here::here("Data",
 
 }
 
-walk(c(1, 2, 4, 5), ~ calc_units(floors = .))
+walk(c(1, 2, 4, 5), ~ calc_units_vacant(floors = .))
 
 
 
