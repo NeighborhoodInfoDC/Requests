@@ -50,21 +50,13 @@ churches <- urbnmapr::get_urbn_map(map = "counties", sf = TRUE) %>%
 
 ```
 
-Subset by county to merge with zoning codes
+Subset Arlington.
 
 ```{r subset}
 
 arl <- churches %>% 
   filter(county_name == "Arlington County")
   
-mont <- churches %>% 
-  filter(county_name == "Montgomery County")
-
-ff <- churches %>% 
-  filter(county_name == "Fairfax County")
-
-dc <- churches %>% 
-  filter(county_name == "District of Columbia")
 
 ```
 
@@ -94,11 +86,12 @@ dc_zoning <- read_csv("L:/Libraries/RegHsg/Doc/zoning-codes/DC Zoning code.csv")
   select(zoning_code, county_name, residential) %>% 
   distinct()
 
-zoning <- bind_rows(arl_zoning, ff_zoning, dc_zoning)
-
 ```
 
-## Merge on zoning codes
+
+## Arlington County
+
+### Merge on zoning codes
 
 
 ```{r merge-zoning}
@@ -128,7 +121,6 @@ arl1 %>%
   filter(residential == 0) %>% 
   count(zoning_code)
   
-  
 ```
 
 Since all of these are dual zoning codes, reclassify to residential.
@@ -140,7 +132,7 @@ arl1 <- arl1 %>%
                               residential))
 ```
 
-## Classify vacant vs. non-vacant
+### Classify vacant vs. non-vacant
 
 
 ```{r}
@@ -174,21 +166,167 @@ arl1 %>%
             building_0 = sum(buildingarea == 0))
 ```
 
+### Calculation
+
 Calculate land owned by faith-based institutions in Arlington.
 
 ```{r}
-arl1 %>% 
+
+a1 <- arl1 %>% 
   mutate(lotsize_sqfeet = ifelse(lotsizeareaunit == "SF",
                                lotsizeorarea,
                                lotsizeorarea * 43560),
-         free_site = lotsize_sqfeet - buildingarea) %>% 
+         free_site = lotsize_sqfeet - buildingarea,
+         units = floor(((free_site * .75) / 950)) * 2) %>% 
+  group_by(county_name, residential) %>% 
   summarize(parcels = n(),
             average_lot = mean(lotsize_sqfeet, na.rm = TRUE),
             average_empty = mean(lotsize_sqfeet[buildingarea == 0]),
             average_unused = mean(free_site, na.rm = TRUE),
             total_lot = sum(lotsize_sqfeet, na.rm = TRUE),
             empty_lot = sum(lotsize_sqfeet[buildingarea == 0]),
-            unused_lot = sum(free_site, na.rm = TRUE))
+            unused_lot = sum(free_site, na.rm = TRUE),
+            unused_over_1000 = sum(free_site > 1000, na.rm = TRUE),
+            amount_over_1000 = sum(free_site[free_site > 1000], na.rm = TRUE),
+            avg_units = mean(units, na.rm = TRUE),
+            units = sum(units, na.rm = TRUE)) %>% 
+  mutate(residential = "Total (all parcels allow residential") %>% 
+  select(county_name, residential, everything())
 
 
 ```
+
+
+## All other jurisdictions
+
+Test variables 
+```{r}
+
+churches %>% 
+  filter(county_name != "Arlington County") %>% 
+  mutate(residential = ifelse(str_sub(zoning, 1, 1) == "R",
+                              1,
+                              0)) %>% 
+  group_by(county_name, residential) %>% 
+  summarize(parcels = n(),
+            lotsize_missing = sum(is.na(lotsizeorarea)),
+            lotsize_0 = sum(lotsizeorarea == 0),
+            building_missing = sum(is.na(buildingarea)),
+            building_0 = sum(buildingarea == 0))
+
+
+```
+
+```{r}
+
+
+churches1 <- churches %>% 
+  mutate(buildingarea = ifelse(is.na(buildingarea),
+                               0,
+                               buildingarea),
+         vacant = ifelse(str_detect(countylandusedescription, "VACANT") == TRUE,
+                         1,
+                         0),
+         vacant = ifelse(str_detect(countylandusedescription, "PARKING") == TRUE,
+                         1,
+                         vacant)) %>% 
+  mutate(lotsize_sqfeet = ifelse(lotsizeareaunit == "SF",
+                                 lotsizeorarea,
+                                 lotsizeorarea * 43560),
+         free_site = lotsize_sqfeet - buildingarea,
+         free_site = ifelse(free_site < 0,
+                            0,
+                            free_site),
+         residential = ifelse(str_sub(zoning, 1, 1) == "R",
+                              "Residential zone",
+                              "Non-residential zone"),
+         residential = ifelse(is.na(zoning),
+                              "Missing zoning information",
+                              residential),
+         units_base = floor((free_site * .75) / 950))
+
+
+calc_units <- function(floors = 1,
+                       sq_feet = 950) {
+  
+  totals <- churches1 %>% 
+  mutate(units = units_base * floors) %>% 
+  group_by(county_name) %>% 
+  summarize(parcels = n(),
+            empty_parcels = sum(buildingarea == 0, na.rm = TRUE),
+            average_empty = mean(lotsize_sqfeet[buildingarea == 0], na.rm = TRUE),
+            total_empty_lot = sum(lotsize_sqfeet[buildingarea == 0], na.rm = TRUE),
+            avg_units = mean(units[buildingarea == 0], na.rm = TRUE),
+            units = sum(units[buildingarea == 0], na.rm = TRUE)) %>% 
+  mutate(residential = "Total")
+
+
+all <- churches1 %>% 
+  mutate(units = units_base * floors) %>% 
+  group_by(county_name, residential) %>% 
+  summarize(parcels = n(),
+            empty_parcels = sum(buildingarea == 0, na.rm = TRUE),
+            average_empty = mean(lotsize_sqfeet[buildingarea == 0], na.rm = TRUE),
+            total_empty_lot = sum(lotsize_sqfeet[buildingarea == 0], na.rm = TRUE),
+            avg_units = mean(units[buildingarea == 0], na.rm = TRUE),
+            units = sum(units[buildingarea == 0], na.rm = TRUE)) %>% 
+  bind_rows(totals) %>% 
+  arrange(county_name, residential)
+
+
+write_csv(all, here::here("Data", str_glue("church-lots_{floors}floors_empty.csv")))
+  
+
+}
+
+walk(c(1, 2, 4, 5), ~ calc_units(floors = .))
+
+
+
+calc_units_vacant <- function(floors = 1,
+                       sq_feet = 950) {
+  
+  
+  totals <- churches1 %>% 
+    filter(vacant == 1) %>% 
+  mutate(units = units_base * floors) %>% 
+  group_by(county_name) %>% 
+  summarize(parcels = n(),
+            empty_parcels = sum(buildingarea == 0, na.rm = TRUE),
+            average_empty = mean(lotsize_sqfeet[buildingarea == 0], na.rm = TRUE),
+            total_empty_lot = sum(lotsize_sqfeet[buildingarea == 0], na.rm = TRUE),
+            avg_units = mean(units[buildingarea == 0], na.rm = TRUE),
+            units = sum(units[buildingarea == 0], na.rm = TRUE)) %>% 
+  mutate(residential = "Total")
+
+
+all <- churches1 %>% 
+      filter(vacant == 1) %>% 
+  mutate(units = units_base * floors) %>% 
+  group_by(county_name, residential) %>% 
+  summarize(parcels = n(),
+            empty_parcels = sum(buildingarea == 0, na.rm = TRUE),
+            average_empty = mean(lotsize_sqfeet[buildingarea == 0], na.rm = TRUE),
+            total_empty_lot = sum(lotsize_sqfeet[buildingarea == 0], na.rm = TRUE),
+            avg_units = mean(units[buildingarea == 0], na.rm = TRUE),
+            units = sum(units[buildingarea == 0], na.rm = TRUE)) %>% 
+  bind_rows(totals) %>% 
+  arrange(county_name, residential)
+
+
+write_csv(all, here::here("Data", 
+                          str_glue("church-lots_{floors}floors_empty_vacant.csv")))
+  
+
+}
+
+walk(c(1, 2, 4, 5), ~ calc_units(floors = .))
+
+
+
+
+```
+
+
+
+
