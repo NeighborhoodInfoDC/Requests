@@ -267,7 +267,7 @@ div.tocify {
 <p>Library: Requests</p>
 <p>Author: Sarah Strochak</p>
 <p>Version: R 3.6.1</p>
-<p>Last updated November 07, 2019</p>
+<p>Last updated November 11, 2019</p>
 <p>Environment: Local Windows session (desktop)</p>
 <pre class="r"><code>options(scipen = 999)
 
@@ -331,6 +331,11 @@ churches &lt;- urbnmapr::get_urbn_map(map = &quot;counties&quot;, sf = TRUE) %&g
                          vacant),
          vacant = ifelse(str_detect(countylandusedescription, &quot;VAC&quot;) == TRUE,
                          1,
+                         vacant),
+         vacant = ifelse(countylandusedescription %in%
+                          c(&quot;FALSE VACANT&quot;,
+                            &quot;FALSE VACANT ABUTTING LOT (RES)&quot;),
+                         0,
                          vacant)) %&gt;% 
   mutate(lotsize_sqfeet = ifelse(lotsizeareaunit == &quot;SF&quot;,
                                  lotsizeorarea,
