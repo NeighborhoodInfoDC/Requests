@@ -90,6 +90,11 @@ churches1 <- churches %>%
                          vacant),
          vacant = ifelse(str_detect(countylandusedescription, "VAC") == TRUE,
                          1,
+                         vacant),
+         vacant = ifelse(countylandusedescription %in%
+                          c("FALSE VACANT",
+                            "FALSE VACANT ABUTTING LOT (RES)"),
+                         0,
                          vacant)) %>% 
   mutate(lotsize_sqfeet = ifelse(lotsizeareaunit == "SF",
                                  lotsizeorarea,
