@@ -1,7 +1,7 @@
 /**************************************************************************
  Program:  Export_rcasd.sas
  Library:  PresCat
- Project:  NeighborhoodInfo DC
+ Project:  Urban-Greater DC
  Author:   M. Cohen
  Created:  11/13/19
  Version:  SAS 9.2
@@ -45,7 +45,7 @@
 
   filename fexport "&out_folder\&out..csv" lrecl=2000;
 
-  proc export data=&data
+  proc export data=&data (drop=bridgepk stantoncommons)
       outfile=fexport
       dbms=csv replace;
 
@@ -53,7 +53,7 @@
   
   filename fexport clear;
 
-  proc contents data=&data out=_cnt_&out (keep=varnum name label label="&desc") noprint;
+  proc contents data=&data (drop=bridgepk stantoncommons) out=_cnt_&out (keep=varnum name label label="&desc") noprint;
 
   proc sort data=_cnt_&out;
     by varnum;
@@ -108,7 +108,7 @@
         label = 'Description';
       title1 bold "Data dictionary for file: &k..csv";
       title2 bold "&desc";
-      title3 height=10pt "Prepared by NeighborhoodInfo DC on %left(%qsysfunc(date(),worddate.)).";
+      title3 height=10pt "Prepared by Urban-Greater DC on %left(%qsysfunc(date(),worddate.)).";
       footnote1;
     run;
 
