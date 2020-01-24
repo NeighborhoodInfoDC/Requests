@@ -815,12 +815,21 @@ label	State_2_AssistedUnits="Total number of units covered by subsidy";
 label	State_2_InacStatusDesc="Subsidy status description";  
 label	State_2_ConstructionType="State construction type";  
 label   OldNHPDPropertyID="Old NHPD Property ID";
+
+
+flag_ABQ=.;
+
+if City in ("Albuquerque" "ALBUQUERQUE") then flag_ABQ=1; else flag_ABQ=0;
+
+label flag_ABQ = "Property Address is listed in ABQ"; 
 run;
 
 proc contents data=test;
 run;
 
-
+proc freq data=test;
+tables city;
+run;
 /*finalize dataset*/
 
 %Finalize_data_set(
@@ -832,7 +841,7 @@ label="National Preservation Database Active and Inconclusive Properties 1/2020 
 sortby=EarliestStartDate,
 /** Metadata parameters **/
 revisions=%str(New file.),
-register_metadata=Y=N,
+register_metadata=N,
 printobs=5
 )
 
