@@ -17,7 +17,7 @@ download for whole metro area or states if easier. We would like to be able to u
 ** Define libraries **;
 %DCData_lib( Requests, local=n )
  
-data WORK.Test ;
+data WORK.Test (where=(CountyCode="35001")) ;
       %let _EFIERR_ = 0; /* set the ERROR detection macro variable */
       infile 'L:\Libraries\Requests\Raw\2020\Active and Inconclusive Properties NM.csv' delimiter = ',' MISSOVER DSD lrecl=32767 firstobs=2;
    format NHPDPropertyID $36. ;
@@ -539,78 +539,7 @@ input
 			OldNHPDPropertyID $
 ;
 if _ERROR_ then call symputx('_EFIERR_',1);  /* set ERROR detection macro variable */;
-/*if NHPDPropertyID = "aa24d43d-c2ff-e611-8115-74d435edc0c2" then do;
-	CountyCode = 24031;
-	County = 'Montgomery';
-	End;
-if NHPDPropertyID = "8523d43d-c2ff-e611-8115-74d435edc0c2" then do;
-	CountyCode = 24031;
-	County = 'Montgomery';
-	End;
-if NHPDPropertyID = "c624d43d-c2ff-e611-8115-74d435edc0c2" then do;
-	CountyCode = 24033;
-	County = 'Prince Georges';
-	End;
-if NHPDPropertyID = "77964eb6-d1ff-e611-8115-74d435edc0c2" then do;
-	CountyCode = 51059;
-	County = 'Fairfax';
-	End;
-if NHPDPropertyID = "15fbdb37-c2ff-e611-8115-74d435edc0c2" then do;
-	CountyCode = 24033;
-	County = 'Prince Georges';
-	End;
-if NHPDPropertyID = "d023d43d-c2ff-e611-8115-74d435edc0c2" then do;
-	CountyCode = '24033';
-	County = 'Prince Georges';
-	End;
-if NHPDPropertyID = "7f9fea25-c2ff-e611-8115-74d435edc0c2" then do;
-	CountyCode = 24031;
-	County = 'Montgomery';
-	End;
-if NHPDPropertyID = "d3da0713-baff-e611-8115-74d435edc0c2" then do;
-	CountyCode = 11001;
-	County = 'Washington';
-	End;
-if NHPDPropertyID = "0f7cfe18-baff-e611-8115-74d435edc0c2" then do;
-	CountyCode = 11001;
-	County = 'Washington';
-	End;
-if NHPDPropertyID = "1123d43d-c2ff-e611-8115-74d435edc0c2" then do;
-	CountyCode = 24033;
-	County = 'Prince Georges';
-	End;
-if NHPDPropertyID = "d624d43d-c2ff-e611-8115-74d435edc0c2" then do;
-	CountyCode = 24033;
-	County = 'Prince Georges';
-	End;
-if NHPDPropertyID = "ad23d43d-c2ff-e611-8115-74d435edc0c2" then do;
-	CountyCode = 24033;
-	County = 'Prince Georges';
-	End;
-if NHPDPropertyID = "95fadb37-c2ff-e611-8115-74d435edc0c2" then do;
-	CountyCode = 24009;
-	County = 'Calvert';
-	End;*/
-run;
 
-proc contents data=test;
-run;
-
-/*create labels for variables*/
-
-proc format;
-	value COG
-    1= "COG county"
-    0="Non COG county";
-
-run;
-
-/*create COG region flag*/
-data all;
-set test;
-  if CountyCode in ("11001", "24017", "24021", "24031", "24033", "51013", "51059", "51107", "51153", "51510", "51600", "51610", "51683", "51685") then COGregion =1;
-  else COGregion=0;
-  format COGregion COG. ;
 label NHPDPropertyID="Unique ID assigned to each property by NHPD staff";
 label PropertyName="Name of the property ";
 label PropertyAddress="Physical street address of property";
@@ -885,26 +814,25 @@ label	State_2_EndDate="Expiration date of subsidy";
 label	State_2_AssistedUnits="Total number of units covered by subsidy";
 label	State_2_InacStatusDesc="Subsidy status description";  
 label	State_2_ConstructionType="State construction type";  
-label   COGregion="COG county";
+label   OldNHPDPropertyID="Old NHPD Property ID";
 run;
 
-/*assign label to variables
-data all;
-set all;
-  format  ;
-run;*/
+proc contents data=test;
+run;
+
 
 /*finalize dataset*/
 
 %Finalize_data_set(
 /** Finalize data set parameters **/
-data=all,
-out=natlpres_ActiveandInc_prop,
-outlib=RegHsg,
-label="National Preservation Database Active and Inconclusive Properties 1/2019",
+data=test,
+out=natlpres_ActiveandInc_prop_ABQ,
+outlib=Requests,
+label="National Preservation Database Active and Inconclusive Properties 1/2020 Bernalillo Cnty NM",
 sortby=EarliestStartDate,
 /** Metadata parameters **/
-revisions=%str(Correct character vars for assisted unit counts),
+revisions=%str(New file.),
+register_metadata=Y=N,
 printobs=5
 )
 
