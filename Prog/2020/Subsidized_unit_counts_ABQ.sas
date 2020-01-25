@@ -1,10 +1,10 @@
 /**************************************************************************
- Program:  Subsidized_units_counts.sas
- Library:  RegHsg
- Project:  NeighborhoodInfo DC
+ Program:  Subsidized_units_counts_ABQ.sas
+ Library:  Requests
+ Project:  ABQ Housing Assessment
  Author:   W. Oliver
  Created:  02/7/19
- Version:  SAS 9.2
+ Version:  SAS 9.4
  Environment:  Local Windows session (desktop)
  
 download for whole metro area or states if easier. 
@@ -12,41 +12,20 @@ We would like to be able to understand where properties are located,
 how many units are subsidized (at what level if known), 
 subsidy programs involved, and any expiration dates for the subsidies.
 
-We want all jurisdictions in the COG region:
 
-DC (11001)
-Charles Couty(24017)
-Frederick County(24021)
-Montgomery County (24031)
-Prince George's County(24033)
-Arlington County (51013)
-Fairfax County (51059)
-Loudoun County (51107)
-Prince William County (51153)
-Alexandria City (51510)
-Fairfax City (51600)
-Falls Church City (51610)
-Manassas City (51683)
-Manassas Park City (51685)
-
- Modifications:
+ Modifications: 1/24/20 LH Adapted for Bernallilo/ABQ
 **************************************************************************/
 
 %include "L:\SAS\Inc\StdLocal.sas";
 
 ** Define libraries **;
-%DCData_lib( RegHsg )
+%DCData_lib( Requests )
 ** Year range for preservation targets **;
-%let Startyr = 2015;
+%let Startyr = 2020;
 %let Endyr = 2999;  /** No upper year limit **/
 *Create property and unit counts for individual programs**;
 
-proc format;
-	value COG
-    1= "COG county"
-    0="Non COG county";
 
-run;
 proc format;
 	value ActiveUnits
     1= "Active subsidies"
@@ -72,7 +51,7 @@ run;
 
 proc format;
   value yearrng
-    2015-2020 = '2015 - 2020'
+    2020 = '2020'
     2021-2025 = '2021 - 2025'
     2026-2030 = '2026 - 2030'
     2031-2035 = '2031 - 2035'
@@ -82,28 +61,23 @@ proc format;
 	2051-2055 = '2051 - 2055'
 	2056-high = '2056 or higher';
 run;
-proc format;
-	value Jurisdiction
-		1= "DC"
-		2= "Charles County"
-		3= "Frederick County "
-		4="Montgomery County"
-		5="Prince Georges "
-		6="Arlington"
-		7="Fairfax, Fairfax city and Falls Church"
-		8="Loudoun"
-		9="Prince William, Manassas and Manassas Park"
-		10="Alexandria"
-		;
+
+
+proc freq data=requests.natlpres_activeandinc_prop_abq;
+tables propertystatus;
+run;
+
+Proc print data=requests.natlpres_activeandinc_prop_abq;
+var PropertyName PropertyAddress City State Zip TotalUnits;
+where Propertystatus="Inconclusive";
+run; 
 
 
 data Work.Allassistedunits;
-	set RegHsg.Natlpres_activeandinc_prop;
-	if CountyCode in ("11001", "24017", "24021", "24031", "24033", "51013", "51059", "51107", "51153", "51510", "51600", "51610", "51683", "51685") then COGregion =1;
-  	else COGregion=0;
-  	format COGregion COG. ;
+	set requests.natlpres_activeandinc_prop_abq;
+
 	ucounty = CountyCode;
-	%ucounty_jurisdiction;
+
 	s8_all_assistedunits=min(sum(s8_1_AssistedUnits, s8_2_AssistedUnits,0),TotalUnits);
 	s202_all_assistedunits=min(sum(s202_1_AssistedUnits, s202_2_AssistedUnits,0),TotalUnits);
 	s236_all_assistedunits=min(sum(s236_1_AssistedUnits, s236_2_AssistedUnits,0),TotalUnits);
@@ -162,6 +136,8 @@ data Work.Allassistedunits;
 
 	format State_activeunits PH_activeunits HOME_activeunits rhs538_activeunits rhs515_activeunits
 	LIHTC_activeunits FHA_activeunits s236_activeunits s202_activeunits s8_activeunits ActiveUnits.;
+
+	city=propcase(city);
 run;
 
 ** Check assisted unit counts and flags **;
@@ -350,12 +326,11 @@ run;
 
 options missing=' ';
 
-ods csvall  body="&_dcdata_default_path\RegHsg\Prog\Subsidized_unit_counts_unique.csv";
+ods csvall  body="&_dcdata_default_path\Requests\Prog\2020\Subsidized_unit_counts_unique_ABQ.csv";
 
 title3 "Project and assisted unit unique counts";
 
 proc tabulate data=Work.ConstructionDates  format=comma10. noseps missing;
-  where COGRegion=1;
   class ProgCat / preloadfmt order=data;
   var mid_assistedunits moe_assistedunits;
   table
@@ -370,36 +345,35 @@ run;
 
 ods csvall close;
 
-ods csvall  body="&_dcdata_default_path\RegHsg\Prog\Subsidized_unit_counts_jurisdiction.csv";
+ods csvall  body="&_dcdata_default_path\Requests\Prog\2020\Subsidized_unit_counts_jurisdiction.csv";
 
-title3 "Projects and assisted units breakdown by jurisdiction";
+title3 "Projects and assisted units breakdown by city";
 
 
 proc tabulate data=Work.ConstructionDates format=comma10. noseps missing;
-  where COGRegion=1 and not missing(jurisdiction);
   class ProgCat / preloadfmt order=data;
-  class jurisdiction;
+  class city;
   var mid_assistedunits moe_assistedunits;
   table
     /** Rows **/
     all='Total' ProgCat=' ',
     /** Columns **/
     n='Projects'    
-    sum='Assisted Units By Jurisdiction' * (  all='Total' jurisdiction=' ' ) 
+    sum='Assisted Units By City' * (  all='Total' City=' ' ) 
       * (  mid_assistedunits='Est.' moe_assistedunits='+/-' )
     ;
-  format ProgCat ProgCat. jurisdiction jurisdiction.;
+  format ProgCat ProgCat. ;
 run;
 
 ods csvall close;
 
-ods csvall  body="&_dcdata_default_path\RegHsg\Prog\Subsidized_unit_counts_expire.csv";
+ods csvall  body="&_dcdata_default_path\Requests\Prog\2020\Subsidized_unit_counts_expire.csv";
 
 title3 "Projects and assisted units with expiring subsidies";
 footnote1 "LIHTC expiration includes 15-year compliance and 30-year subsidy end dates.";
 
 proc tabulate data=Work.ConstructionDates format=comma10. noseps missing;
-  where COGRegion=1 and not missing(earliest_expirationdate15);
+  where not missing(earliest_expirationdate15);
   class ProgCat / preloadfmt order=data;
   class earliest_expirationdate15;
   var mid_assistedunits moe_assistedunits;
@@ -417,13 +391,13 @@ run;
 ods csvall close;
 
 /*Section 8*/
-ods csvall body="&_dcdata_default_path\RegHsg\Prog\Subsidized_unit_counts_s8.csv";
+ods csvall body="&_dcdata_default_path\Requests\Prog\2020\Subsidized_unit_counts_s8.csv";
 
 title3 "Section 8 projects and assisted units with expiring subsidies";
 footnote1;
 
 proc tabulate data=Work.ConstructionDates format=comma10. noseps missing;
-  where COGRegion=1 and not missing(s8_endyr);
+  where not missing(s8_endyr);
   class s8_endyr;
   var s8_all_assistedunits;
   table 
@@ -439,13 +413,13 @@ run;
 ods csvall close;
 
 /*S202*/
-ods csvall body="&_dcdata_default_path\RegHsg\Prog\Subsidized_unit_counts_s202.csv";
+ods csvall body="&_dcdata_default_path\Requests\Prog\2020\Subsidized_unit_counts_s202.csv";
 
 title3 "Section 202 projects and assisted units with expiring subsidies";
 footnote1;
 
 proc tabulate data=Work.ConstructionDates format=comma10. noseps missing;
-  where COGRegion=1 and not missing(s202_endyr);
+  where not missing(s202_endyr);
   class s202_endyr;
   var s202_all_assistedunits;
   table 
@@ -461,13 +435,13 @@ run;
 ods csvall close;
 
 /*S236*/
-ods csvall body="&_dcdata_default_path\RegHsg\Prog\Subsidized_unit_counts_s236.csv";
+ods csvall body="&_dcdata_default_path\Requests\Prog\2020\Subsidized_unit_counts_s236.csv";
 
 title3 "Section 236 projects and assisted units with expiring subsidies";
 footnote1;
 
 proc tabulate data=Work.ConstructionDates format=comma10. noseps missing;
-  where COGRegion=1 and not missing(s236_endyr);
+  where not missing(s236_endyr);
   class s236_endyr;
   var s236_all_assistedunits;
   table 
@@ -483,13 +457,13 @@ run;
 ods csvall close;
 
 /*FHA*/
-ods csvall body="&_dcdata_default_path\RegHsg\Prog\Subsidized_unit_counts_FHA.csv";
+ods csvall body="&_dcdata_default_path\Requests\Prog\2020\Subsidized_unit_counts_FHA.csv";
 
 title3 "FHA projects and assisted units with expiring subsidies";
 footnote1;
 
 proc tabulate data=Work.ConstructionDates format=comma10. noseps missing;
-  where COGRegion=1 and not missing(FHA_endyr);
+  where not missing(FHA_endyr);
   class FHA_endyr;
   var FHA_all_assistedunits;
   table 
@@ -505,13 +479,13 @@ run;
 ods csvall close;
 
 /*LIHTC*/
-ods csvall body="&_dcdata_default_path\RegHsg\Prog\Subsidized_unit_counts_LIHTC.csv";
+ods csvall body="&_dcdata_default_path\Requests\Prog\2020\Subsidized_unit_counts_LIHTC.csv";
 
 title3 "LIHTC projects and assisted units with expiring subsidies";
 footnote1;
 
 proc tabulate data=Work.ConstructionDates format=comma10. noseps missing;
-  where COGRegion=1 and not missing(LIHTC_endyr);
+  where not missing(LIHTC_endyr);
   class LIHTC_endyr;
   var LIHTC_all_assistedunits;
   table 
@@ -527,13 +501,13 @@ run;
 ods csvall close;
 
 /*LIHTC-15year*/
-ods csvall body="&_dcdata_default_path\RegHsg\Prog\Subsidized_unit_counts_LIHTC15yr.csv";
+ods csvall body="&_dcdata_default_path\Requests\Prog\2020\Subsidized_unit_counts_LIHTC15yr.csv";
 
 title3 "LIHTC projects and assisted units with expiring subsidies, 15 year dates";
 footnote1;
 
 proc tabulate data=Work.ConstructionDates format=comma10. noseps missing;
-  where COGRegion=1 and not missing(LIHTC_15yr);
+  where not missing(LIHTC_15yr);
   class LIHTC_15yr;
   var LIHTC_all_assistedunits;
   table 
@@ -549,13 +523,13 @@ run;
 ods csvall close;
 
 /*RHS515*/
-ods csvall body="&_dcdata_default_path\RegHsg\Prog\Subsidized_unit_counts_rhs515.csv";
+ods csvall body="&_dcdata_default_path\Requests\Prog\2020\Subsidized_unit_counts_rhs515.csv";
 
 title3 "RHS 515 projects and assisted units with expiring subsidies";
 footnote1;
 
 proc tabulate data=Work.ConstructionDates format=comma10. noseps missing;
-  where COGRegion=1 and not missing(RHS515_endyr);
+  where not missing(RHS515_endyr);
   class RHS515_endyr;
   var RHS515_all_assistedunits;
   table 
@@ -571,13 +545,13 @@ run;
 ods csvall close;
 
 /*RHS538*/
-ods csvall body="&_dcdata_default_path\RegHsg\Prog\Subsidized_unit_counts_rhs538.csv";
+ods csvall body="&_dcdata_default_path\Requests\Prog\2020\Subsidized_unit_counts_rhs538.csv";
 
 title3 "RHS 538 projects and assisted units with expiring subsidies";
 footnote1;
 
 proc tabulate data=Work.ConstructionDates format=comma10. noseps missing;
-  where COGRegion=1 and not missing(RHS538_endyr);
+  where not missing(RHS538_endyr);
   class RHS538_endyr;
   var RHS538_all_assistedunits;
   table 
@@ -593,13 +567,13 @@ run;
 ods csvall close;
 
 /*HOME*/
-ods csvall body="&_dcdata_default_path\RegHsg\Prog\Subsidized_unit_counts_HOME.csv";
+ods csvall body="&_dcdata_default_path\Requests\Prog\2020\Subsidized_unit_counts_HOME.csv";
 
 title3 "HOME projects and assisted units with expiring subsidies";
 footnote1;
 
 proc tabulate data=Work.ConstructionDates format=comma10. noseps missing;
-  where COGRegion=1 and not missing(HOME_endyr);
+  where not missing(HOME_endyr);
   class HOME_endyr;
   var HOME_all_assistedunits;
   table 
@@ -615,12 +589,12 @@ run;
 ods csvall close;
 
 /*Public Housing*/
-ods csvall  body="&_dcdata_default_path\RegHsg\Prog\PH_unit_counts.csv";
+ods csvall  body="&_dcdata_default_path\Requests\Prog\2020\PH_unit_counts.csv";
 
 title3 "Public housing projects and assisted units with latest construction dates";
 
 proc tabulate data=Work.ConstructionDates format=comma10. noseps missing;
-  where COGRegion=1 and not missing(PHConstructionDate);
+  where not missing(PHConstructionDate);
   class ProgCat / preloadfmt order=data;
   class timecount;
   var mid_assistedunits moe_assistedunits;
