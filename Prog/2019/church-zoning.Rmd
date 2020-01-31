@@ -109,57 +109,10 @@ churches1 <- churches %>%
 
 ```
 
-## Calculate units
 
-### All parcels
+## Vacant parcels
 
-Calculate for 1, 2, 4, and 5 story buildings.
-
-```{r}
-
-calc_units <- function(floors = 1,
-                       sq_feet = 950) {
-  
-  totals <- churches1 %>% 
-    mutate(units = units_base * floors) %>% 
-    group_by(county_name) %>% 
-    summarize(parcels = n(),
-              total_area = sum(lotsize_sqfeet, na.rm = TRUE),
-              empty_parcels = sum(buildingarea == 0, na.rm = TRUE),
-              average_empty = mean(lotsize_sqfeet[buildingarea == 0], na.rm = TRUE),
-              total_empty_lot = sum(lotsize_sqfeet[buildingarea == 0], na.rm = TRUE),
-              avg_units = mean(units[buildingarea == 0], na.rm = TRUE),
-              units = sum(units[buildingarea == 0], na.rm = TRUE)) %>% 
-    mutate(residential = "Total")
-  
-  
-  all <- churches1 %>% 
-    mutate(units = units_base * floors) %>% 
-    group_by(county_name, residential) %>% 
-    summarize(parcels = n(),
-              total_area = sum(lotsize_sqfeet, na.rm = TRUE),
-              empty_parcels = sum(buildingarea == 0, na.rm = TRUE),
-              average_empty = mean(lotsize_sqfeet[buildingarea == 0], na.rm = TRUE),
-              total_empty_lot = sum(lotsize_sqfeet[buildingarea == 0], na.rm = TRUE),
-              avg_units = mean(units[buildingarea == 0], na.rm = TRUE),
-              units = sum(units[buildingarea == 0], na.rm = TRUE)) %>% 
-    bind_rows(totals) %>% 
-    arrange(county_name, residential)
-  
-
-write_csv(all, here::here("Prog", "2019",
-                          str_glue("church-lots_{floors}floors_empty.csv")))
-  
-
-}
-
-# walk(c(1, 2, 4, 5), ~ calc_units(floors = .))
-
-```
-
-### Vacant parcels
-
-Calculate for 2 and 5 buildings, using only vacant and empty parcels.
+Calculate units for 2 and 5 buildings, using only vacant and empty parcels.
 
 ```{r}
 
@@ -210,7 +163,6 @@ calc_units_vacant <- function(sq_feet = 950) {
               avg_units_5fl = mean(units[buildingarea == 0], na.rm = TRUE) * 5,
               total_units_5fl = sum(units[buildingarea == 0], na.rm = TRUE) * 5) %>% 
     bind_rows(totals) %>% 
-    mutate_if(is.numeric, ~ round(., 0)) %>% 
     left_join(total_area, by = c("residential", "county_name")) %>% 
     arrange(desc(residential), county_name) %>% 
     select(county_name, residential, total_parcels, total_area_sqft, total_area_acres,
