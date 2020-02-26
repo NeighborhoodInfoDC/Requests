@@ -105,7 +105,40 @@ churches1 <- churches %>%
          residential = ifelse(is.na(zoning),
                               "Missing zoning information",
                               residential),
-         units_base = floor((lotsize_sqfeet * .75) / 950))
+         units_base = floor((lotsize_sqfeet * .75) / 950),
+         units_2fl = units_base * 2,
+         units_5fl = units_base * 5)
+
+
+## Create extract for city of DC
+
+churches_export <- churches1 %>% 
+  filter(county_fips == "11001") %>% 
+  mutate(vacant_status = ifelse(vacant == 0,
+                                "Not vacant",
+                                "Vacant")) %>% 
+  mutate_at(vars(starts_with("units")),
+         ~ ifelse(vacant == 0 | buildingarea > 0,
+                  NA,
+                  .)) %>% 
+  select(county_name, county_fips,
+         assessorsparcelnumberapnpin,
+         starts_with("property"),
+         -propertyaddresssourceflag,
+         assesseeownername,
+         countylandusedescription,
+         zoning,
+         lotsize_sqfeet,
+         buildingarea,
+         ownername_full,
+         Ownercat,
+         residential,
+         vacant_status,
+         starts_with("units"))
+
+write_csv(churches_export,
+          here::here("Prog", "2019", "church-parcels-units.csv"),
+          na = "")
 
 ```
 
