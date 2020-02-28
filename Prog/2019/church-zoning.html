@@ -1,11 +1,10 @@
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
 
 <head>
 
 <meta charset="utf-8" />
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta name="generator" content="pandoc" />
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
@@ -149,6 +148,7 @@ summary {
   border: none;
   display: inline-block;
   border-radius: 4px;
+  background-color: transparent;
 }
 
 .tabset-dropdown > .nav-tabs.nav-tabs-open > li {
@@ -180,6 +180,12 @@ summary {
 }
 }
 
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
 
 .toc-content {
   padding-left: 30px;
@@ -267,7 +273,7 @@ div.tocify {
 <p>Library: Requests</p>
 <p>Author: Sarah Strochak</p>
 <p>Version: R 3.6.1</p>
-<p>Last updated November 11, 2019</p>
+<p>Last updated January 31, 2020</p>
 <p>Environment: Local Windows session (desktop)</p>
 <pre class="r"><code>options(scipen = 999)
 
@@ -348,100 +354,69 @@ churches &lt;- urbnmapr::get_urbn_map(map = &quot;counties&quot;, sf = TRUE) %&g
                               residential),
          units_base = floor((lotsize_sqfeet * .75) / 950))</code></pre>
 </div>
-<div id="calculate-units" class="section level2">
-<h2>Calculate units</h2>
-<div id="all-parcels" class="section level3">
-<h3>All parcels</h3>
-<p>Calculate for 1, 2, 4, and 5 story buildings.</p>
-<pre class="r"><code>calc_units &lt;- function(floors = 1,
-                       sq_feet = 950) {
-  
-  totals &lt;- churches1 %&gt;% 
-    mutate(units = units_base * floors) %&gt;% 
-    group_by(county_name) %&gt;% 
-    summarize(parcels = n(),
-              total_area = sum(lotsize_sqfeet, na.rm = TRUE),
-              empty_parcels = sum(buildingarea == 0, na.rm = TRUE),
-              average_empty = mean(lotsize_sqfeet[buildingarea == 0], na.rm = TRUE),
-              total_empty_lot = sum(lotsize_sqfeet[buildingarea == 0], na.rm = TRUE),
-              avg_units = mean(units[buildingarea == 0], na.rm = TRUE),
-              units = sum(units[buildingarea == 0], na.rm = TRUE)) %&gt;% 
-    mutate(residential = &quot;Total&quot;)
-  
-  
-  all &lt;- churches1 %&gt;% 
-    mutate(units = units_base * floors) %&gt;% 
-    group_by(county_name, residential) %&gt;% 
-    summarize(parcels = n(),
-              total_area = sum(lotsize_sqfeet, na.rm = TRUE),
-              empty_parcels = sum(buildingarea == 0, na.rm = TRUE),
-              average_empty = mean(lotsize_sqfeet[buildingarea == 0], na.rm = TRUE),
-              total_empty_lot = sum(lotsize_sqfeet[buildingarea == 0], na.rm = TRUE),
-              avg_units = mean(units[buildingarea == 0], na.rm = TRUE),
-              units = sum(units[buildingarea == 0], na.rm = TRUE)) %&gt;% 
-    bind_rows(totals) %&gt;% 
-    arrange(county_name, residential)
-  
-
-write_csv(all, here::here(&quot;Prog&quot;, &quot;2019&quot;,
-                          str_glue(&quot;church-lots_{floors}floors_empty.csv&quot;)))
-  
-
-}
-
-walk(c(1, 2, 4, 5), ~ calc_units(floors = .))</code></pre>
-</div>
-<div id="vacant-parcels" class="section level3">
-<h3>Vacant parcels</h3>
-<p>Calculate for 1, 2, 4, and 5 story buildings.</p>
-<pre class="r"><code>calc_units_vacant &lt;- function(floors = 1,
-                       sq_feet = 950) {
+<div id="vacant-parcels" class="section level2">
+<h2>Vacant parcels</h2>
+<p>Calculate units for 2 and 5 buildings, using only vacant and empty parcels.</p>
+<pre class="r"><code>calc_units_vacant &lt;- function(sq_feet = 950) {
   
   
   total_area &lt;- churches1 %&gt;% 
     group_by(county_name) %&gt;% 
-    summarize(total_area = sum(lotsize_sqfeet, na.rm = TRUE)) %&gt;% 
+    summarize(total_parcels = n(),
+              total_area_sqft = sum(lotsize_sqfeet, na.rm = TRUE),
+              total_area_acres = total_area_sqft / 43560) %&gt;% 
     mutate(residential = &quot;Total&quot;) %&gt;% 
     bind_rows(churches1 %&gt;% 
                 group_by(county_name, residential) %&gt;% 
-                summarize(total_area = sum(lotsize_sqfeet, na.rm = TRUE)))
+                summarize(total_parcels = n(),
+                          total_area_sqft = sum(lotsize_sqfeet, na.rm = TRUE),
+                          total_area_acres = total_area_sqft / 43560))
   
   totals &lt;- churches1 %&gt;% 
     filter(vacant == 1) %&gt;% 
-    mutate(units = units_base * floors) %&gt;% 
+    mutate(units = units_base) %&gt;% 
     group_by(county_name) %&gt;% 
-    summarize(parcels = n(),
+    summarize(vacant_parcels = n(),
               empty_parcels = sum(buildingarea == 0, na.rm = TRUE),
-              average_empty = mean(lotsize_sqfeet[buildingarea == 0], na.rm = TRUE),
-              total_empty_lot = sum(lotsize_sqfeet[buildingarea == 0], na.rm = TRUE),
-              avg_units = mean(units[buildingarea == 0], na.rm = TRUE),
-              units = sum(units[buildingarea == 0], na.rm = TRUE)) %&gt;% 
+              total_empty_lot_sqft = sum(lotsize_sqfeet[buildingarea == 0], na.rm = TRUE),
+              total_empty_lot_acres = total_empty_lot_sqft / 43560,
+              average_empty_sqft = mean(lotsize_sqfeet[buildingarea == 0], na.rm = TRUE),
+              average_empty_acres = average_empty_sqft / 43560,
+              avg_units_2fl = mean(units[buildingarea == 0], na.rm = TRUE) * 2,
+              total_units_2fl = sum(units[buildingarea == 0], na.rm = TRUE) * 2,
+              avg_units_5fl = mean(units[buildingarea == 0], na.rm = TRUE) * 5,
+              total_units_5fl = sum(units[buildingarea == 0], na.rm = TRUE) * 5) %&gt;% 
     mutate(residential = &quot;Total&quot;)
   
   
   all &lt;- churches1 %&gt;% 
     filter(vacant == 1) %&gt;% 
-    mutate(units = units_base * floors) %&gt;% 
+    mutate(units = units_base) %&gt;% 
     group_by(county_name, residential) %&gt;% 
-    summarize(parcels = n(),
+    summarize(vacant_parcels = n(),
               empty_parcels = sum(buildingarea == 0, na.rm = TRUE),
-              average_empty = mean(lotsize_sqfeet[buildingarea == 0], na.rm = TRUE),
-              total_empty_lot = sum(lotsize_sqfeet[buildingarea == 0], na.rm = TRUE),
-              avg_units = mean(units[buildingarea == 0], na.rm = TRUE),
-              units = sum(units[buildingarea == 0], na.rm = TRUE)) %&gt;% 
+              total_empty_lot_sqft = sum(lotsize_sqfeet[buildingarea == 0], na.rm = TRUE),
+              total_empty_lot_acres = total_empty_lot_sqft / 43560,
+              average_empty_sqft = mean(lotsize_sqfeet[buildingarea == 0], na.rm = TRUE),
+              average_empty_acres = average_empty_sqft / 43560,
+              avg_units_2fl = mean(units[buildingarea == 0] * 2, na.rm = TRUE),
+              total_units_2fl = sum(units[buildingarea == 0] * 2, na.rm = TRUE),
+              avg_units_5fl = mean(units[buildingarea == 0], na.rm = TRUE) * 5,
+              total_units_5fl = sum(units[buildingarea == 0], na.rm = TRUE) * 5) %&gt;% 
     bind_rows(totals) %&gt;% 
     left_join(total_area, by = c(&quot;residential&quot;, &quot;county_name&quot;)) %&gt;% 
-    arrange(county_name, residential)
+    arrange(desc(residential), county_name) %&gt;% 
+    select(county_name, residential, total_parcels, total_area_sqft, total_area_acres,
+           everything())
   
   
-write_csv(all, here::here(&quot;Prog&quot;, &quot;2019&quot;, 
-                          str_glue(&quot;church-lots_{floors}floors_empty_vacant.csv&quot;)))
+  write_csv(all, here::here(&quot;Prog&quot;, &quot;2019&quot;, 
+                            &quot;church-lots_options_empty_vacant.csv&quot;))
   
-
+  
 }
 
-walk(c(1, 2, 4, 5), ~ calc_units_vacant(floors = .))</code></pre>
-</div>
+calc_units_vacant()</code></pre>
 </div>
 
 
