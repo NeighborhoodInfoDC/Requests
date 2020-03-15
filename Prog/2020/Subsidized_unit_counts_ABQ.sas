@@ -138,6 +138,8 @@ data Work.Allassistedunits;
 	then State_activeunits = 1;
 	else State_activeunits = 0;
 
+	if LIHTC_1_Status  = "Active" and LIHTC_all_assistedunits in(. 0) and TotalUnits ~=. then LIHTC_activeunits = 1;
+
 	format State_activeunits PH_activeunits HOME_activeunits rhs538_activeunits rhs515_activeunits
 	LIHTC_activeunits FHA_activeunits s236_activeunits s202_activeunits s8_activeunits ActiveUnits.;
 
@@ -205,7 +207,11 @@ data Work.SubsidyCategories;
 
 	run;
 
-** Check project category coding **;
+proc print data=requests.natlpres_activeandinc_prop_abq;
+where NHPDPropertyID="1104551";
+*var totalunits LIHTC_1_AssistedUnits LIHTC_2_AssistedUnits;
+run;
+	** Check project category coding **;
 
 proc sort data=Work.SubsidyCategories;
   by ProgCat;
@@ -226,6 +232,10 @@ run;
 data Work.SubsidyExpirationDates;
 
   set Work.SubsidyCategories;
+
+  If (progcat=6 and LIHTC_all_assistedunits=0 and  LIHTC_1_Status = "Active") 
+		then LIHTC_all_assistedunits=TotalUnits; 
+
 
   min_assistedunits = max( s8_all_assistedunits, s202_all_assistedunits, s236_all_assistedunits,FHA_all_assistedunits,
 	LIHTC_all_assistedunits,rhs515_all_assistedunits,rhs538_all_assistedunits,HOME_all_assistedunits ,PH_all_assistedunits,0);
@@ -323,10 +333,11 @@ run;
 
 proc means data=Work.ConstructionDates n mean min max;
   by ProgCat;
-  var min_assistedunits max_assistedunits mid_assistedunits moe_assistedunits 
+  var  min_assistedunits max_assistedunits mid_assistedunits moe_assistedunits 
       earliest_expirationdate latest_expirationdate;
   format ProgCat ProgCat.;
 run;
+
 
 options missing=' ';
 ods csvall  body="&_dcdata_default_path\Requests\Prog\2020\Subsidized_unit_counts_jurisdiction.csv";
