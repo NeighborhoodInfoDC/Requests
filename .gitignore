@@ -61,6 +61,7 @@ Prog/Temp/
 
 # Other
 *.bat
+*.ps1
 Thumbs.db
 .Rproj.user
 
