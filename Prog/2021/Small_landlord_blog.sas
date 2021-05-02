@@ -57,7 +57,7 @@ data Small_landlord;
 
   end;
   
-  label owner_state = "Owner's state";
+  label owner_state = "Owner's state from property tax billing address";
   
   drop i;
     
@@ -75,7 +75,8 @@ run;
     all='Total'
     &row=' ',
     /** Columns **/
-    sum=' ' * ( total='Parcels' adj_unit_count='Units' )
+    total='Parcels' * ( sum='Number' colpctsum='Percent' * f=comma12.1 )
+    adj_unit_count='Housing units' * ( sum='Number' colpctsum='Percent' * f=comma12.1 ) 
   /rts=60 box=&row
   ;
 
@@ -95,16 +96,26 @@ proc format;
     . = 'Unknown';
 run;
 
+%fdate()
+
+ods rtf file="&_dcdata_default_path\Requests\Prog\2021\Small_landlord_blog.rtf" style=Styles.Rtf_arial_9pt;
+options nodate nonumber;
+
+footnote1 height=9pt "Prepared by Urban-Greater DC (greaterdc.urban.org), &fdate..";
+footnote2 height=9pt j=r '{Page}\~{\field{\*\fldinst{\pard\b\i0\chcbpat8\qc\f1\fs19\cf1{PAGE }\cf0\chcbpat0}}}';
+
 title2 "INCLUDING taxable/nontaxable corporations, partnerships, associations";
 
 proc tabulate data=Small_landlord format=comma12.0 noseps missing;
-  class ui_proptype ownercat ward2012 rent_controlled adj_unit_count_owner_max Trust_flag;
+  class ui_proptype usecode ownercat rent_controlled Owner_state Zip ward2012 Trust_flag /order=freq;
   class year_built_min /order=data preloadfmt;
-  class Owner_state /order=freq;
+  class adj_unit_count_owner_max;
   var total adj_unit_count;
   %table_stmt( row=ownercat )
   %table_stmt( row=ui_proptype )
+  %table_stmt( row=usecode )
   %table_stmt( row=ward2012 )
+  %table_stmt( row=Zip )
   %table_stmt( row=rent_controlled )
   %table_stmt( row=year_built_min )
   %table_stmt( row=adj_unit_count_owner_max )
@@ -118,13 +129,15 @@ title2 "EXCLUDING taxable/nontaxable corporations, partnerships, associations";
 
 proc tabulate data=Small_landlord format=comma12.0 noseps missing;
   where ownercat not in ( '111', '115' );
-  class ui_proptype ownercat ward2012 rent_controlled adj_unit_count_owner_max Trust_flag;
+  class ui_proptype usecode ownercat rent_controlled Owner_state Zip ward2012 Trust_flag /order=freq;
   class year_built_min /order=data preloadfmt;
-  class Owner_state /order=freq;
+  class adj_unit_count_owner_max;
   var total adj_unit_count;
   %table_stmt( row=ownercat )
   %table_stmt( row=ui_proptype )
+  %table_stmt( row=usecode )
   %table_stmt( row=ward2012 )
+  %table_stmt( row=Zip )
   %table_stmt( row=rent_controlled )
   %table_stmt( row=year_built_min )
   %table_stmt( row=adj_unit_count_owner_max )
@@ -133,6 +146,10 @@ proc tabulate data=Small_landlord format=comma12.0 noseps missing;
   format year_built_min year_built.;
 run;
 
+title2;
+footnote1;
+
+ods rtf close;
 
 
 ** Export data for review **;
