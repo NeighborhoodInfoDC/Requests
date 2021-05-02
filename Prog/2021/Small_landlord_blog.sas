@@ -49,7 +49,7 @@ data Small_landlord;
   do i = 1 to 10 by 1 until( missing( scan( address3, i ) ) );
   
     if length( scan( address3, i ) ) = 2 then do;
-      if not missing( stfips( left( scan( address3, i ) ) ) ) then do;
+      if not missing( stfips( left( upcase( scan( address3, i ) ) ) ) ) then do;
         owner_state = stnamel( left( upcase( scan( address3, i ) ) ) );
         leave;
       end;
