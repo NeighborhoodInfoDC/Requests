@@ -107,7 +107,7 @@ footnote2 height=9pt j=r '{Page}\~{\field{\*\fldinst{\pard\b\i0\chcbpat8\qc\f1\f
 title2 "INCLUDING taxable/nontaxable corporations, partnerships, associations";
 
 proc tabulate data=Small_landlord format=comma12.0 noseps missing;
-  class ui_proptype usecode ownercat rent_controlled Owner_state Zip ward2012 Trust_flag /order=freq;
+  class ui_proptype usecode ownercat rent_controlled Owner_state owner_occ_sale Zip ward2012 Trust_flag /order=freq;
   class year_built_min /order=data preloadfmt;
   class adj_unit_count_owner_max;
   var total adj_unit_count;
@@ -121,6 +121,7 @@ proc tabulate data=Small_landlord format=comma12.0 noseps missing;
   %table_stmt( row=adj_unit_count_owner_max )
   %table_stmt( row=Trust_flag )
   %table_stmt( row=Owner_state )
+  %table_stmt( row=owner_occ_sale )
   format year_built_min year_built.;
 run;
 
@@ -129,7 +130,7 @@ title2 "EXCLUDING taxable/nontaxable corporations, partnerships, associations";
 
 proc tabulate data=Small_landlord format=comma12.0 noseps missing;
   where ownercat not in ( '111', '115' );
-  class ui_proptype usecode ownercat rent_controlled Owner_state Zip ward2012 Trust_flag /order=freq;
+  class ui_proptype usecode ownercat rent_controlled Owner_state owner_occ_sale Zip ward2012 Trust_flag /order=freq;
   class year_built_min /order=data preloadfmt;
   class adj_unit_count_owner_max;
   var total adj_unit_count;
@@ -143,6 +144,7 @@ proc tabulate data=Small_landlord format=comma12.0 noseps missing;
   %table_stmt( row=adj_unit_count_owner_max )
   %table_stmt( row=Trust_flag )
   %table_stmt( row=Owner_state )
+  %table_stmt( row=owner_occ_sale )
   format year_built_min year_built.;
 run;
 
