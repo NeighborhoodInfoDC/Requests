@@ -20,6 +20,7 @@
 %DCData_lib( Requests )
 %DCData_lib( DHCD )
 %DCData_lib( RealProp )
+%DCData_lib( ACS )
 
 
 ** Multifamily properties owned by owners of 2 - 19 units 
@@ -69,6 +70,36 @@ data Small_landlord;
   
   drop i;
     
+run;
+
+
+** Create counts of rental units by ward (renter-occupied + vacant-for-rent + rented not occupied) **;
+
+%Transform_geo_data(
+    dat_ds_name=Acs.Acs_sf_2015_19_dc_tr10,
+    dat_org_geo=geo2010,
+    dat_count_vars=b25004e2 b25004e3 b25032e13,
+    dat_prop_vars=,
+    wgt_ds_name=General.Wt_tr10_ward12,
+    wgt_org_geo=geo2010,
+    wgt_new_geo=ward2012,
+    wgt_id_vars=,
+    wgt_wgt_var=popwt,
+    out_ds_name=acs_rental_units_wd12,
+    out_ds_label=,
+    calc_vars=
+      numrenterunits_2015_19 = b25004e2 + b25004e3 + b25032e13;
+    ,
+    calc_vars_labels=,
+    keep_nonmatch=N,
+    show_warnings=10,
+    print_diag=Y,
+    full_diag=N
+  )
+
+proc print data=acs_rental_units_wd12;
+  id ward2012;
+  sum numrenterunits_2015_19 b25004e2 b25004e3 b25032e13; 
 run;
 
 
@@ -185,6 +216,45 @@ proc tabulate data=Small_landlord format=comma12.0 noseps missing;
   %table_stmt( row=owner_occ_sale )
   format year_built_min year_built. adj_prop_count_owner_max num_properties. cluster2017 $clus17f.;
 run;
+
+title3;
+
+** Share of rental units owned by individual small landlords **;
+
+proc summary data=Small_landlord nway;
+  where ownercat not in ( '111', '115' );
+  class ward2012;
+  var adj_unit_count;
+  output out=Small_landlord_w12 sum=;
+run;
+
+data Small_landlord_w12_acs;
+
+  merge
+    Small_landlord_w12
+    acs_rental_units_wd12;
+  by ward2012;
+    
+  pct_adj_unit_count = adj_unit_count / numrenterunits_2015_19;
+
+run;
+
+proc sort data=Small_landlord_w12_acs;
+  by descending pct_adj_unit_count;
+run;
+
+proc tabulate data=Small_landlord_w12_acs format=comma12.0 noseps missing;
+  class ward2012 / order=data;
+  var adj_unit_count numrenterunits_2015_19;
+  table 
+    /** Rows **/
+    all='Total' ward2012=' ',
+    /** Columns **/
+    sum='Rental units' * ( numrenterunits_2015_19='All owners' adj_unit_count='Small landlords' )
+    pctsum<numrenterunits_2015_19>='Percent small landlord rental units' * adj_unit_count=' ' * f=comma12.1
+  ;
+run;
+
 
 title2;
 footnote1;
