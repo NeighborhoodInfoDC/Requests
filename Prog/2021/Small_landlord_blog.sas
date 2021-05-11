@@ -39,8 +39,11 @@ data Small_landlord;
   retain total 1;
   
   adj_unit_count_owner_max = max( adj_unit_count_ownername_sum, adj_unit_count_owner_add_sum );
+  adj_prop_count_owner_max = max( ownername_count, owner_add_count );
   
-  label adj_unit_count_owner_max = "Total units belonging to owner";
+  label 
+    adj_unit_count_owner_max = "Total units belonging to owner"
+    adj_prop_count_owner_max = "Total properties belonging to owner";
   
   ** Owner state var **;
   
@@ -58,6 +61,11 @@ data Small_landlord;
   end;
   
   label owner_state = "Owner's state from property tax billing address";
+  
+  label
+    ward2012 = "Property ward (2012)"
+    Zip = "Property ZIP code"
+    cluster2017 = "Property neighborhood cluster (2017)";
   
   drop i;
     
@@ -94,6 +102,8 @@ proc format;
     1980 - 1999 = '1980 - 1999'
     2000 - high = '2000 or later'
     . = 'Unknown';
+  value num_properties
+    5-high = '5 or more';
 run;
 
 %fdate()
@@ -107,22 +117,24 @@ footnote2 height=9pt j=r '{Page}\~{\field{\*\fldinst{\pard\b\i0\chcbpat8\qc\f1\f
 title2 "INCLUDING taxable/nontaxable corporations, partnerships, associations";
 
 proc tabulate data=Small_landlord format=comma12.0 noseps missing;
-  class ui_proptype usecode ownercat rent_controlled Owner_state owner_occ_sale Zip ward2012 Trust_flag /order=freq;
+  class ui_proptype usecode ownercat rent_controlled Owner_state owner_occ_sale Zip ward2012 cluster2017 Trust_flag /order=freq;
   class year_built_min /order=data preloadfmt;
-  class adj_unit_count_owner_max;
+  class adj_unit_count_owner_max adj_prop_count_owner_max;
   var total adj_unit_count;
   %table_stmt( row=ownercat )
   %table_stmt( row=ui_proptype )
   %table_stmt( row=usecode )
   %table_stmt( row=ward2012 )
   %table_stmt( row=Zip )
+  %table_stmt( row=cluster2017 )
   %table_stmt( row=rent_controlled )
   %table_stmt( row=year_built_min )
+  %table_stmt( row=adj_prop_count_owner_max )
   %table_stmt( row=adj_unit_count_owner_max )
   %table_stmt( row=Trust_flag )
   %table_stmt( row=Owner_state )
   %table_stmt( row=owner_occ_sale )
-  format year_built_min year_built.;
+  format year_built_min year_built. adj_prop_count_owner_max num_properties. cluster2017 $clus17f.;
 run;
 
 
@@ -130,22 +142,48 @@ title2 "EXCLUDING taxable/nontaxable corporations, partnerships, associations";
 
 proc tabulate data=Small_landlord format=comma12.0 noseps missing;
   where ownercat not in ( '111', '115' );
-  class ui_proptype usecode ownercat rent_controlled Owner_state owner_occ_sale Zip ward2012 Trust_flag /order=freq;
+  class ui_proptype usecode ownercat rent_controlled Owner_state owner_occ_sale Zip ward2012 cluster2017 Trust_flag /order=freq;
   class year_built_min /order=data preloadfmt;
-  class adj_unit_count_owner_max;
+  class adj_unit_count_owner_max adj_prop_count_owner_max;
+  var total adj_unit_count;
+  %table_stmt( row=ownercat )
+  %table_stmt( row=ui_proptype )
+  %table_stmt( row=usecode )
+  %table_stmt( row=ward2012 )
+  %table_stmt( row=cluster2017 )
+  %table_stmt( row=Zip )
+  %table_stmt( row=rent_controlled )
+  %table_stmt( row=year_built_min )
+  %table_stmt( row=adj_prop_count_owner_max )
+  %table_stmt( row=adj_unit_count_owner_max )
+  %table_stmt( row=Trust_flag )
+  %table_stmt( row=Owner_state )
+  %table_stmt( row=owner_occ_sale )
+  format year_built_min year_built. adj_prop_count_owner_max num_properties. cluster2017 $clus17f.;
+run;
+
+title3 "Owners living in DC only";
+
+proc tabulate data=Small_landlord format=comma12.0 noseps missing;
+  where ownercat not in ( '111', '115' ) and ownerdc;
+  class ui_proptype usecode ownercat rent_controlled Owner_state owner_occ_sale Zip ward2012 cluster2017 Trust_flag /order=freq;
+  class year_built_min /order=data preloadfmt;
+  class adj_unit_count_owner_max adj_prop_count_owner_max;
   var total adj_unit_count;
   %table_stmt( row=ownercat )
   %table_stmt( row=ui_proptype )
   %table_stmt( row=usecode )
   %table_stmt( row=ward2012 )
   %table_stmt( row=Zip )
+  %table_stmt( row=cluster2017 )
   %table_stmt( row=rent_controlled )
   %table_stmt( row=year_built_min )
+  %table_stmt( row=adj_prop_count_owner_max )
   %table_stmt( row=adj_unit_count_owner_max )
   %table_stmt( row=Trust_flag )
   %table_stmt( row=Owner_state )
   %table_stmt( row=owner_occ_sale )
-  format year_built_min year_built.;
+  format year_built_min year_built. adj_prop_count_owner_max num_properties. cluster2017 $clus17f.;
 run;
 
 title2;
