@@ -23,7 +23,7 @@
 %DCData_lib( ACS )
 
 
-** Multifamily properties owned by owners of 2 - 19 units 
+** Multifamily rental properties (not condo/coop) owned by owners of 2 - 19 units 
 ** Exclude properties owned by quasi-public entities, CDCs, schools, religious institutions, GSEs, and banks
 ** Exclude government-owned and assisted properties;
 
@@ -71,6 +71,14 @@ data Small_landlord;
   drop i;
     
 run;
+
+** Check for duplicate parcels **;
+
+%Dup_check(
+  data=Small_landlord,
+  by=ssl,
+  id=premiseadd
+)
 
 
 ** Create counts of rental units by ward (renter-occupied + vacant-for-rent + rented not occupied) **;
