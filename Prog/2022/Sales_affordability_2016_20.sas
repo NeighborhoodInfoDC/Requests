@@ -33,14 +33,16 @@ data create_flags;
   
   /*pull in effective interest rates - for example: 
   http://www.fhfa.gov/DataTools/Downloads/Documents/Historical-Summary-Tables/Table15_2018_by_State_and_Year.xls*/
+*averaged freddie mac weekly rates and converted to effective)
+https://urbanorg.app.box.com/file/933065867963;
   
 	sale_yr = year(saledate);
   
-	eff_int_rate_2016= 3.69;
-	eff_int_rate_2017= 3.96;
-	eff_int_rate_2018= 4.95;
-	eff_int_rate_2019= 3.95;
-	eff_int_rate_2020= 4.22;
+	eff_int_rate_2016= 3.72;
+	eff_int_rate_2017= 4.06;
+	eff_int_rate_2018= 4.64;
+	eff_int_rate_2019= 4.01;
+	eff_int_rate_2020= 3.16;
 
 		month_int_rate_2016 = (eff_int_rate_2016/12/100);
 		month_int_rate_2017 = (eff_int_rate_2017/12/100); 
@@ -106,7 +108,7 @@ data create_flags;
 	if PITI_First <= (72915 / 12 *.28) then black_first_afford=1; else black_first_afford=0; 
 		if PITI_Repeat <= (72915 / 12 *.28) then black_repeat_afford=1; else black_repeat_afford=0; 
 	if PITI_First <= (120441 / 12*.28) then hispanic_first_afford=1; else hispanic_first_afford=0; 
-		if PITI_Repeat <= (120441/ 12*.28 ) then hispanic_repeat_afford=1; else hispanic_repeat_afford=0; 
+		if PITI_Repeat <= (120441 / 12*.28 ) then hispanic_repeat_afford=1; else hispanic_repeat_afford=0; 
 	/*if PITI_First <= (76271 / 12*.28 ) then aiom_first_afford=1; else aiom_first_afford=0; 
 		if PITI_Repeat <= (76271 / 12*.28 ) then aiom_repeat_afford=1; else aiom_repeat_afford=0; 
 	*/
@@ -129,10 +131,22 @@ data create_flags;
 
 run;
 proc print data= create_flags (obs=25);
-var saleprice PITI_FIRST PITI_repeat white_first_afford black_first_afford hispanic_first_afford /*AIOM_first_afford*/;
-run;
+var ward2012 saleprice PITI_FIRST PITI_repeat white_first_afford black_first_afford hispanic_first_afford /*AIOM_first_afford*/;
+run; 
+
 proc freq data=create_flags; 
 tables white_first_afford black_first_afford hispanic_first_afford /*AIOM_first_afford*/; 
+run;
+*testing*;
+proc sort data=create_flags;
+by ward2012;
+proc univariate data=create_flags;
+by ward2012;
+var saleprice;
+run;
+proc print data =create_flags;
+var saleprice PITI_FIRST PITI_repeat white_first_afford black_first_afford hispanic_first_afford ;
+where ward2012="2" and PITI_FIRST <1701.35;
 run;
 *proc summary at city, ward, tract, and cluster levels - so you could get % of sales in Ward 7 affordable to 
 median white family vs. median black family.;
