@@ -34,11 +34,12 @@
 
 /** Macro Make_one_table - Start Definition **/
 
-%macro Make_one_table( fmt=npercent., col=, colfmt=, total=y, var=, text=, text2=, vlabel=, data=Voices.Voices_2017_nonopen_recode, typefmt=$coltype_pct. );
+%macro Make_one_table( where=(1), fmt=npercent., col=, colfmt=, total=y, var=, text=, text2=, vlabel=, data=Voices.Voices_2017_nonopen_recode, typefmt=$coltype_pct. );
 
   %local count rrden num_obs ref_rate;
   
   proc summary data=&data. nway;
+    where &where;
     class &col;
     var &var;
     weight weight;
@@ -46,12 +47,14 @@
   run;
 
   proc summary data=&data. nway;
+    where &where;
     class &col;
     var &var;
     output out=_Voices_se (drop=_type_ _freq_) stderr=;
   run;
 
   proc summary data=&data. nway;
+    where &where;
     class &col;
     var &var;
     output out=_Voices_n (drop=_type_ _freq_) n=;
@@ -59,7 +62,8 @@
   
   data _Voices_rrden_a;
   
-    set &data. (keep=&col &var.);
+    set &data.;
+    where &where;
     
     array a{*} &var;
     
@@ -67,6 +71,8 @@
       if a{i} = .n then a{i} = 0;
       else a{i} = 1;
     end;
+    
+    keep &col &var.;
     
   run;
   
@@ -197,7 +203,7 @@
 
 /** Macro Make_all_tables - Start Definition **/
 
-%macro Make_all_tables( indata=, list=, col=, colfmt=, title= );
+%macro Make_all_tables( indata=, list=, col=, colfmt=, title=, where= );
 
   %fdate()
 
@@ -214,6 +220,7 @@
 
   %Make_one_table( 
     data=Voices.Voices_2017_q1_q2_recode,
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     total=y,
@@ -235,6 +242,7 @@
 
   %Make_one_table( 
     data=Voices.Voices_2017_q1_q2_recode,
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     total=y,
@@ -255,6 +263,7 @@
 
   %Make_one_table( 
     data=Voices.Voices_2017_q1_q2_recode,
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     total=y,
@@ -276,6 +285,7 @@
 
   %Make_one_table( 
     data=Voices.Voices_2017_q1_q2_recode,
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     total=y,
@@ -295,6 +305,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     fmt=comma10.1,
@@ -305,6 +316,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q3_cat_:, 
@@ -312,6 +324,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q4_cat_:, 
@@ -319,6 +332,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q5_cat_:, 
@@ -326,6 +340,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q6_:, 
@@ -333,6 +348,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q7_:, 
@@ -340,6 +356,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q8_:, 
@@ -347,6 +364,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q9_:, 
@@ -354,6 +372,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q10_:, 
@@ -361,6 +380,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     total=n,
@@ -369,6 +389,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     total=n,
@@ -377,6 +398,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     total=n,
@@ -385,6 +407,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     total=n,
@@ -396,6 +419,7 @@
 
   ** Omit Q14_10 (other) for now **;
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     total=n,
@@ -404,6 +428,7 @@
   )
  
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     total=n,
@@ -511,6 +536,7 @@
 
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q17_:, 
@@ -518,6 +544,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q18_:, 
@@ -525,6 +552,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q19_:, 
@@ -532,6 +560,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q20_a_:, 
@@ -546,6 +575,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q20_b_:, 
@@ -560,6 +590,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q20_c_:, 
@@ -574,6 +605,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q20_d_:, 
@@ -588,6 +620,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q20_e_:, 
@@ -602,6 +635,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q20_f_:, 
@@ -616,6 +650,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q20_g_:, 
@@ -630,6 +665,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q20_h_:, 
@@ -646,6 +682,7 @@
   ** SKIP Q20i. Other FOR NOW **;
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=dQ21_a:, 
@@ -659,6 +696,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=dQ21_b:, 
@@ -672,6 +710,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=dQ21_c:, 
@@ -685,6 +724,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=dQ21_d:, 
@@ -698,6 +738,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=dQ21_e:, 
@@ -711,6 +752,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=dQ21_f:, 
@@ -724,6 +766,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q22_:, 
@@ -733,6 +776,7 @@
 
   ** Omit Q23_6 (other) for now **;
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     total=n,
@@ -741,6 +785,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q24_:, 
@@ -748,6 +793,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q25_:, 
@@ -755,6 +801,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q26_:, 
@@ -762,6 +809,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     total=n,
@@ -770,6 +818,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     total=n,
@@ -778,6 +827,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q29_:, 
@@ -785,6 +835,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q30_a_1-Q30_a_4, 
@@ -798,6 +849,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q30_b_1-Q30_b_4, 
@@ -811,6 +863,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     total=n,
@@ -819,6 +872,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q32_a_1-Q32_a_4, 
@@ -832,6 +886,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q32_b_1-Q32_b_4, 
@@ -845,6 +900,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q33_:, 
@@ -852,6 +908,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q34_:, 
@@ -859,6 +916,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=dQ35_a:, 
@@ -873,6 +931,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=dQ35_b:, 
@@ -887,6 +946,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=dQ35_c:, 
@@ -901,6 +961,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=dQ35_d:, 
@@ -915,6 +976,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=dQ35_e:, 
@@ -929,6 +991,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=dQ35_f:, 
@@ -943,6 +1006,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=dQ35_g:, 
@@ -957,6 +1021,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=dQ35_h:, 
@@ -971,6 +1036,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=dQ35_i:, 
@@ -985,6 +1051,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=dQ35_j:, 
@@ -999,6 +1066,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=dQ35_k:, 
@@ -1013,6 +1081,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=dQ35_l:, 
@@ -1027,6 +1096,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q36_:, 
@@ -1034,6 +1104,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=phy_health_:, 
@@ -1041,6 +1112,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=ment_health_:, 
@@ -1048,6 +1120,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=satisf_:, 
@@ -1055,6 +1128,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=worth_:, 
@@ -1062,6 +1136,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=happy_:, 
@@ -1069,6 +1144,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=anxious_:, 
@@ -1076,6 +1152,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     total=n,
@@ -1084,6 +1161,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=thriving suffering struggling, 
@@ -1091,6 +1169,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     total=n,
@@ -1099,6 +1178,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q43_:, 
@@ -1107,6 +1187,7 @@
 
   ** Omit Q44_n (other) for now **;
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     total=n,
@@ -1116,6 +1197,7 @@
 
   ** Omit Q45_i (other) for now **;
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     total=n,
@@ -1124,6 +1206,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q46_a_:, 
@@ -1138,6 +1221,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q46_b_:, 
@@ -1152,6 +1236,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q46_c_:, 
@@ -1166,6 +1251,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q46_d_:, 
@@ -1180,6 +1266,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q46_e_:, 
@@ -1194,6 +1281,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q46_f_:, 
@@ -1208,6 +1296,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q46_g_:, 
@@ -1222,6 +1311,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q46_h_:, 
@@ -1236,6 +1326,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q46_i_:, 
@@ -1250,6 +1341,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q46_j_:, 
@@ -1264,6 +1356,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q46_k_:, 
@@ -1278,6 +1371,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q46_l_:, 
@@ -1292,6 +1386,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q46_m_:, 
@@ -1306,6 +1401,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q46_n_:, 
@@ -1320,6 +1416,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q46_o_:, 
@@ -1334,6 +1431,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q46_p_:, 
@@ -1348,6 +1446,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q47_a_:, 
@@ -1361,6 +1460,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q47_b_:, 
@@ -1374,6 +1474,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q47_c_:, 
@@ -1387,6 +1488,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q48_:, 
@@ -1394,6 +1496,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q49_:, 
@@ -1402,6 +1505,7 @@
 
  
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q50_:, 
@@ -1409,6 +1513,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q51_:, 
@@ -1417,6 +1522,7 @@
 
   
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q52_:, 
@@ -1424,6 +1530,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q53_:, 
@@ -1431,6 +1538,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q54_:, 
@@ -1438,6 +1546,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     total=n,
@@ -1447,6 +1556,7 @@
 
   
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q56_:, 
@@ -1454,6 +1564,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     total=n,
@@ -1462,6 +1573,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q58_:, 
@@ -1469,6 +1581,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     total=n,
@@ -1477,6 +1590,7 @@
   )
   
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q60_:, 
@@ -1485,6 +1599,7 @@
 
   ** Omit Q61_j (other) for now **;
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     total=n,
@@ -1493,6 +1608,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     total=n,
@@ -1501,6 +1617,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q63_a_:, 
@@ -1513,6 +1630,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q63_b_:, 
@@ -1525,6 +1643,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q63_c_:, 
@@ -1537,6 +1656,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q63_d_:, 
@@ -1549,6 +1669,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q63_e_:, 
@@ -1561,6 +1682,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q63_f_:, 
@@ -1573,6 +1695,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q63_g_:, 
@@ -1587,6 +1710,7 @@
   ** SKIP Q63h. Other FOR NOW **;
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     total=n,
@@ -1595,6 +1719,7 @@
   )
     **look into**;
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q78_:, 
@@ -1602,6 +1727,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=Q79_:, 
@@ -1609,6 +1735,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=DOV_REL1_:, 
@@ -1616,6 +1743,7 @@
   )
 
   %Make_one_table( 
+    where=%str(&where),
     col=&col, 
     colfmt=&colfmt,
     var=DOV_IDEO_:, 
@@ -1667,7 +1795,7 @@ run;
 
 ** Create tables **;
 
-%Make_all_tables( col=race, colfmt=race., title=Summary Tables by Race )
+%Make_all_tables( col=race, colfmt=race., where=(race=2 and gender=1), title=Summary Tables by Race )
 
 /*
 %Make_all_tables( col=region, colfmt=region., title=Summary Tables for Entire Region )
