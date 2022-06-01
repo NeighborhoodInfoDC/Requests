@@ -6,9 +6,10 @@
  Created:  03/30/16
  Version:  SAS 9.2
  Environment:  Local Windows session (desktop)
- 
- Description:  Export all PresCat data sets to CSV files, with  
- data dictionary.
+ GitHub issue:  70
+
+ Description:  Export PresCat data sets to CSV files, 
+ for Children's National Hospital.
 
  Modifications:
 **************************************************************************/
@@ -136,14 +137,12 @@
 %let file_list = ;
 
 ** Fill in the folder location where the export files should be saved **;
-%let out_folder = &_dcdata_r_path\PresCat\Raw\Export;
+%let out_folder = &_dcdata_r_path\Requests\Raw\2022;
 
 ** Export individual data sets **;
 %Export( data=PresCat.Project_category_view, out=Project, desc=%str(DC Preservation Catalog, Projects) )
 %Export( data=PresCat.Subsidy )
-%Export( data=PresCat.Parcel )
-%Export( data=PresCat.Reac_score ) 
-%Export( data=PresCat.Real_property )
+%Export( data=Prescat.Building_geocode )
 
 ** Create data dictionary **;
 %Dictionary()
