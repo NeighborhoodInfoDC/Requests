@@ -89,8 +89,8 @@ data sales_filtered;
 run;
 
 /* Sales trend summary */
-proc summary data = sales_filtered;
-	class &summarygeos. /missing;
+proc summary data = sales_filtered completetypes missing;
+	class &summarygeos. / order=data preloadfmt;
 	var sales_2016-sales_2020;
 	output out = sales_&housetype._&nhood._&tenure. (where=(_type_ in (1,2,4))) sum=;
 run;
@@ -101,13 +101,13 @@ data sales_&housetype._&nhood._&tenure.;
 		else if ward2012 ^=. then geo = vvalue(ward2012);
 		else if city ^=. then geo = vvalue(city);
 	if geo ^= "";
-	drop _type_ _freq_;
+	drop &summarygeos. _type_ _freq_;
 run;
 
 
 /* Median price summary */
-proc summary data = sales_filtered;
-	class &summarygeos. /missing;
+proc summary data = sales_filtered completetypes missing;
+	class &summarygeos. / preloadfmt order=data;
 	var price_2016-price_2020;
 	output out = price_&housetype._&nhood._&tenure. (where=(_type_ in (1,2,4))) median=;
 run;
@@ -118,7 +118,7 @@ data price_&housetype._&nhood._&tenure.;
 		else if ward2012 ^=. then geo = vvalue(ward2012);
 		else if city ^=. then geo = vvalue(city);
 	if geo ^= "";
-	drop _type_ _freq_;
+	drop &summarygeos. _type_ _freq_;
 run;
 
 
