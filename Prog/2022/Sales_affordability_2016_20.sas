@@ -169,7 +169,7 @@ proc summary data=create_flags;
 		hispanic_first_afford hispanic_repeat_afford /*AIOM_first_afford AIOM_repeat_afford*/;
 	output 	out=Ward_Level (where=(_type_^=0)) 
 	sum= ; 
-	format ward2012 $wd12.;
+	format ward2012 $ward12a.;
 ;
 		run;
 
@@ -181,7 +181,7 @@ proc summary data=create_flags;
 		run;
 
 proc summary data=create_flags;
-	class cluster_tr2000;
+	class cluster2017;
 	var total_sales white_first_afford white_repeat_afford black_first_afford black_repeat_afford
 		hispanic_first_afford hispanic_repeat_afford /*AIOM_first_afford AIOM_repeat_afford*/;
 	output 		out=Cluster_Level (where=(_type_^=0)) 	sum= ;
@@ -190,15 +190,15 @@ proc summary data=create_flags;
 
 
 
-	data requests.sales_afford_all_2016_20 (label="DC Homes Sales Affordabilty for Average Household Income, 2016-20" drop=_type_ _freq_);
+	data sales_afford_all_2016_20 (drop=_type_ _freq_);
 
 	set city_level ward_level cluster_level tract_level; 
 
 	tractlabel=geo2010; 
-	clustername=cluster_tr2000; 
-	clusterlabel=cluster_tr2000;
+	clustername=cluster2017; 
+	clusterlabel=cluster2017;
 
-	format tractlabel $GEO10A11. Clusterlabel $CLUS00A16. clustername $clus00s. geo2010 cluster_tr2000; 
+	format tractlabel $GEO10A11. Clusterlabel $CLUS17A. clustername $CLUS17B. geo2010 cluster2017; 
 
 	PctAffordFirst_White=white_first_afford/total_sales*100; 
 	PctAffordFirst_Black=Black_first_afford/total_sales*100; 
@@ -237,26 +237,18 @@ tractlabel="Census Tract Label"
 
 	
 	run;
-	
-	/** Register metadata **;
 
-%Dc_update_meta_file(
-      ds_lib=Equity,
-      ds_name=sales_afford_all,
-      creator_process=Sales_Affordability.sas,
-      restrictions=None,
-      revisions=New file.
-      )*/
+	
 
 data wardonly;
-	set requests.sales_afford_all_2016_20 (where=(ward2012~=" ") keep=ward2012 pct:); 
+	set sales_afford_all_2016_20 (where=(ward2012~=" ") keep=ward2012 pct:); 
 	run; 
 	proc transpose data=wardonly out=ward_long prefix=Ward_;
 	id ward2012;
 	run;
 
 data cityonly;
-	set requests.sales_afford_all_2016_20 (where=(city~=" ") keep=city pct:); 
+	set sales_afford_all_2016_20 (where=(city~=" ") keep=city pct:); 
 	city=0;
 	rename city=ward2012;
 	run; 
@@ -295,17 +287,16 @@ Ward 1		Hispanic	Value	Value	Value
 	
 
 	data white;
-		set requests.sales_afford_all_2016_20 (drop= PctAffordFirst_Black PctAffordFirst_Hispanic /*PctAffordFirst_AIOM*/
+		set sales_afford_all_2016_20 (drop= PctAffordFirst_Black PctAffordFirst_Hispanic /*PctAffordFirst_AIOM*/
 											PctAffordRepeat_Black PctAffordRepeat_Hispanic /*PctAffordRepeat_AIOM*/
 											black_first_afford Hispanic_first_afford /*AIOM_first_afford*/
 											black_Repeat_afford Hispanic_Repeat_afford /*AIOM_Repeat_afford*/ );
-
 	length race $10. ID $11.;
 	race="White"; 
 
 	if city="1" then ID="0";
 	if Ward2012~=" " then ID=Ward2012;
-	if cluster_tr2000~=" " then ID=Cluster_Tr2000;
+	if cluster2017~=" " then ID=Cluster2017;
 	if geo2010~=" " then ID=geo2010; 
 
 	Rename PctAffordFirst_White=PctAffordFirst
@@ -315,17 +306,16 @@ Ward 1		Hispanic	Value	Value	Value
 	run;	
 
 		data black;
-		set requests.sales_afford_all_2016_20 (drop= PctAffordFirst_white PctAffordFirst_Hispanic /*PctAffordFirst_AIOM*/
+		set sales_afford_all_2016_20 (drop= PctAffordFirst_white PctAffordFirst_Hispanic /*PctAffordFirst_AIOM*/
 											PctAffordRepeat_white PctAffordRepeat_Hispanic /*PctAffordRepeat_AIOM*/
 											white_first_afford Hispanic_first_afford /*AIOM_first_afford*/ 
 											white_Repeat_afford Hispanic_Repeat_afford /*AIOM_Repeat_afford*/ );
-
 	length race $10. ID $11.;
 	race="Black"; 
 
 	if city="1" then ID="0";
 	if Ward2012~=" " then ID=Ward2012;
-	if cluster_tr2000~=" " then ID=Cluster_Tr2000;
+	if cluster2017~=" " then ID=Cluster2017;
 	if geo2010~=" " then ID=geo2010; 
 
 	Rename PctAffordFirst_black=PctAffordFirst
@@ -336,17 +326,16 @@ Ward 1		Hispanic	Value	Value	Value
 
 	
 		data hispanic;
-		set requests.sales_afford_all_2016_20 (drop= PctAffordFirst_white PctAffordFirst_black /*PctAffordFirst_AIOM*/
+		set sales_afford_all_2016_20 (drop= PctAffordFirst_white PctAffordFirst_black /*PctAffordFirst_AIOM*/
 											PctAffordRepeat_white PctAffordRepeat_black /*PctAffordRepeat_AIOM*/
 											white_first_afford black_first_afford /*AIOM_first_afford*/ 
 											white_Repeat_afford black_Repeat_afford /*AIOM_Repeat_afford*/ );
-
 	length race $10. ID $11.;
 	race="Hispanic"; 
 
 	if city="1" then ID="0";
 	if Ward2012~=" " then ID=Ward2012;
-	if cluster_tr2000~=" " then ID=Cluster_Tr2000;
+	if cluster2017~=" " then ID=Cluster2017;
 	if geo2010~=" " then ID=geo2010; 
 
 	Rename PctAffordFirst_Hispanic=PctAffordFirst
@@ -368,12 +357,11 @@ Ward 1		Hispanic	Value	Value	Value
 		repeat_afford = "Number of SF/Condo Sales 2016-20  Affordable for Repeat Owners"
 		race="Race of Householder";
 
-	
-	
+		
 	run;
 
 	proc sort data=all_race;
-	by  geo2010 cluster_tr2000 ward2012 city  ;
+	by  geo2010 cluster2017 ward2012 city  ;
 	run;
 proc export data=all_race 
 	outfile="&_dcdata_default_path\Requests\Prog\2022\Sales_affordability_allgeo.csv"
@@ -381,3 +369,19 @@ proc export data=all_race
 	run;
 	proc contents data=all_race;
 	run; 
+
+/*don't really need a permanent dataset
+	%Finalize_data_set(
+
+  data=sales_afford_all_2016_20,
+  out=sales_afford_all_2016_20,
+  outlib=requests,
+  label="DC Homes Sales Affordability for Average Household Income, 2016-20",
+  sortby=ssl,
+
+  restrictions=None,
+  revisions=%str(New file DC Homes Sales Affordability, 2016-20),
+  printobs=5,
+  freqvars=white_first_afford black_first_afford hispanic_first_afford
+);	
+*/
