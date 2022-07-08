@@ -50,11 +50,21 @@ data property_sales;
 		else if sale_yr = 2020 then sales_2020 = 1;
 
 	/* Price per year */
-	if sale_yr = 2016 then price_2016 = saleprice;
-		else if sale_yr = 2017 then price_2017 = saleprice;
-		else if sale_yr = 2018 then price_2018 = saleprice;
-		else if sale_yr = 2019 then price_2019 = saleprice;
-		else if sale_yr = 2020 then price_2020 = saleprice;
+	if sale_yr = 2016 then do;
+		%dollar_convert(saleprice,price_2016,2016,2020, series=CUUR0000SA0L2);
+	end; 
+	else if sale_yr = 2017 then do;
+		%dollar_convert(saleprice,price_2017,2017,2020, series=CUUR0000SA0L2);
+	end; 
+	else if sale_yr = 2018 then do;
+		%dollar_convert(saleprice,price_2018,2018,2020, series=CUUR0000SA0L2);
+	end; 
+	else if sale_yr = 2019 then do;
+		%dollar_convert(saleprice,price_2019,2019,2020, series=CUUR0000SA0L2);
+	end; 
+	else if sale_yr = 2020 then do;
+		%dollar_convert(saleprice,price_2020,2020,2020, series=CUUR0000SA0L2);
+	end; 
 
 	length ward2022 $1;
 	ward2022 = put( geoblk2010, $bk1wd2f. );
