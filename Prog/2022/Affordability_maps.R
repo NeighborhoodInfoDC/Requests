@@ -26,6 +26,8 @@ library(urbnmapr)
 library(urbnthemes)
 library(sf)
 
+set_urbn_defaults(style="map")
+
 # Use tidycensus to get a tract dataset with geography
 dctracts <- get_acs("tract", table = "B01003", cache_table = TRUE, geometry = TRUE,
                    state = "11", county = "001", year = 2019, output = "tidy",
@@ -37,7 +39,7 @@ salsaff <- read_csv("D:/dcdata/Libraries/Requests/Prog/2022/Sales_affordability_
   mutate(Geo2010=as.character(Geo2010))
 
 # Function to create each map by race
-makemap <- function(maprace){
+makemap <- function(maprace, affvar, status){
 
 salesaff_race <- salsaff %>%
   filter(!is.na(Geo2010)) %>%
@@ -46,39 +48,43 @@ salesaff_race <- salsaff %>%
 salesaff_race_tacts <- left_join(dctracts,salesaff_race,by="Geo2010") %>% 
   st_set_geometry(value = "geometry") %>%
   mutate(ratebucket = case_when(
-    PctAffordFirst_dec < .5 ~ "Less than 50%",
-    PctAffordFirst_dec >= .5 ~ "50% or greater",
-    is.na(PctAffordFirst_dec) ~ "No data"))
+    {{affvar}} < .15 ~ "0% to up to 15%",
+    {{affvar}} < .30 ~ "15% to up to 30%",
+    {{affvar}} < .45 ~ "30% to up to 45%",
+    {{affvar}} < .60 ~ "45% to up to 60%",
+    {{affvar}} < .75 ~ "60% to up to 75%",
+    {{affvar}} >= .75 ~ "75% or greater",
+    is.na({{affvar}}) ~ "No data"))
 
 set_urbn_defaults(style = "print")
 
-urban_colors8 <- c("#cfe8f3", "#a2d4ec", "#73bfe2", "#46abdb","#1696d2", "#12719e", "#0a4c6a", "#d2d2d2")
+aff_colors <- c("#cfe8f3", "#a2d4ec", "#73bfe2", "#46abdb","#1696d2", "#12719e", "#bcbcbc")
 
 ggplot() +
   geom_sf(data = salesaff_race_tacts, aes( fill = ratebucket))+
-  scale_fill_manual(name="`Bucket`", values = urban_colors8, guide = guide_legend(override.aes = list(linetype = "blank", 
-                                                                                                            shape = NA)))+ 
-  #geom_sf(salesaff_wht_tacts, mapping = aes(), fill=NA,lwd =  1, color="#fdbf11",show.legend = "line")+
-   geom_sf(cog_all, mapping = aes(), fill=NA,lwd =  1, color="#ec008b",show.legend = "line")+
+  scale_fill_manual(name="`Bucket`", values = aff_colors, guide = guide_legend(override.aes = list(linetype = "blank", shape = NA)))+ 
   scale_color_manual(values = 'transparent', guide = guide_legend(override.aes = list(linetype = "solid"))) +
   coord_sf(datum = NA)+
  
   theme(
     panel.grid.major = element_line(colour = "transparent", size = 0),
-    axis.title = element_blank(),
+    axis.title = element_text(),
     axis.line.y = element_blank(),
-    plot.caption = element_text(hjust = 0, size = 16),
-    plot.title = element_text(size = 20),
-    legend.text = element_text(size = 16)
-    
-  )+
-  guides(color = guide_legend(override.aes = list(size=5)))+
-  labs(title = paste0("Poverty rates by census tract in \n", countyname, ", ", statename),
-       subtitle= "Racially or Ethnically Concentrated Areas of Poverty highlighted in yellow",
-       caption = "Source: American Community Survey, 2019") 
+    plot.caption = element_text(hjust = 0, size = 10),
+    plot.title = element_text(size = 16,hjust=.5),
+    legend.text = element_text(size = 14) 
+    )+
+  guides(color = guide_legend(override.aes = list(size=3)))+
+  labs(title = paste0("Homes affordable to ", maprace, " ", status, " homebuyers"),
+       caption = "Source: American Community Survey and DC Office of Tax and Revenue, 
+       Tabulated by Urban-Greater DC") 
 
 }
 
-makemap(maprace = "White")
-makemap(maprace = "Black")
-makemap(maprace = "Hispanic")
+makemap(maprace = "White", affvar=PctAffordFirst_dec, status="first time")
+makemap(maprace = "Black", affvar=PctAffordFirst_dec, status="first time")
+makemap(maprace = "Hispanic", affvar=PctAffordFirst_dec, status="first time")
+
+makemap(maprace = "White", affvar=PctAffordRepeat_dec, status="repeat")
+makemap(maprace = "Black", affvar=PctAffordRepeat_dec, status="repeat")
+makemap(maprace = "Hispanic", affvar=PctAffordRepeat_dec, status="repeat")
