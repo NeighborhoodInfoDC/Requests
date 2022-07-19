@@ -70,14 +70,14 @@ ggplot() +
     panel.grid.major = element_line(colour = "transparent", size = 0),
     axis.title = element_text(),
     axis.line.y = element_blank(),
-    plot.caption = element_text(hjust = 0, size = 10),
+    plot.caption = element_text(hjust = 0.5, size = 10),
     plot.title = element_text(size = 16,hjust=.5),
     legend.text = element_text(size = 14) 
     )+
   guides(color = guide_legend(override.aes = list(size=3)))+
-  labs(title = paste0("Homes affordable to ", maprace, " ", status, " homebuyers"),
-       caption = "Source: American Community Survey and DC Office of Tax and Revenue, 
-       Tabulated by Urban-Greater DC") 
+  labs(title = paste0("Pct. of SF/Condo Sales 2016-20 Affordable to \n", 
+                      status, " Buyer at Avg. Household Income - ", maprace),
+       caption = "Source: American Community Survey and DC Office of Tax \n and Revenue, Tabulated by Urban-Greater DC") 
 
 ggsave(paste0("D:/dcdata/Libraries/Requests/Prog/2022/", maprace, " ", status, " affordable.png"),
        device = "png",
@@ -86,12 +86,12 @@ ggsave(paste0("D:/dcdata/Libraries/Requests/Prog/2022/", maprace, " ", status, "
 
 }
 
-makemap(maprace = "White", affvar=PctAffordFirst_dec, status="first time")
-makemap(maprace = "Black", affvar=PctAffordFirst_dec, status="first time")
-makemap(maprace = "Hispanic", affvar=PctAffordFirst_dec, status="first time")
+makemap(maprace = "White", affvar=PctAffordFirst_dec, status="First-time")
+makemap(maprace = "Black", affvar=PctAffordFirst_dec, status="First-time")
+makemap(maprace = "Hispanic", affvar=PctAffordFirst_dec, status="First-time")
 
-makemap(maprace = "White", affvar=PctAffordRepeat_dec, status="repeat")
-makemap(maprace = "Black", affvar=PctAffordRepeat_dec, status="repeat")
-makemap(maprace = "Hispanic", affvar=PctAffordRepeat_dec, status="repeat")
+makemap(maprace = "White", affvar=PctAffordRepeat_dec, status="Repeat")
+makemap(maprace = "Black", affvar=PctAffordRepeat_dec, status="Repeat")
+makemap(maprace = "Hispanic", affvar=PctAffordRepeat_dec, status="Repeat")
 
 # End of program
