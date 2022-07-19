@@ -79,6 +79,11 @@ ggplot() +
        caption = "Source: American Community Survey and DC Office of Tax and Revenue, 
        Tabulated by Urban-Greater DC") 
 
+ggsave(paste0("D:/dcdata/Libraries/Requests/Prog/2022/", maprace, " ", status, " affordable.png"),
+       device = "png",
+       width = 8.5,
+       height = 8.5)
+
 }
 
 makemap(maprace = "White", affvar=PctAffordFirst_dec, status="first time")
@@ -88,3 +93,5 @@ makemap(maprace = "Hispanic", affvar=PctAffordFirst_dec, status="first time")
 makemap(maprace = "White", affvar=PctAffordRepeat_dec, status="repeat")
 makemap(maprace = "Black", affvar=PctAffordRepeat_dec, status="repeat")
 makemap(maprace = "Hispanic", affvar=PctAffordRepeat_dec, status="repeat")
+
+# End of program
