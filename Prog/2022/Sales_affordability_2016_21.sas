@@ -141,7 +141,7 @@ https://urbanorg.app.box.com/file/933065867963;
 
 run;
 proc print data= create_flags (obs=25);
-var ward2012 saleprice PITI_FIRST PITI_repeat white_first_afford black_first_afford hispanic_first_afford /*AIOM_first_afford*/;
+var ward2022 saleprice PITI_FIRST PITI_repeat white_first_afford black_first_afford hispanic_first_afford /*AIOM_first_afford*/;
 run; 
 
 proc freq data=create_flags; 
@@ -149,14 +149,14 @@ tables white_first_afford black_first_afford hispanic_first_afford /*AIOM_first_
 run;
 *testing*;
 proc sort data=create_flags;
-by ward2012;
+by ward2022;
 proc univariate data=create_flags;
-by ward2012;
+by ward2022;
 var saleprice;
 run;
 proc print data =create_flags;
 var saleprice PITI_FIRST PITI_repeat white_first_afford black_first_afford hispanic_first_afford ;
-where ward2012="2" and PITI_FIRST <1701.35;
+where ward2022="2" and PITI_FIRST <1701.35;
 run;
 *proc summary at city, ward, tract, and cluster levels - so you could get % of sales in Ward 7 affordable to 
 median white family vs. median black family.;
@@ -174,12 +174,12 @@ proc summary data=create_flags;
 		run;
 
 proc summary data=create_flags;
-	class ward2012;
+	class ward2022;
 	var total_sales white_first_afford white_repeat_afford black_first_afford black_repeat_afford
 		hispanic_first_afford hispanic_repeat_afford /*AIOM_first_afford AIOM_repeat_afford*/;
 	output 	out=Ward_Level (where=(_type_^=0)) 
 	sum= ; 
-	format ward2012 $ward12a.;
+	format ward2022 $ward22a.;
 ;
 		run;
 
@@ -251,20 +251,20 @@ tractlabel="Census Tract Label"
 	
 
 data wardonly;
-	set sales_afford_all_2016_20 (where=(ward2012~=" ") keep=ward2012 pct:); 
+	set sales_afford_all_2016_20 (where=(ward2022~=" ") keep=ward2022 pct:); 
 	run; 
 	proc transpose data=wardonly out=ward_long prefix=Ward_;
-	id ward2012;
+	id ward2022;
 	run;
 
 data cityonly;
 	set sales_afford_all_2016_20 (where=(city~=" ") keep=city pct:); 
 	city=0;
-	rename city=ward2012;
+	rename city=ward2022;
 	run; 
 
 	proc transpose data=cityonly out=city_long prefix=Ward_;
-	id ward2012;
+	id ward2022;
 	run;
 proc sort data=city_long;
 by _name_;
@@ -305,7 +305,7 @@ Ward 1		Hispanic	Value	Value	Value
 	race="White"; 
 
 	if city="1" then ID="0";
-	if Ward2012~=" " then ID=Ward2012;
+	if Ward2022~=" " then ID=Ward2022;
 	if cluster2017~=" " then ID=Cluster2017;
 	if geo2010~=" " then ID=geo2010; 
 
@@ -324,7 +324,7 @@ Ward 1		Hispanic	Value	Value	Value
 	race="Black"; 
 
 	if city="1" then ID="0";
-	if Ward2012~=" " then ID=Ward2012;
+	if Ward2022~=" " then ID=Ward2022;
 	if cluster2017~=" " then ID=Cluster2017;
 	if geo2010~=" " then ID=geo2010; 
 
@@ -344,7 +344,7 @@ Ward 1		Hispanic	Value	Value	Value
 	race="Hispanic"; 
 
 	if city="1" then ID="0";
-	if Ward2012~=" " then ID=Ward2012;
+	if Ward2022~=" " then ID=Ward2022;
 	if cluster2017~=" " then ID=Cluster2017;
 	if geo2010~=" " then ID=geo2010; 
 
@@ -371,7 +371,7 @@ Ward 1		Hispanic	Value	Value	Value
 	run;
 
 	proc sort data=all_race;
-	by  geo2010 cluster2017 ward2012 city  ;
+	by  geo2010 cluster2017 ward2022 city  ;
 	run;
 proc export data=all_race 
 	outfile="&_dcdata_default_path\Requests\Prog\2022\Sales_affordability_allgeo.csv"
