@@ -14,6 +14,7 @@ Homeownership Affordability in Urban America: Past and Future;
  Modifications: 09/11/16 LH Added Price Adjustments and used 2015$ adj. income
 				10/07/16 LH Added output for COMM. 
 				03/18/22 LH Update for 2016-2020
+				09/13/22 RP Update for 2021
 
 **************************************************************************/
 
@@ -43,18 +44,21 @@ https://urbanorg.app.box.com/file/933065867963;
 	eff_int_rate_2018= 4.64;
 	eff_int_rate_2019= 4.01;
 	eff_int_rate_2020= 3.16;
+	eff_int_rate_2021= 2.88;
 
 		month_int_rate_2016 = (eff_int_rate_2016/12/100);
 		month_int_rate_2017 = (eff_int_rate_2017/12/100); 
 		month_int_rate_2018 = (eff_int_rate_2018/12/100); 
 		month_int_rate_2019 = (eff_int_rate_2019/12/100); 
 		month_int_rate_2020 = (eff_int_rate_2020/12/100); 
+		month_int_rate_2021 = (eff_int_rate_2021/12/100); 
 		
 	loan_multiplier_2016 =  month_int_rate_2016 *	( ( 1 + month_int_rate_2016 )**360	) / ( ( ( 1+ month_int_rate_2016 )**360 )-1 );
   	loan_multiplier_2017 =  month_int_rate_2017 *	( ( 1 + month_int_rate_2017 )**360	) / ( ( ( 1+ month_int_rate_2017 )**360 )-1 );
   	loan_multiplier_2018 =  month_int_rate_2018 *	( ( 1 + month_int_rate_2018 )**360	) / ( ( ( 1+ month_int_rate_2018 )**360 )-1 );
   	loan_multiplier_2019 =  month_int_rate_2019 *	( ( 1 + month_int_rate_2019 )**360	) / ( ( ( 1+ month_int_rate_2019 )**360 )-1 );
   	loan_multiplier_2020 =  month_int_rate_2020 *	( ( 1 + month_int_rate_2020 )**360	) / ( ( ( 1+ month_int_rate_2020 )**360 )-1 );
+	loan_multiplier_2021 =  month_int_rate_2021 *	( ( 1 + month_int_rate_2021 )**360	) / ( ( ( 1+ month_int_rate_2021 )**360 )-1 );
 
   *calculate monthly Principal and Interest for First time Homebuyer (10% down);
     if sale_yr=2016 then PI_First2016=saleprice*.9*loan_multiplier_2016;
@@ -62,12 +66,14 @@ https://urbanorg.app.box.com/file/933065867963;
 	if sale_yr=2018 then PI_First2018=saleprice*.9*loan_multiplier_2018;
 	if sale_yr=2019 then PI_First2019=saleprice*.9*loan_multiplier_2019;
 	if sale_yr=2020 then PI_First2020=saleprice*.9*loan_multiplier_2020;
+	if sale_yr=2021 then PI_First2021=saleprice*.9*loan_multiplier_2021;
 
-	%dollar_convert(PI_first2016,PI_first2016r,2016,2020, series=CUUR0000SA0L2);
-	%dollar_convert(PI_first2017,PI_first2017r,2017,2020, series=CUUR0000SA0L2);
- 	%dollar_convert(PI_first2018,PI_first2018r,2018,2020, series=CUUR0000SA0L2);
-	%dollar_convert(PI_first2019,PI_first2019r,2019,2020, series=CUUR0000SA0L2);
-	%dollar_convert(PI_first2020,PI_first2020r,2020,2020, series=CUUR0000SA0L2);
+	%dollar_convert(PI_first2016,PI_first2016r,2016,2021, series=CUUR0000SA0L2);
+	%dollar_convert(PI_first2017,PI_first2017r,2017,2021, series=CUUR0000SA0L2);
+ 	%dollar_convert(PI_first2018,PI_first2018r,2018,2021, series=CUUR0000SA0L2);
+	%dollar_convert(PI_first2019,PI_first2019r,2019,2021, series=CUUR0000SA0L2);
+	%dollar_convert(PI_first2020,PI_first2020r,2020,2021, series=CUUR0000SA0L2);
+	%dollar_convert(PI_first2021,PI_first2020r,2021,2021, series=CUUR0000SA0L2);
 
   *calculate monthly PITI (Principal, Interest, Taxes and Insurance) for First Time Homebuyer (34% of PI = TI);
 	if sale_yr=2016 then PITI_First=PI_First2016r*1.34;
@@ -75,6 +81,7 @@ https://urbanorg.app.box.com/file/933065867963;
 	if sale_yr=2018 then PITI_First=PI_First2018r*1.34;
 	if sale_yr=2019 then PITI_First=PI_First2019r*1.34;
 	if sale_yr=2020 then PITI_First=PI_First2020r*1.34;
+	if sale_yr=2021 then PITI_First=PI_First2021r*1.34;
 
   *calculate monthly Principal and Interest for Repeat Homebuyer (20% down);
     if sale_yr=2016 then PI_Repeat2016=saleprice*.8*loan_multiplier_2016;
@@ -82,12 +89,14 @@ https://urbanorg.app.box.com/file/933065867963;
 	if sale_yr=2018 then PI_Repeat2018=saleprice*.8*loan_multiplier_2018;
 	if sale_yr=2019 then PI_Repeat2019=saleprice*.8*loan_multiplier_2019;
 	if sale_yr=2020 then PI_Repeat2020=saleprice*.8*loan_multiplier_2020;
+	if sale_yr=2021 then PI_Repeat2021=saleprice*.8*loan_multiplier_2021;
 
-	%dollar_convert(PI_Repeat2016,PI_Repeat2016r,2016,2020,series=CUUR0000SA0L2);
-	%dollar_convert(PI_Repeat2017,PI_Repeat2017r,2017,2020,series=CUUR0000SA0L2);
- 	%dollar_convert(PI_Repeat2018,PI_Repeat2018r,2018,2020,series=CUUR0000SA0L2);
-	%dollar_convert(PI_Repeat2019,PI_Repeat2019r,2019,2020,series=CUUR0000SA0L2);
-	%dollar_convert(PI_Repeat2020,PI_Repeat2020r,2020,2020,series=CUUR0000SA0L2);
+	%dollar_convert(PI_Repeat2016,PI_Repeat2016r,2016,2021,series=CUUR0000SA0L2);
+	%dollar_convert(PI_Repeat2017,PI_Repeat2017r,2017,2021,series=CUUR0000SA0L2);
+ 	%dollar_convert(PI_Repeat2018,PI_Repeat2018r,2018,2021,series=CUUR0000SA0L2);
+	%dollar_convert(PI_Repeat2019,PI_Repeat2019r,2019,2021,series=CUUR0000SA0L2);
+	%dollar_convert(PI_Repeat2020,PI_Repeat2020r,2020,2021,series=CUUR0000SA0L2);
+	%dollar_convert(PI_Repeat2021,PI_Repeat2020r,2021,2021,series=CUUR0000SA0L2);
 
 	*calculate monthly PITI (Principal, Interest, Taxes and Insurance) for Repeat Homebuyer (25% of PI = TI);
 	if sale_yr=2016 then PITI_Repeat=PI_Repeat2016r*1.25;
@@ -95,6 +104,7 @@ https://urbanorg.app.box.com/file/933065867963;
 	if sale_yr=2018 then PITI_Repeat=PI_Repeat2018r*1.25;
 	if sale_yr=2019 then PITI_Repeat=PI_Repeat2019r*1.25;
 	if sale_yr=2020 then PITI_Repeat=PI_Repeat2020r*1.25;
+	if sale_yr=2021 then PITI_Repeat=PI_Repeat2021r*1.25;
 
 
 	/*Here are numbers for Average Household Income at the city level. 2016-20 ACS 
