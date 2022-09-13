@@ -48,33 +48,37 @@ data property_sales;
 		else if sale_yr = 2018 then sales_2018 = 1;
 		else if sale_yr = 2019 then sales_2019 = 1;
 		else if sale_yr = 2020 then sales_2020 = 1;
+		else if sale_yr = 2021 then sales_2021 = 1;
 
 	/* Price per year */
 	if sale_yr = 2016 then do;
-		%dollar_convert(saleprice,price_2016,2016,2020, series=CUUR0000SA0L2);
+		%dollar_convert(saleprice,price_2016,2016,2021, series=CUUR0000SA0L2);
 	end; 
 	else if sale_yr = 2017 then do;
-		%dollar_convert(saleprice,price_2017,2017,2020, series=CUUR0000SA0L2);
+		%dollar_convert(saleprice,price_2017,2017,2021, series=CUUR0000SA0L2);
 	end; 
 	else if sale_yr = 2018 then do;
-		%dollar_convert(saleprice,price_2018,2018,2020, series=CUUR0000SA0L2);
+		%dollar_convert(saleprice,price_2018,2018,2021, series=CUUR0000SA0L2);
 	end; 
 	else if sale_yr = 2019 then do;
-		%dollar_convert(saleprice,price_2019,2019,2020, series=CUUR0000SA0L2);
+		%dollar_convert(saleprice,price_2019,2019,2021, series=CUUR0000SA0L2);
 	end; 
 	else if sale_yr = 2020 then do;
-		%dollar_convert(saleprice,price_2020,2020,2020, series=CUUR0000SA0L2);
+		%dollar_convert(saleprice,price_2020,2020,2021, series=CUUR0000SA0L2);
+	end; 
+	else if sale_yr = 2021 then do;
+		%dollar_convert(saleprice,price_2021,2021,2021, series=CUUR0000SA0L2);
 	end; 
 
-	length ward2022 $1;
+	/*length ward2022 $1;
 	ward2022 = put( geoblk2010, $bk1wd2f. );
-	label geoblk2010 = "Ward (2012)";
+	label geoblk2010 = "Ward (2012)";*/
 
-	format cluster2017 clus17b. ward2022 ward12a.;
+	format cluster2017 clus17b. /*ward2022 ward12a.*/;
 
 run;
 
-%let summarygeos = cluster2017 ward2012 city;
+%let summarygeos = cluster2017 ward2022 city;
 
 %macro sales_tabs (housetype,nhood,tenure);
 
@@ -101,14 +105,14 @@ run;
 /* Sales trend summary */
 proc summary data = sales_filtered completetypes missing;
 	class &summarygeos. / order=data preloadfmt;
-	var sales_2016-sales_2020;
+	var sales_2016-sales_2021;
 	output out = sales_&housetype._&nhood._&tenure. (where=(_type_ in (1,2,4))) sum=;
 run;
 
 data sales_&housetype._&nhood._&tenure.;
 	set sales_&housetype._&nhood._&tenure.;
 	if cluster2017 ^=. then geo = vvalue(cluster2017);
-		else if ward2012 ^=. then geo = vvalue(ward2012);
+		else if ward2022 ^=. then geo = vvalue(ward2022);
 		else if city ^=. then geo = vvalue(city);
 	if geo ^= "";
 	drop &summarygeos. _type_ _freq_;
@@ -118,14 +122,14 @@ run;
 /* Median price summary */
 proc summary data = sales_filtered completetypes missing;
 	class &summarygeos. / preloadfmt order=data;
-	var price_2016-price_2020;
+	var price_2016-price_2021;
 	output out = price_&housetype._&nhood._&tenure. (where=(_type_ in (1,2,4))) median=;
 run;
 
 data price_&housetype._&nhood._&tenure.;
 	set price_&housetype._&nhood._&tenure.;
 	if cluster2017 ^=. then geo = vvalue(cluster2017);
-		else if ward2012 ^=. then geo = vvalue(ward2012);
+		else if ward2022 ^=. then geo = vvalue(ward2022);
 		else if city ^=. then geo = vvalue(city);
 	if geo ^= "";
 	drop &summarygeos. _type_ _freq_;
@@ -136,9 +140,9 @@ run;
 data appreciation_&housetype._&nhood._&tenure.;
 	set price_&housetype._&nhood._&tenure. ;
 
-	price_change = (price_2020-price_2016)/price_2016;
+	price_change = (price_2021-price_2016)/price_2016;
 
-	drop price_2017 price_2018 price_2019;
+	drop price_2017 price_2018 price_2019 price_2020;
 run;
 
 
