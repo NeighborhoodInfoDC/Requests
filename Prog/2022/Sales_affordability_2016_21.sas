@@ -200,7 +200,7 @@ proc summary data=create_flags;
 
 
 
-	data sales_afford_all_2016_20 (drop=_type_ _freq_);
+	data sales_afford_all_2016_21 (drop=_type_ _freq_);
 
 	set city_level ward_level cluster_level tract_level; 
 
@@ -221,26 +221,26 @@ proc summary data=create_flags;
 	PctAffordRepeat_Hispanic=Hispanic_Repeat_afford/total_sales*100;
 	*PctAffordRepeat_AIOM= AIOM_repeat_afford/total_sales*100;
 
-	label PctAffordFirst_White="Pct. of SF/Condo Sales 2016-20 Affordable to First-time Buyer at Avg. Household Inc. NH White"
-		  PctAffordFirst_Black="Pct. of SF/Condo Sales 2016-20 Affordable to First-time Buyer at Avg. Household Inc. Black Alone"
-		  PctAffordFirst_Hispanic="Pct. of SF/Condo Sales 2016-20 Affordable to First-time Buyer at Avg. Household Inc. Hispanic"
-		/* PctAffordFirst_AIOM="Pct. of SF/Condo Sales 2016-20 Affordable to First-time Buyer at Avg. Household Inc. Asian, Native American, Other, Multiple Race"*/
+	label PctAffordFirst_White="Pct. of SF/Condo Sales 2016-21 Affordable to First-time Buyer at Avg. Household Inc. NH White"
+		  PctAffordFirst_Black="Pct. of SF/Condo Sales 2016-21 Affordable to First-time Buyer at Avg. Household Inc. Black Alone"
+		  PctAffordFirst_Hispanic="Pct. of SF/Condo Sales 2016-21 Affordable to First-time Buyer at Avg. Household Inc. Hispanic"
+		/* PctAffordFirst_AIOM="Pct. of SF/Condo Sales 2016-21 Affordable to First-time Buyer at Avg. Household Inc. Asian, Native American, Other, Multiple Race"*/
 	
-		PctAffordRepeat_White="Pct. of SF/Condo Sales 2016-20 Affordable to Repeat Buyer at Avg. Household Inc. NH White"
-		PctAffordRepeat_Black="Pct. of SF/Condo Sales 2016-20 Affordable to Repeat Buyer at Avg. Household Inc. Black Alone"
-		PctAffordRepeat_Hispanic="Pct. of SF/Condo Sales 2016-20 Affordable to Repeat Buyer at Avg. Household Inc. Hispanic"
-		/*PctAffordRepeat_AIOM="Pct. of SF/Condo Sales 2016-20 Affordable to First-time Buyer at Avg. Household Inc. Asian, Native American, Other, Multiple Race"*/
+		PctAffordRepeat_White="Pct. of SF/Condo Sales 2016-21 Affordable to Repeat Buyer at Avg. Household Inc. NH White"
+		PctAffordRepeat_Black="Pct. of SF/Condo Sales 2016-21 Affordable to Repeat Buyer at Avg. Household Inc. Black Alone"
+		PctAffordRepeat_Hispanic="Pct. of SF/Condo Sales 2016-21 Affordable to Repeat Buyer at Avg. Household Inc. Hispanic"
+		/*PctAffordRepeat_AIOM="Pct. of SF/Condo Sales 2016-21 Affordable to First-time Buyer at Avg. Household Inc. Asian, Native American, Other, Multiple Race"*/
 	clusterlabel="Neighborhood Cluster Label" 
 clustername="Name of Neighborhood Cluster"
-total_sales="Total Number of Sales of Single Family Homes and Condiminium Units in Geography, 2016-20"
+total_sales="Total Number of Sales of Single Family Homes and Condiminium Units in Geography, 2016-21"
 tractlabel="Census Tract Label"
-		white_first_afford = "Number of SF/Condo Sales 2016-20 Affordable for FT White Owners"
-			black_first_afford = "Number of SF/Condo Sales 2016-20 Affordable for FT Black Owners"
-			hispanic_first_afford = "Number of SF/Condo Sales 2016-20 Affordable for FT Hispanic Owners"
-			/*AIOM_first_afford = "Number of SF/Condo Sales 2016-20 Affordable for FT Owners of Asian, Pacific Islander, American Indian, Alaskan Native Descent, Other, Two or More Races"*/
-			white_repeat_afford = "Number of SF/Condo Sales 2016-20  Affordable for Repeat White Owners"
-			black_repeat_afford = "Number of SF/Condo Sales 2016-20 Affordable for Repeat Black Owners"
-			hispanic_repeat_afford = "Number of SF/Condo Sales 2016-20 Affordable for Repeat Hispanic Owners"
+		white_first_afford = "Number of SF/Condo Sales 2016-21 Affordable for FT White Owners"
+			black_first_afford = "Number of SF/Condo Sales 2016-21 Affordable for FT Black Owners"
+			hispanic_first_afford = "Number of SF/Condo Sales 2016-21 Affordable for FT Hispanic Owners"
+			/*AIOM_first_afford = "Number of SF/Condo Sales 2016-21 Affordable for FT Owners of Asian, Pacific Islander, American Indian, Alaskan Native Descent, Other, Two or More Races"*/
+			white_repeat_afford = "Number of SF/Condo Sales 2016-21  Affordable for Repeat White Owners"
+			black_repeat_afford = "Number of SF/Condo Sales 2016-21 Affordable for Repeat Black Owners"
+			hispanic_repeat_afford = "Number of SF/Condo Sales 2016-21 Affordable for Repeat Hispanic Owners"
 			/*AIOM_repeat_afford = "AffordableProperty Sale is Affordable Asian, Pacific Islander, American Indian, Alaskan Native Descent, Other, Two or More Races"*/
 			;
 
@@ -251,14 +251,14 @@ tractlabel="Census Tract Label"
 	
 
 data wardonly;
-	set sales_afford_all_2016_20 (where=(ward2022~=" ") keep=ward2022 pct:); 
+	set sales_afford_all_2016_21 (where=(ward2022~=" ") keep=ward2022 pct:); 
 	run; 
 	proc transpose data=wardonly out=ward_long prefix=Ward_;
 	id ward2022;
 	run;
 
 data cityonly;
-	set sales_afford_all_2016_20 (where=(city~=" ") keep=city pct:); 
+	set sales_afford_all_2016_21 (where=(city~=" ") keep=city pct:); 
 	city=0;
 	rename city=ward2022;
 	run; 
@@ -277,7 +277,7 @@ by _name_;
 	run;
 
 proc export data=output_table 
-	outfile="&_dcdata_default_path\Requests\Prog\2022\profile_tabs_aff.csv"
+	outfile="&_dcdata_default_path\Requests\Prog\2022\profile_tabs_aff_2021.csv"
 	dbms=csv replace;
 	run;
 
@@ -297,7 +297,7 @@ Ward 1		Hispanic	Value	Value	Value
 	
 
 	data white;
-		set sales_afford_all_2016_20 (drop= PctAffordFirst_Black PctAffordFirst_Hispanic /*PctAffordFirst_AIOM*/
+		set sales_afford_all_2016_21 (drop= PctAffordFirst_Black PctAffordFirst_Hispanic /*PctAffordFirst_AIOM*/
 											PctAffordRepeat_Black PctAffordRepeat_Hispanic /*PctAffordRepeat_AIOM*/
 											black_first_afford Hispanic_first_afford /*AIOM_first_afford*/
 											black_Repeat_afford Hispanic_Repeat_afford /*AIOM_Repeat_afford*/ );
@@ -316,7 +316,7 @@ Ward 1		Hispanic	Value	Value	Value
 	run;	
 
 		data black;
-		set sales_afford_all_2016_20 (drop= PctAffordFirst_white PctAffordFirst_Hispanic /*PctAffordFirst_AIOM*/
+		set sales_afford_all_2016_21 (drop= PctAffordFirst_white PctAffordFirst_Hispanic /*PctAffordFirst_AIOM*/
 											PctAffordRepeat_white PctAffordRepeat_Hispanic /*PctAffordRepeat_AIOM*/
 											white_first_afford Hispanic_first_afford /*AIOM_first_afford*/ 
 											white_Repeat_afford Hispanic_Repeat_afford /*AIOM_Repeat_afford*/ );
@@ -336,7 +336,7 @@ Ward 1		Hispanic	Value	Value	Value
 
 	
 		data hispanic;
-		set sales_afford_all_2016_20 (drop= PctAffordFirst_white PctAffordFirst_black /*PctAffordFirst_AIOM*/
+		set sales_afford_all_2016_21 (drop= PctAffordFirst_white PctAffordFirst_black /*PctAffordFirst_AIOM*/
 											PctAffordRepeat_white PctAffordRepeat_black /*PctAffordRepeat_AIOM*/
 											white_first_afford black_first_afford /*AIOM_first_afford*/ 
 											white_Repeat_afford black_Repeat_afford /*AIOM_Repeat_afford*/ );
@@ -360,11 +360,11 @@ Ward 1		Hispanic	Value	Value	Value
 	 PctAffordFirst_dec= PctAffordFirst/100; 
 	PctAffordRepeat_dec=PctAffordRepeat/100; 
 	label 
-	 PctAffordFirst_dec="Pct. of SF/Condo Sales 2016-20 Affordable to First-time Buyer at Avg. Household Inc."
-		 PctAffordRepeat_dec="Pct. of SF/Condo Sales 2016-20 Affordable to Repeat Buyer at Avg. Household Inc."
+	 PctAffordFirst_dec="Pct. of SF/Condo Sales 2016-21 Affordable to First-time Buyer at Avg. Household Inc."
+		 PctAffordRepeat_dec="Pct. of SF/Condo Sales 2016-21 Affordable to Repeat Buyer at Avg. Household Inc."
 		
-		first_afford = "Number of SF/Condo Sales 2016-20 Affordable for First Time Buyer"
-		repeat_afford = "Number of SF/Condo Sales 2016-20  Affordable for Repeat Owners"
+		first_afford = "Number of SF/Condo Sales 2016-21 Affordable for First Time Buyer"
+		repeat_afford = "Number of SF/Condo Sales 2016-21  Affordable for Repeat Owners"
 		race="Race of Householder";
 
 		
@@ -374,7 +374,7 @@ Ward 1		Hispanic	Value	Value	Value
 	by  geo2010 cluster2017 ward2022 city  ;
 	run;
 proc export data=all_race 
-	outfile="&_dcdata_default_path\Requests\Prog\2022\Sales_affordability_allgeo.csv"
+	outfile="&_dcdata_default_path\Requests\Prog\2022\Sales_affordability_allgeo_2021.csv"
 	dbms=csv replace;
 	run;
 	proc contents data=all_race;
