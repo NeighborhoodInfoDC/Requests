@@ -35,7 +35,7 @@ dctracts <- get_acs("tract", table = "B01003", cache_table = TRUE, geometry = TR
   rename(Geo2010=GEOID) 
 
 # Read in affordability data
-salsaff <- read_csv("D:/dcdata/Libraries/Requests/Prog/2022/Sales_affordability_allgeo.csv") %>%
+salsaff <- read_csv("D:/dcdata/Libraries/Requests/Prog/2022/Sales_affordability_allgeo_2021.csv") %>%
   mutate(Geo2010=as.character(Geo2010))
 
 # Function to create each map by race
@@ -75,11 +75,11 @@ ggplot() +
     legend.text = element_text(size = 14) 
     )+
   guides(color = guide_legend(override.aes = list(size=3)))+
-  labs(title = paste0("Pct. of SF/Condo Sales 2016-20 Affordable to \n", 
+  labs(title = paste0("Pct. of SF/Condo Sales 2016-21 Affordable to \n", 
                       status, " Buyer at Avg. Household Income - ", maprace),
        caption = "Source: American Community Survey and DC Office of Tax \n and Revenue, Tabulated by Urban-Greater DC") 
 
-ggsave(paste0("D:/dcdata/Libraries/Requests/Prog/2022/", maprace, " ", status, " affordable.png"),
+ggsave(paste0("D:/dcdata/Libraries/Requests/Prog/2022/map/", maprace, " ", status, " affordable 2021.png"),
        device = "png",
        width = 8.5,
        height = 8.5)
