@@ -1,5 +1,5 @@
 /**************************************************************************
- Program:  Sales_Affordability.sas
+ Program:  Sales_Affordability_2016_21.sas
  Library:  Equity
  Project:  NeighborhoodInfo DC
  Author:   M. Woluchem	
@@ -29,7 +29,7 @@ Homeownership Affordability in Urban America: Past and Future;
 
 
 data create_flags;
-  set realpr_r.sales_res_clean (where=(ui_proptype in ('10' '11') and 2016 <= year(saledate) <= 2020))
+  set realpr_r.sales_res_clean (where=(ui_proptype in ('10' '11') and year(saledate) >= 2016))
 ;
   
   /*pull in effective interest rates - for example: 
@@ -73,7 +73,7 @@ https://urbanorg.app.box.com/file/933065867963;
  	%dollar_convert(PI_first2018,PI_first2018r,2018,2021, series=CUUR0000SA0L2);
 	%dollar_convert(PI_first2019,PI_first2019r,2019,2021, series=CUUR0000SA0L2);
 	%dollar_convert(PI_first2020,PI_first2020r,2020,2021, series=CUUR0000SA0L2);
-	%dollar_convert(PI_first2021,PI_first2020r,2021,2021, series=CUUR0000SA0L2);
+	%dollar_convert(PI_first2021,PI_first2021r,2021,2021, series=CUUR0000SA0L2);
 
   *calculate monthly PITI (Principal, Interest, Taxes and Insurance) for First Time Homebuyer (34% of PI = TI);
 	if sale_yr=2016 then PITI_First=PI_First2016r*1.34;
@@ -96,7 +96,7 @@ https://urbanorg.app.box.com/file/933065867963;
  	%dollar_convert(PI_Repeat2018,PI_Repeat2018r,2018,2021,series=CUUR0000SA0L2);
 	%dollar_convert(PI_Repeat2019,PI_Repeat2019r,2019,2021,series=CUUR0000SA0L2);
 	%dollar_convert(PI_Repeat2020,PI_Repeat2020r,2020,2021,series=CUUR0000SA0L2);
-	%dollar_convert(PI_Repeat2021,PI_Repeat2020r,2021,2021,series=CUUR0000SA0L2);
+	%dollar_convert(PI_Repeat2021,PI_Repeat2021r,2021,2021,series=CUUR0000SA0L2);
 
 	*calculate monthly PITI (Principal, Interest, Taxes and Insurance) for Repeat Homebuyer (25% of PI = TI);
 	if sale_yr=2016 then PITI_Repeat=PI_Repeat2016r*1.25;
