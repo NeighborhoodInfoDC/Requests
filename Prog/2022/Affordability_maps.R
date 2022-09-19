@@ -77,7 +77,7 @@ ggplot() +
   guides(color = guide_legend(override.aes = list(size=3)))+
   labs(title = paste0("Pct. of SF/Condo Sales 2016-20 Affordable to \n", 
                       status, " Buyer at Avg. Household Income - ", maprace),
-       caption = "Source: American Community Survey and DC Office of Tax \n and Revenue, Tabulated by Urban-Greater DC") 
+       caption = "Source: American Community Survey 2015-19 and \n DC Office of Taxand Revenue, Tabulated by Urban-Greater DC") 
 
 ggsave(paste0("D:/dcdata/Libraries/Requests/Prog/2022/map/", maprace, " ", status, " affordable 2021.png"),
        device = "png",
