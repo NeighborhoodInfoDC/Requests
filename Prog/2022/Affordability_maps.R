@@ -75,7 +75,7 @@ ggplot() +
     legend.text = element_text(size = 14) 
     )+
   guides(color = guide_legend(override.aes = list(size=3)))+
-  labs(title = paste0("Pct. of SF/Condo Sales 2016-21 Affordable to \n", 
+  labs(title = paste0("Pct. of SF/Condo Sales 2016-20 Affordable to \n", 
                       status, " Buyer at Avg. Household Income - ", maprace),
        caption = "Source: American Community Survey and DC Office of Tax \n and Revenue, Tabulated by Urban-Greater DC") 
 
