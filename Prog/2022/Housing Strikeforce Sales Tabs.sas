@@ -48,33 +48,29 @@ data property_sales;
 		else if sale_yr = 2018 then sales_2018 = 1;
 		else if sale_yr = 2019 then sales_2019 = 1;
 		else if sale_yr = 2020 then sales_2020 = 1;
-		else if sale_yr = 2021 then sales_2021 = 1;
+		else if sale_yr = 2021 then sales_2020 = 1;
 
 	/* Price per year */
 	if sale_yr = 2016 then do;
-		%dollar_convert(saleprice,price_2016,2016,2021, series=CUUR0000SA0L2);
+		%dollar_convert(saleprice,price_2016,2016,2020, series=CUUR0000SA0L2);
 	end; 
 	else if sale_yr = 2017 then do;
-		%dollar_convert(saleprice,price_2017,2017,2021, series=CUUR0000SA0L2);
+		%dollar_convert(saleprice,price_2017,2017,2020, series=CUUR0000SA0L2);
 	end; 
 	else if sale_yr = 2018 then do;
-		%dollar_convert(saleprice,price_2018,2018,2021, series=CUUR0000SA0L2);
+		%dollar_convert(saleprice,price_2018,2018,2020, series=CUUR0000SA0L2);
 	end; 
 	else if sale_yr = 2019 then do;
-		%dollar_convert(saleprice,price_2019,2019,2021, series=CUUR0000SA0L2);
+		%dollar_convert(saleprice,price_2019,2019,2020, series=CUUR0000SA0L2);
 	end; 
 	else if sale_yr = 2020 then do;
-		%dollar_convert(saleprice,price_2020,2020,2021, series=CUUR0000SA0L2);
+		%dollar_convert(saleprice,price_2020,2020,2020, series=CUUR0000SA0L2);
 	end; 
 	else if sale_yr = 2021 then do;
-		%dollar_convert(saleprice,price_2021,2021,2021, series=CUUR0000SA0L2);
+		%dollar_convert(saleprice,price_2020,2021,2020, series=CUUR0000SA0L2);
 	end; 
 
-	/*length ward2022 $1;
-	ward2022 = put( geoblk2010, $bk1wd2f. );
-	label geoblk2010 = "Ward (2012)";*/
-
-	format cluster2017 clus17b. /*ward2022 ward12a.*/;
+	format cluster2017 clus17b.;
 
 run;
 
@@ -105,7 +101,7 @@ run;
 /* Sales trend summary */
 proc summary data = sales_filtered completetypes missing;
 	class &summarygeos. / order=data preloadfmt;
-	var sales_2016-sales_2021;
+	var sales_2016-sales_2020;
 	output out = sales_&housetype._&nhood._&tenure. (where=(_type_ in (1,2,4))) sum=;
 run;
 
@@ -122,7 +118,7 @@ run;
 /* Median price summary */
 proc summary data = sales_filtered completetypes missing;
 	class &summarygeos. / preloadfmt order=data;
-	var price_2016-price_2021;
+	var price_2016-price_2020;
 	output out = price_&housetype._&nhood._&tenure. (where=(_type_ in (1,2,4))) median=;
 run;
 
@@ -140,9 +136,9 @@ run;
 data appreciation_&housetype._&nhood._&tenure.;
 	set price_&housetype._&nhood._&tenure. ;
 
-	price_change = (price_2021-price_2016)/price_2016;
+	price_change = (price_2020-price_2016)/price_2016;
 
-	drop price_2017 price_2018 price_2019 price_2020;
+	drop price_2017 price_2018 price_2019;
 run;
 
 
