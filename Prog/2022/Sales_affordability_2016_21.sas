@@ -1,5 +1,5 @@
 /**************************************************************************
- Program:  Sales_Affordability_2016_21.sas
+ Program:  Sales_Affordability_2016_20.sas
  Library:  Equity
  Project:  NeighborhoodInfo DC
  Author:   M. Woluchem	
@@ -14,7 +14,7 @@ Homeownership Affordability in Urban America: Past and Future;
  Modifications: 09/11/16 LH Added Price Adjustments and used 2015$ adj. income
 				10/07/16 LH Added output for COMM. 
 				03/18/22 LH Update for 2016-2020
-				09/13/22 RP Update for 2021
+				09/13/22 RP Update for 2020 tracts and 2022 wards
 
 **************************************************************************/
 
@@ -44,21 +44,21 @@ https://urbanorg.app.box.com/file/933065867963;
 	eff_int_rate_2018= 4.64;
 	eff_int_rate_2019= 4.01;
 	eff_int_rate_2020= 3.16;
-	eff_int_rate_2021= 2.88;
+	*eff_int_rate_2021= 3.00;
 
 		month_int_rate_2016 = (eff_int_rate_2016/12/100);
 		month_int_rate_2017 = (eff_int_rate_2017/12/100); 
 		month_int_rate_2018 = (eff_int_rate_2018/12/100); 
 		month_int_rate_2019 = (eff_int_rate_2019/12/100); 
 		month_int_rate_2020 = (eff_int_rate_2020/12/100); 
-		month_int_rate_2021 = (eff_int_rate_2021/12/100); 
+		*month_int_rate_2021 = (eff_int_rate_2021/12/100); 
 		
 	loan_multiplier_2016 =  month_int_rate_2016 *	( ( 1 + month_int_rate_2016 )**360	) / ( ( ( 1+ month_int_rate_2016 )**360 )-1 );
   	loan_multiplier_2017 =  month_int_rate_2017 *	( ( 1 + month_int_rate_2017 )**360	) / ( ( ( 1+ month_int_rate_2017 )**360 )-1 );
   	loan_multiplier_2018 =  month_int_rate_2018 *	( ( 1 + month_int_rate_2018 )**360	) / ( ( ( 1+ month_int_rate_2018 )**360 )-1 );
   	loan_multiplier_2019 =  month_int_rate_2019 *	( ( 1 + month_int_rate_2019 )**360	) / ( ( ( 1+ month_int_rate_2019 )**360 )-1 );
   	loan_multiplier_2020 =  month_int_rate_2020 *	( ( 1 + month_int_rate_2020 )**360	) / ( ( ( 1+ month_int_rate_2020 )**360 )-1 );
-	loan_multiplier_2021 =  month_int_rate_2021 *	( ( 1 + month_int_rate_2021 )**360	) / ( ( ( 1+ month_int_rate_2021 )**360 )-1 );
+	*loan_multiplier_2021 =  month_int_rate_2021 *	( ( 1 + month_int_rate_2021 )**360	) / ( ( ( 1+ month_int_rate_2021 )**360 )-1 );
 
   *calculate monthly Principal and Interest for First time Homebuyer (10% down);
     if sale_yr=2016 then PI_First2016=saleprice*.9*loan_multiplier_2016;
@@ -66,14 +66,14 @@ https://urbanorg.app.box.com/file/933065867963;
 	if sale_yr=2018 then PI_First2018=saleprice*.9*loan_multiplier_2018;
 	if sale_yr=2019 then PI_First2019=saleprice*.9*loan_multiplier_2019;
 	if sale_yr=2020 then PI_First2020=saleprice*.9*loan_multiplier_2020;
-	if sale_yr=2021 then PI_First2021=saleprice*.9*loan_multiplier_2021;
+	*if sale_yr=2021 then PI_First2021=saleprice*.9*loan_multiplier_2021;
 
-	%dollar_convert(PI_first2016,PI_first2016r,2016,2021, series=CUUR0000SA0L2);
-	%dollar_convert(PI_first2017,PI_first2017r,2017,2021, series=CUUR0000SA0L2);
- 	%dollar_convert(PI_first2018,PI_first2018r,2018,2021, series=CUUR0000SA0L2);
-	%dollar_convert(PI_first2019,PI_first2019r,2019,2021, series=CUUR0000SA0L2);
-	%dollar_convert(PI_first2020,PI_first2020r,2020,2021, series=CUUR0000SA0L2);
-	%dollar_convert(PI_first2021,PI_first2021r,2021,2021, series=CUUR0000SA0L2);
+	%dollar_convert(PI_first2016,PI_first2016r,2016,2020, series=CUUR0000SA0L2);
+	%dollar_convert(PI_first2017,PI_first2017r,2017,2020, series=CUUR0000SA0L2);
+ 	%dollar_convert(PI_first2018,PI_first2018r,2018,2020, series=CUUR0000SA0L2);
+	%dollar_convert(PI_first2019,PI_first2019r,2019,2020, series=CUUR0000SA0L2);
+	%dollar_convert(PI_first2020,PI_first2020r,2020,2020, series=CUUR0000SA0L2);
+	*%dollar_convert(PI_first2021,PI_first2021r,2021,2021, series=CUUR0000SA0L2);
 
   *calculate monthly PITI (Principal, Interest, Taxes and Insurance) for First Time Homebuyer (34% of PI = TI);
 	if sale_yr=2016 then PITI_First=PI_First2016r*1.34;
@@ -81,7 +81,7 @@ https://urbanorg.app.box.com/file/933065867963;
 	if sale_yr=2018 then PITI_First=PI_First2018r*1.34;
 	if sale_yr=2019 then PITI_First=PI_First2019r*1.34;
 	if sale_yr=2020 then PITI_First=PI_First2020r*1.34;
-	if sale_yr=2021 then PITI_First=PI_First2021r*1.34;
+	*if sale_yr=2021 then PITI_First=PI_First2021r*1.34;
 
   *calculate monthly Principal and Interest for Repeat Homebuyer (20% down);
     if sale_yr=2016 then PI_Repeat2016=saleprice*.8*loan_multiplier_2016;
@@ -89,14 +89,14 @@ https://urbanorg.app.box.com/file/933065867963;
 	if sale_yr=2018 then PI_Repeat2018=saleprice*.8*loan_multiplier_2018;
 	if sale_yr=2019 then PI_Repeat2019=saleprice*.8*loan_multiplier_2019;
 	if sale_yr=2020 then PI_Repeat2020=saleprice*.8*loan_multiplier_2020;
-	if sale_yr=2021 then PI_Repeat2021=saleprice*.8*loan_multiplier_2021;
+	*if sale_yr=2021 then PI_Repeat2021=saleprice*.8*loan_multiplier_2021;
 
-	%dollar_convert(PI_Repeat2016,PI_Repeat2016r,2016,2021,series=CUUR0000SA0L2);
-	%dollar_convert(PI_Repeat2017,PI_Repeat2017r,2017,2021,series=CUUR0000SA0L2);
- 	%dollar_convert(PI_Repeat2018,PI_Repeat2018r,2018,2021,series=CUUR0000SA0L2);
-	%dollar_convert(PI_Repeat2019,PI_Repeat2019r,2019,2021,series=CUUR0000SA0L2);
-	%dollar_convert(PI_Repeat2020,PI_Repeat2020r,2020,2021,series=CUUR0000SA0L2);
-	%dollar_convert(PI_Repeat2021,PI_Repeat2021r,2021,2021,series=CUUR0000SA0L2);
+	%dollar_convert(PI_Repeat2016,PI_Repeat2016r,2016,2020,series=CUUR0000SA0L2);
+	%dollar_convert(PI_Repeat2017,PI_Repeat2017r,2017,2020,series=CUUR0000SA0L2);
+ 	%dollar_convert(PI_Repeat2018,PI_Repeat2018r,2018,2020,series=CUUR0000SA0L2);
+	%dollar_convert(PI_Repeat2019,PI_Repeat2019r,2019,2020,series=CUUR0000SA0L2);
+	%dollar_convert(PI_Repeat2020,PI_Repeat2020r,2020,2020,series=CUUR0000SA0L2);
+	*%dollar_convert(PI_Repeat2021,PI_Repeat2021r,2021,2021,series=CUUR0000SA0L2);
 
 	*calculate monthly PITI (Principal, Interest, Taxes and Insurance) for Repeat Homebuyer (25% of PI = TI);
 	if sale_yr=2016 then PITI_Repeat=PI_Repeat2016r*1.25;
@@ -104,7 +104,7 @@ https://urbanorg.app.box.com/file/933065867963;
 	if sale_yr=2018 then PITI_Repeat=PI_Repeat2018r*1.25;
 	if sale_yr=2019 then PITI_Repeat=PI_Repeat2019r*1.25;
 	if sale_yr=2020 then PITI_Repeat=PI_Repeat2020r*1.25;
-	if sale_yr=2021 then PITI_Repeat=PI_Repeat2021r*1.25;
+	*if sale_yr=2021 then PITI_Repeat=PI_Repeat2021r*1.25;
 
 
 	/*Here are numbers for Average Household Income at the city level. 2016-20 ACS 
@@ -200,7 +200,7 @@ proc summary data=create_flags;
 
 
 
-	data sales_afford_all_2016_21 (drop=_type_ _freq_);
+	data sales_afford_all_2016_20 (drop=_type_ _freq_);
 
 	set city_level ward_level cluster_level tract_level; 
 
@@ -221,26 +221,26 @@ proc summary data=create_flags;
 	PctAffordRepeat_Hispanic=Hispanic_Repeat_afford/total_sales*100;
 	*PctAffordRepeat_AIOM= AIOM_repeat_afford/total_sales*100;
 
-	label PctAffordFirst_White="Pct. of SF/Condo Sales 2016-21 Affordable to First-time Buyer at Avg. Household Inc. NH White"
-		  PctAffordFirst_Black="Pct. of SF/Condo Sales 2016-21 Affordable to First-time Buyer at Avg. Household Inc. Black Alone"
-		  PctAffordFirst_Hispanic="Pct. of SF/Condo Sales 2016-21 Affordable to First-time Buyer at Avg. Household Inc. Hispanic"
-		/* PctAffordFirst_AIOM="Pct. of SF/Condo Sales 2016-21 Affordable to First-time Buyer at Avg. Household Inc. Asian, Native American, Other, Multiple Race"*/
+	label PctAffordFirst_White="Pct. of SF/Condo Sales 2016-20 Affordable to First-time Buyer at Avg. Household Inc. NH White"
+		  PctAffordFirst_Black="Pct. of SF/Condo Sales 2016-20 Affordable to First-time Buyer at Avg. Household Inc. Black Alone"
+		  PctAffordFirst_Hispanic="Pct. of SF/Condo Sales 2016-20 Affordable to First-time Buyer at Avg. Household Inc. Hispanic"
+		/* PctAffordFirst_AIOM="Pct. of SF/Condo Sales 2016-20 Affordable to First-time Buyer at Avg. Household Inc. Asian, Native American, Other, Multiple Race"*/
 	
-		PctAffordRepeat_White="Pct. of SF/Condo Sales 2016-21 Affordable to Repeat Buyer at Avg. Household Inc. NH White"
-		PctAffordRepeat_Black="Pct. of SF/Condo Sales 2016-21 Affordable to Repeat Buyer at Avg. Household Inc. Black Alone"
-		PctAffordRepeat_Hispanic="Pct. of SF/Condo Sales 2016-21 Affordable to Repeat Buyer at Avg. Household Inc. Hispanic"
-		/*PctAffordRepeat_AIOM="Pct. of SF/Condo Sales 2016-21 Affordable to First-time Buyer at Avg. Household Inc. Asian, Native American, Other, Multiple Race"*/
+		PctAffordRepeat_White="Pct. of SF/Condo Sales 2016-20 Affordable to Repeat Buyer at Avg. Household Inc. NH White"
+		PctAffordRepeat_Black="Pct. of SF/Condo Sales 2016-20 Affordable to Repeat Buyer at Avg. Household Inc. Black Alone"
+		PctAffordRepeat_Hispanic="Pct. of SF/Condo Sales 2016-20 Affordable to Repeat Buyer at Avg. Household Inc. Hispanic"
+		/*PctAffordRepeat_AIOM="Pct. of SF/Condo Sales 2016-20 Affordable to First-time Buyer at Avg. Household Inc. Asian, Native American, Other, Multiple Race"*/
 	clusterlabel="Neighborhood Cluster Label" 
 clustername="Name of Neighborhood Cluster"
-total_sales="Total Number of Sales of Single Family Homes and Condiminium Units in Geography, 2016-21"
+total_sales="Total Number of Sales of Single Family Homes and Condiminium Units in Geography, 2016-20"
 tractlabel="Census Tract Label"
-		white_first_afford = "Number of SF/Condo Sales 2016-21 Affordable for FT White Owners"
-			black_first_afford = "Number of SF/Condo Sales 2016-21 Affordable for FT Black Owners"
-			hispanic_first_afford = "Number of SF/Condo Sales 2016-21 Affordable for FT Hispanic Owners"
-			/*AIOM_first_afford = "Number of SF/Condo Sales 2016-21 Affordable for FT Owners of Asian, Pacific Islander, American Indian, Alaskan Native Descent, Other, Two or More Races"*/
-			white_repeat_afford = "Number of SF/Condo Sales 2016-21  Affordable for Repeat White Owners"
-			black_repeat_afford = "Number of SF/Condo Sales 2016-21 Affordable for Repeat Black Owners"
-			hispanic_repeat_afford = "Number of SF/Condo Sales 2016-21 Affordable for Repeat Hispanic Owners"
+		white_first_afford = "Number of SF/Condo Sales 2016-20 Affordable for FT White Owners"
+			black_first_afford = "Number of SF/Condo Sales 2016-20 Affordable for FT Black Owners"
+			hispanic_first_afford = "Number of SF/Condo Sales 2016-20 Affordable for FT Hispanic Owners"
+			/*AIOM_first_afford = "Number of SF/Condo Sales 2016-20 Affordable for FT Owners of Asian, Pacific Islander, American Indian, Alaskan Native Descent, Other, Two or More Races"*/
+			white_repeat_afford = "Number of SF/Condo Sales 2016-20  Affordable for Repeat White Owners"
+			black_repeat_afford = "Number of SF/Condo Sales 2016-20 Affordable for Repeat Black Owners"
+			hispanic_repeat_afford = "Number of SF/Condo Sales 2016-20 Affordable for Repeat Hispanic Owners"
 			/*AIOM_repeat_afford = "AffordableProperty Sale is Affordable Asian, Pacific Islander, American Indian, Alaskan Native Descent, Other, Two or More Races"*/
 			;
 
@@ -251,14 +251,14 @@ tractlabel="Census Tract Label"
 	
 
 data wardonly;
-	set sales_afford_all_2016_21 (where=(ward2022~=" ") keep=ward2022 pct:); 
+	set sales_afford_all_2016_20 (where=(ward2022~=" ") keep=ward2022 pct:); 
 	run; 
 	proc transpose data=wardonly out=ward_long prefix=Ward_;
 	id ward2022;
 	run;
 
 data cityonly;
-	set sales_afford_all_2016_21 (where=(city~=" ") keep=city pct:); 
+	set sales_afford_all_2016_20 (where=(city~=" ") keep=city pct:); 
 	city=0;
 	rename city=ward2022;
 	run; 
@@ -297,7 +297,7 @@ Ward 1		Hispanic	Value	Value	Value
 	
 
 	data white;
-		set sales_afford_all_2016_21 (drop= PctAffordFirst_Black PctAffordFirst_Hispanic /*PctAffordFirst_AIOM*/
+		set sales_afford_all_2016_20 (drop= PctAffordFirst_Black PctAffordFirst_Hispanic /*PctAffordFirst_AIOM*/
 											PctAffordRepeat_Black PctAffordRepeat_Hispanic /*PctAffordRepeat_AIOM*/
 											black_first_afford Hispanic_first_afford /*AIOM_first_afford*/
 											black_Repeat_afford Hispanic_Repeat_afford /*AIOM_Repeat_afford*/ );
@@ -316,7 +316,7 @@ Ward 1		Hispanic	Value	Value	Value
 	run;	
 
 		data black;
-		set sales_afford_all_2016_21 (drop= PctAffordFirst_white PctAffordFirst_Hispanic /*PctAffordFirst_AIOM*/
+		set sales_afford_all_2016_20 (drop= PctAffordFirst_white PctAffordFirst_Hispanic /*PctAffordFirst_AIOM*/
 											PctAffordRepeat_white PctAffordRepeat_Hispanic /*PctAffordRepeat_AIOM*/
 											white_first_afford Hispanic_first_afford /*AIOM_first_afford*/ 
 											white_Repeat_afford Hispanic_Repeat_afford /*AIOM_Repeat_afford*/ );
@@ -336,7 +336,7 @@ Ward 1		Hispanic	Value	Value	Value
 
 	
 		data hispanic;
-		set sales_afford_all_2016_21 (drop= PctAffordFirst_white PctAffordFirst_black /*PctAffordFirst_AIOM*/
+		set sales_afford_all_2016_20 (drop= PctAffordFirst_white PctAffordFirst_black /*PctAffordFirst_AIOM*/
 											PctAffordRepeat_white PctAffordRepeat_black /*PctAffordRepeat_AIOM*/
 											white_first_afford black_first_afford /*AIOM_first_afford*/ 
 											white_Repeat_afford black_Repeat_afford /*AIOM_Repeat_afford*/ );
@@ -360,11 +360,11 @@ Ward 1		Hispanic	Value	Value	Value
 	 PctAffordFirst_dec= PctAffordFirst/100; 
 	PctAffordRepeat_dec=PctAffordRepeat/100; 
 	label 
-	 PctAffordFirst_dec="Pct. of SF/Condo Sales 2016-21 Affordable to First-time Buyer at Avg. Household Inc."
-		 PctAffordRepeat_dec="Pct. of SF/Condo Sales 2016-21 Affordable to Repeat Buyer at Avg. Household Inc."
+	 PctAffordFirst_dec="Pct. of SF/Condo Sales 2016-20 Affordable to First-time Buyer at Avg. Household Inc."
+		 PctAffordRepeat_dec="Pct. of SF/Condo Sales 2016-20 Affordable to Repeat Buyer at Avg. Household Inc."
 		
-		first_afford = "Number of SF/Condo Sales 2016-21 Affordable for First Time Buyer"
-		repeat_afford = "Number of SF/Condo Sales 2016-21  Affordable for Repeat Owners"
+		first_afford = "Number of SF/Condo Sales 2016-20 Affordable for First Time Buyer"
+		repeat_afford = "Number of SF/Condo Sales 2016-20  Affordable for Repeat Owners"
 		race="Race of Householder";
 
 		
