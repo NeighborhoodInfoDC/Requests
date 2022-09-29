@@ -18,28 +18,30 @@
 %DCData_lib( Requests )
 %DCData_lib( realprop );
 %DCData_lib( ACS );
+%DCData_lib( Census );
 
 
-/* ACS data to merge for majority black neighborhoods */
-proc sort data = acs.acs_2015_19_dc_sum_tr_tr10
-	(keep = geo2010 PopBlackNonHispBridge_2015_19 PopWithRace_2015_19)
+/* Census 2020 data to merge for majority black neighborhoods */
+proc sort data = census.census_pl_2020_dc
+	(keep = geo2020 sumlev p0020001 p0020006
+	where=(sumlev='140'))
 	out = cen_race;
-	by geo2010;
+	by geo2020;
 run;
 
 
 /* Prep sales data */
-proc sort data = realprop.sales_res_clean out = sales_in; by geo2010; run;
+proc sort data = realprop.sales_res_clean out = sales_in; by geo2020; run;
 
 data property_sales;
   	merge sales_in cen_race;
-	by geo2010;
+	by geo2020;
 
 	sale_yr = year(saledate);
 	total_sales=1;
 
 	/* Calculate if neighborhood is majority black */
-	PctBlack = PopBlackNonHispBridge_2015_19 / PopWithRace_2015_19;
+	PctBlack = p0020006 / p0020001;
 	if PctBlack > .5 then MajBlack = 1;
 
 	/* Sales per year */
@@ -48,7 +50,7 @@ data property_sales;
 		else if sale_yr = 2018 then sales_2018 = 1;
 		else if sale_yr = 2019 then sales_2019 = 1;
 		else if sale_yr = 2020 then sales_2020 = 1;
-		else if sale_yr = 2021 then sales_2020 = 1;
+		else if sale_yr = 2021 then sales_2021 = 1;
 
 	/* Price per year */
 	if sale_yr = 2016 then do;

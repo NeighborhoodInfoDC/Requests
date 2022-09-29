@@ -23,13 +23,15 @@ Homeownership Affordability in Urban America: Past and Future;
 
 ** Define libraries **;
 %DCData_lib( Requests )
-
 %DCData_lib( realprop );
 %DCData_lib( equity );
 
+%let firstyear = 2016;
+%let lastyear = 2020;
+
 
 data create_flags;
-  set realpr_r.sales_res_clean (where=(ui_proptype in ('10' '11') and year(saledate) >= 2016))
+  set realpr_r.sales_res_clean (where=(ui_proptype in ('10' '11') and &firstyear. <= year(saledate) <= &lastyear.))
 ;
   
   /*pull in effective interest rates - for example: 
