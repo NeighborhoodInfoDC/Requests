@@ -269,20 +269,20 @@ run;
 
 data wardonly;
 	set sales_afford_all_&yrs. (where=(ward2022~=" ") keep=ward2022 pct:); 
-	run; 
+run; 
 proc transpose data=wardonly out=ward_long prefix=Ward_;
 	id ward2022;
-	run;
+run;
 
 data cityonly;
 	set sales_afford_all_&yrs. (where=(city~=" ") keep=city pct:); 
 	city=0;
 	rename city=ward2022;
-	run; 
+run; 
 
 proc transpose data=cityonly out=city_long prefix=Ward_;
 	id ward2022;
-	run;
+run;
 proc sort data=city_long;
 by _name_;
 proc sort data=ward_long;
@@ -291,12 +291,12 @@ by _name_;
 data output_table;
 	merge city_long ward_long;
 	by _name_;
-	run;
+run;
 
 proc export data=output_table 
 	outfile="&_dcdata_default_path\Requests\Prog\2023\profile_tabs_aff_&lastyear..csv"
 	dbms=csv replace;
-	run;
+run;
 
 
 /***
@@ -385,17 +385,18 @@ data all_race (label="DC Sales Affordability for COMM" drop=PctAffordFirst PctAf
 	race="Race of Householder";
 
 		
-	run;
+run;
 
 proc sort data=all_race;
 	by  geo2020 cluster2017 ward2022 city  ;
-	run;
+run;
+
 proc export data=all_race 
 	outfile="&_dcdata_default_path\Requests\Prog\2023\Sales_affordability_allgeo_&lastyear..csv"
 	dbms=csv replace;
-	run;
-	proc contents data=all_race;
-	run; 
+run;
+proc contents data=all_race;
+run; 
 
 /*don't really need a permanent dataset
 	%Finalize_data_set(
