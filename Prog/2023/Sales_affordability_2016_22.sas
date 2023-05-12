@@ -1,5 +1,5 @@
 /**************************************************************************
- Program:  Sales_Affordability_2016_20.sas
+ Program:  Sales_Affordability_2016_22.sas
  Library:  Equity
  Project:  NeighborhoodInfo DC
  Author:   M. Woluchem	
@@ -15,6 +15,7 @@ Homeownership Affordability in Urban America: Past and Future;
 				10/07/16 LH Added output for COMM. 
 				03/18/22 LH Update for 2016-2020
 				09/13/22 RP Update for 2020 tracts and 2022 wards
+				05/12/23 RP Update for most recent real property data
 
 **************************************************************************/
 
@@ -27,78 +28,86 @@ Homeownership Affordability in Urban America: Past and Future;
 %DCData_lib( equity );
 
 %let firstyear = 2016;
-%let lastyear = 2020;
+%let lastyear = 2022;
 
 
 data create_flags;
-  set realpr_r.sales_res_clean (where=(ui_proptype in ('10' '11') and &firstyear. <= year(saledate) <= &lastyear.))
-;
-  
-  /*pull in effective interest rates - for example: 
-  http://www.fhfa.gov/DataTools/Downloads/Documents/Historical-Summary-Tables/Table15_2018_by_State_and_Year.xls*/
-*averaged freddie mac weekly rates and converted to effective)
-https://urbanorg.app.box.com/file/933065867963;
-  
+	set realpr_r.sales_res_clean (where=(ui_proptype in ('10' '11') and &firstyear. <= year(saledate) <= &lastyear.))
+	;
+
 	sale_yr = year(saledate);
+  
+  /* Copy/paste in effective interest rates by downloading the Current Mortgage Rates Data Since 1971? (xlsx) from:
+     https://www.freddiemac.com/pmms */;
   
 	eff_int_rate_2016= 3.72;
 	eff_int_rate_2017= 4.06;
 	eff_int_rate_2018= 4.64;
 	eff_int_rate_2019= 4.01;
-	eff_int_rate_2020= 3.16;
-	*eff_int_rate_2021= 3.00;
+	eff_int_rate_2020= 3.11;
+	eff_int_rate_2021= 2.96;
+	eff_int_rate_2022= 5.34;
 
-		month_int_rate_2016 = (eff_int_rate_2016/12/100);
-		month_int_rate_2017 = (eff_int_rate_2017/12/100); 
-		month_int_rate_2018 = (eff_int_rate_2018/12/100); 
-		month_int_rate_2019 = (eff_int_rate_2019/12/100); 
-		month_int_rate_2020 = (eff_int_rate_2020/12/100); 
-		*month_int_rate_2021 = (eff_int_rate_2021/12/100); 
+	month_int_rate_2016 = (eff_int_rate_2016/12/100);
+	month_int_rate_2017 = (eff_int_rate_2017/12/100); 
+	month_int_rate_2018 = (eff_int_rate_2018/12/100); 
+	month_int_rate_2019 = (eff_int_rate_2019/12/100); 
+	month_int_rate_2020 = (eff_int_rate_2020/12/100); 
+	month_int_rate_2021 = (eff_int_rate_2021/12/100); 
+	month_int_rate_2022 = (eff_int_rate_2022/12/100); 
 		
 	loan_multiplier_2016 =  month_int_rate_2016 *	( ( 1 + month_int_rate_2016 )**360	) / ( ( ( 1+ month_int_rate_2016 )**360 )-1 );
   	loan_multiplier_2017 =  month_int_rate_2017 *	( ( 1 + month_int_rate_2017 )**360	) / ( ( ( 1+ month_int_rate_2017 )**360 )-1 );
   	loan_multiplier_2018 =  month_int_rate_2018 *	( ( 1 + month_int_rate_2018 )**360	) / ( ( ( 1+ month_int_rate_2018 )**360 )-1 );
   	loan_multiplier_2019 =  month_int_rate_2019 *	( ( 1 + month_int_rate_2019 )**360	) / ( ( ( 1+ month_int_rate_2019 )**360 )-1 );
   	loan_multiplier_2020 =  month_int_rate_2020 *	( ( 1 + month_int_rate_2020 )**360	) / ( ( ( 1+ month_int_rate_2020 )**360 )-1 );
-	*loan_multiplier_2021 =  month_int_rate_2021 *	( ( 1 + month_int_rate_2021 )**360	) / ( ( ( 1+ month_int_rate_2021 )**360 )-1 );
+	loan_multiplier_2021 =  month_int_rate_2021 *	( ( 1 + month_int_rate_2021 )**360	) / ( ( ( 1+ month_int_rate_2021 )**360 )-1 );
+	loan_multiplier_2022 =  month_int_rate_2022 *	( ( 1 + month_int_rate_2022 )**360	) / ( ( ( 1+ month_int_rate_2022 )**360 )-1 );
 
-  *calculate monthly Principal and Interest for First time Homebuyer (10% down);
+    *calculate monthly Principal and Interest for First time Homebuyer (10% down);
     if sale_yr=2016 then PI_First2016=saleprice*.9*loan_multiplier_2016;
 	if sale_yr=2017 then PI_First2017=saleprice*.9*loan_multiplier_2017;
 	if sale_yr=2018 then PI_First2018=saleprice*.9*loan_multiplier_2018;
 	if sale_yr=2019 then PI_First2019=saleprice*.9*loan_multiplier_2019;
 	if sale_yr=2020 then PI_First2020=saleprice*.9*loan_multiplier_2020;
-	*if sale_yr=2021 then PI_First2021=saleprice*.9*loan_multiplier_2021;
+	if sale_yr=2021 then PI_First2021=saleprice*.9*loan_multiplier_2021;
+	if sale_yr=2022 then PI_First2022=saleprice*.9*loan_multiplier_2022;
 
-	%dollar_convert(PI_first2016,PI_first2016r,2016,2020, series=CUUR0000SA0L2);
-	%dollar_convert(PI_first2017,PI_first2017r,2017,2020, series=CUUR0000SA0L2);
- 	%dollar_convert(PI_first2018,PI_first2018r,2018,2020, series=CUUR0000SA0L2);
-	%dollar_convert(PI_first2019,PI_first2019r,2019,2020, series=CUUR0000SA0L2);
-	%dollar_convert(PI_first2020,PI_first2020r,2020,2020, series=CUUR0000SA0L2);
-	*%dollar_convert(PI_first2021,PI_first2021r,2021,2021, series=CUUR0000SA0L2);
+	*inflation adjust into most recent year dollars ;
+	%dollar_convert(PI_first2016,PI_first2016r,2016,&lastyear., series=CUUR0000SA0L2);
+	%dollar_convert(PI_first2017,PI_first2017r,2017,&lastyear., series=CUUR0000SA0L2);
+ 	%dollar_convert(PI_first2018,PI_first2018r,2018,&lastyear., series=CUUR0000SA0L2);
+	%dollar_convert(PI_first2019,PI_first2019r,2019,&lastyear., series=CUUR0000SA0L2);
+	%dollar_convert(PI_first2020,PI_first2020r,2020,&lastyear., series=CUUR0000SA0L2);
+	%dollar_convert(PI_first2021,PI_first2021r,2021,&lastyear., series=CUUR0000SA0L2);
+	%dollar_convert(PI_first2022,PI_first2022r,2022,&lastyear., series=CUUR0000SA0L2);
 
-  *calculate monthly PITI (Principal, Interest, Taxes and Insurance) for First Time Homebuyer (34% of PI = TI);
+    *calculate monthly PITI (Principal, Interest, Taxes and Insurance) for First Time Homebuyer (34% of PI = TI);
 	if sale_yr=2016 then PITI_First=PI_First2016r*1.34;
 	if sale_yr=2017 then PITI_First=PI_First2017r*1.34;
 	if sale_yr=2018 then PITI_First=PI_First2018r*1.34;
 	if sale_yr=2019 then PITI_First=PI_First2019r*1.34;
 	if sale_yr=2020 then PITI_First=PI_First2020r*1.34;
-	*if sale_yr=2021 then PITI_First=PI_First2021r*1.34;
+	if sale_yr=2021 then PITI_First=PI_First2021r*1.34;
+	if sale_yr=2022 then PITI_First=PI_First2022r*1.34;
 
-  *calculate monthly Principal and Interest for Repeat Homebuyer (20% down);
+    *calculate monthly Principal and Interest for Repeat Homebuyer (20% down);
     if sale_yr=2016 then PI_Repeat2016=saleprice*.8*loan_multiplier_2016;
 	if sale_yr=2017 then PI_Repeat2017=saleprice*.8*loan_multiplier_2017;
 	if sale_yr=2018 then PI_Repeat2018=saleprice*.8*loan_multiplier_2018;
 	if sale_yr=2019 then PI_Repeat2019=saleprice*.8*loan_multiplier_2019;
 	if sale_yr=2020 then PI_Repeat2020=saleprice*.8*loan_multiplier_2020;
-	*if sale_yr=2021 then PI_Repeat2021=saleprice*.8*loan_multiplier_2021;
+	if sale_yr=2021 then PI_Repeat2021=saleprice*.8*loan_multiplier_2021;
+	if sale_yr=2022 then PI_Repeat2022=saleprice*.8*loan_multiplier_2022;
 
-	%dollar_convert(PI_Repeat2016,PI_Repeat2016r,2016,2020,series=CUUR0000SA0L2);
-	%dollar_convert(PI_Repeat2017,PI_Repeat2017r,2017,2020,series=CUUR0000SA0L2);
- 	%dollar_convert(PI_Repeat2018,PI_Repeat2018r,2018,2020,series=CUUR0000SA0L2);
-	%dollar_convert(PI_Repeat2019,PI_Repeat2019r,2019,2020,series=CUUR0000SA0L2);
-	%dollar_convert(PI_Repeat2020,PI_Repeat2020r,2020,2020,series=CUUR0000SA0L2);
-	*%dollar_convert(PI_Repeat2021,PI_Repeat2021r,2021,2021,series=CUUR0000SA0L2);
+	*inflation adjust into most recent year dollars ;
+	%dollar_convert(PI_Repeat2016,PI_Repeat2016r,2016,&lastyear.,series=CUUR0000SA0L2);
+	%dollar_convert(PI_Repeat2017,PI_Repeat2017r,2017,&lastyear.,series=CUUR0000SA0L2);
+ 	%dollar_convert(PI_Repeat2018,PI_Repeat2018r,2018,&lastyear.,series=CUUR0000SA0L2);
+	%dollar_convert(PI_Repeat2019,PI_Repeat2019r,2019,&lastyear.,series=CUUR0000SA0L2);
+	%dollar_convert(PI_Repeat2020,PI_Repeat2020r,2020,&lastyear.,series=CUUR0000SA0L2);
+	%dollar_convert(PI_Repeat2021,PI_Repeat2021r,2021,&lastyear.,series=CUUR0000SA0L2);
+	%dollar_convert(PI_Repeat2022,PI_Repeat2022r,2022,&lastyear.,series=CUUR0000SA0L2);
 
 	*calculate monthly PITI (Principal, Interest, Taxes and Insurance) for Repeat Homebuyer (25% of PI = TI);
 	if sale_yr=2016 then PITI_Repeat=PI_Repeat2016r*1.25;
@@ -106,28 +115,31 @@ https://urbanorg.app.box.com/file/933065867963;
 	if sale_yr=2018 then PITI_Repeat=PI_Repeat2018r*1.25;
 	if sale_yr=2019 then PITI_Repeat=PI_Repeat2019r*1.25;
 	if sale_yr=2020 then PITI_Repeat=PI_Repeat2020r*1.25;
-	*if sale_yr=2021 then PITI_Repeat=PI_Repeat2021r*1.25;
+	if sale_yr=2021 then PITI_Repeat=PI_Repeat2021r*1.25;
+	if sale_yr=2022 then PITI_Repeat=PI_Repeat2022r*1.25;
 
 
-	/*Here are numbers for Average Household Income at the city level. 2016-20 ACS 
-	Using tables B19025(B,H, I) and B11001X (B,H,I)
-	Black	NH-White	Hispanic	AIOM	 
-	72915	 194743		120441 	 	 		*/
+	/*Here are numbers for Average Household Income at the city level. 2017-21 ACS 
+	Using tables B19025(B,H, I) and B11001 (B,H,I)*/
+	%let hhinc_blk = 74240;
+	%let hhinc_nhwht = 195681;
+	%let hhinc_hisp = 138973;
 
-
-	if PITI_First <= (194743 / 12*.28) then white_first_afford=1; else white_first_afford=0; 
+	*use HH Income numbers to calculate affordable or nonaffodable sales ;
+	if PITI_First <= (&hhinc_nhwht. / 12*.28) then white_first_afford=1; else white_first_afford=0; 
 		if PITI_Repeat <= (194743/ 12 *.28) then white_repeat_afford=1; else white_repeat_afford=0; 
-	if PITI_First <= (72915 / 12 *.28) then black_first_afford=1; else black_first_afford=0; 
+	if PITI_First <= (&hhinc_nhwht. / 12 *.28) then black_first_afford=1; else black_first_afford=0; 
 		if PITI_Repeat <= (72915 / 12 *.28) then black_repeat_afford=1; else black_repeat_afford=0; 
-	if PITI_First <= (120441 / 12*.28) then hispanic_first_afford=1; else hispanic_first_afford=0; 
+	if PITI_First <= (&hhinc_hisp. / 12*.28) then hispanic_first_afford=1; else hispanic_first_afford=0; 
 		if PITI_Repeat <= (120441 / 12*.28 ) then hispanic_repeat_afford=1; else hispanic_repeat_afford=0; 
 	/*if PITI_First <= (76271 / 12*.28 ) then aiom_first_afford=1; else aiom_first_afford=0; 
 		if PITI_Repeat <= (76271 / 12*.28 ) then aiom_repeat_afford=1; else aiom_repeat_afford=0; 
 	*/
 
-
+	*dummy variable to count total sales ;
 	total_sales=1;
 
+	*variable labels;
 	label 	PITI_First = "Principal, Interest, Tax and Insurance for FT Homebuyer"
 			PITI_Repeat = "Principal, Interest, Tax and Insurance for Repeat Homebuyer"
 			white_first_afford = "Property Sale is Affordable for FT White Owners"
