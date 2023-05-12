@@ -188,7 +188,7 @@ proc summary data=create_flags;
 	output	out=City_level (where=(_type_^=0))	sum= ;
 	
 	format city $CITY16.;
-		run;
+run;
 
 proc summary data=create_flags;
 	class ward2022;
@@ -198,14 +198,14 @@ proc summary data=create_flags;
 	sum= ; 
 	format ward2022 $ward22a.;
 ;
-		run;
+run;
 
 proc summary data=create_flags;
 	class geo2020;
 	var total_sales white_first_afford white_repeat_afford black_first_afford black_repeat_afford
 		hispanic_first_afford hispanic_repeat_afford /*AIOM_first_afford AIOM_repeat_afford*/;
 	output out=Tract_Level (where=(_type_^=0)) sum= ;
-		run;
+run;
 
 proc summary data=create_flags;
 	class cluster2017;
@@ -213,7 +213,7 @@ proc summary data=create_flags;
 		hispanic_first_afford hispanic_repeat_afford /*AIOM_first_afford AIOM_repeat_afford*/;
 	output 		out=Cluster_Level (where=(_type_^=0)) 	sum= ;
 	
-		run;
+run;
 
 
 
