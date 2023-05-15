@@ -30,6 +30,8 @@ Homeownership Affordability in Urban America: Past and Future;
 %let firstyear = 2016;
 %let lastyear = 2022;
 
+%let inflation_year = 2021;
+
 %let yrs = %sysfunc(substr(&firstyear, 1, 4))_%sysfunc(substr(&lastyear, 3, 2));
 %let yr_label = %sysfunc(substr(&firstyear, 1, 4))-%sysfunc(substr(&lastyear, 3, 2));
 
@@ -77,13 +79,13 @@ data create_flags;
 	if sale_yr=2022 then PI_First2022=saleprice*.9*loan_multiplier_2022;
 
 	*inflation adjust into most recent year dollars ;
-	%dollar_convert(PI_first2016,PI_first2016r,2016,&lastyear., series=CUUR0000SA0L2);
-	%dollar_convert(PI_first2017,PI_first2017r,2017,&lastyear., series=CUUR0000SA0L2);
- 	%dollar_convert(PI_first2018,PI_first2018r,2018,&lastyear., series=CUUR0000SA0L2);
-	%dollar_convert(PI_first2019,PI_first2019r,2019,&lastyear., series=CUUR0000SA0L2);
-	%dollar_convert(PI_first2020,PI_first2020r,2020,&lastyear., series=CUUR0000SA0L2);
-	%dollar_convert(PI_first2021,PI_first2021r,2021,&lastyear., series=CUUR0000SA0L2);
-	%dollar_convert(PI_first2022,PI_first2022r,2022,&lastyear., series=CUUR0000SA0L2);
+	%dollar_convert(PI_first2016,PI_first2016r,2016,&inflation_year., series=CUUR0000SA0L2);
+	%dollar_convert(PI_first2017,PI_first2017r,2017,&inflation_year., series=CUUR0000SA0L2);
+ 	%dollar_convert(PI_first2018,PI_first2018r,2018,&inflation_year., series=CUUR0000SA0L2);
+	%dollar_convert(PI_first2019,PI_first2019r,2019,&inflation_year., series=CUUR0000SA0L2);
+	%dollar_convert(PI_first2020,PI_first2020r,2020,&inflation_year., series=CUUR0000SA0L2);
+	%dollar_convert(PI_first2021,PI_first2021r,2021,&inflation_year., series=CUUR0000SA0L2);
+	%dollar_convert(PI_first2022,PI_first2022r,2022,&inflation_year., series=CUUR0000SA0L2);
 
     *calculate monthly PITI (Principal, Interest, Taxes and Insurance) for First Time Homebuyer (34% of PI = TI);
 	if sale_yr=2016 then PITI_First=PI_First2016r*1.34;
@@ -104,13 +106,13 @@ data create_flags;
 	if sale_yr=2022 then PI_Repeat2022=saleprice*.8*loan_multiplier_2022;
 
 	*inflation adjust into most recent year dollars ;
-	%dollar_convert(PI_Repeat2016,PI_Repeat2016r,2016,&lastyear.,series=CUUR0000SA0L2);
-	%dollar_convert(PI_Repeat2017,PI_Repeat2017r,2017,&lastyear.,series=CUUR0000SA0L2);
- 	%dollar_convert(PI_Repeat2018,PI_Repeat2018r,2018,&lastyear.,series=CUUR0000SA0L2);
-	%dollar_convert(PI_Repeat2019,PI_Repeat2019r,2019,&lastyear.,series=CUUR0000SA0L2);
-	%dollar_convert(PI_Repeat2020,PI_Repeat2020r,2020,&lastyear.,series=CUUR0000SA0L2);
-	%dollar_convert(PI_Repeat2021,PI_Repeat2021r,2021,&lastyear.,series=CUUR0000SA0L2);
-	%dollar_convert(PI_Repeat2022,PI_Repeat2022r,2022,&lastyear.,series=CUUR0000SA0L2);
+	%dollar_convert(PI_Repeat2016,PI_Repeat2016r,2016,&inflation_year.,series=CUUR0000SA0L2);
+	%dollar_convert(PI_Repeat2017,PI_Repeat2017r,2017,&inflation_year.,series=CUUR0000SA0L2);
+ 	%dollar_convert(PI_Repeat2018,PI_Repeat2018r,2018,&inflation_year.,series=CUUR0000SA0L2);
+	%dollar_convert(PI_Repeat2019,PI_Repeat2019r,2019,&inflation_year.,series=CUUR0000SA0L2);
+	%dollar_convert(PI_Repeat2020,PI_Repeat2020r,2020,&inflation_year.,series=CUUR0000SA0L2);
+	%dollar_convert(PI_Repeat2021,PI_Repeat2021r,2021,&inflation_year.,series=CUUR0000SA0L2);
+	%dollar_convert(PI_Repeat2022,PI_Repeat2022r,2022,&inflation_year.,series=CUUR0000SA0L2);
 
 	*calculate monthly PITI (Principal, Interest, Taxes and Insurance) for Repeat Homebuyer (25% of PI = TI);
 	if sale_yr=2016 then PITI_Repeat=PI_Repeat2016r*1.25;

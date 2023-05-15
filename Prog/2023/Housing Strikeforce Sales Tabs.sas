@@ -20,7 +20,7 @@
 %DCData_lib( ACS );
 %DCData_lib( Census );
 
-%let inflation_year = 2022;
+%let inflation_year = 2021;
 
 
 /* Census 2020 data to merge for majority black neighborhoods */
