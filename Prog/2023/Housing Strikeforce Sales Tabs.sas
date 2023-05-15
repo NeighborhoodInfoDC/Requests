@@ -20,6 +20,8 @@
 %DCData_lib( ACS );
 %DCData_lib( Census );
 
+%let inflation_year = 2022;
+
 
 /* Census 2020 data to merge for majority black neighborhoods */
 proc sort data = census.census_pl_2020_dc
@@ -51,25 +53,29 @@ data property_sales;
 		else if sale_yr = 2019 then sales_2019 = 1;
 		else if sale_yr = 2020 then sales_2020 = 1;
 		else if sale_yr = 2021 then sales_2021 = 1;
+		else if sale_yr = 2022 then sales_2022 = 1;
 
 	/* Price per year */
 	if sale_yr = 2016 then do;
-		%dollar_convert(saleprice,price_2016,2016,2020, series=CUUR0000SA0L2);
+		%dollar_convert(saleprice,price_2016,2016,&inflation_year., series=CUUR0000SA0L2);
 	end; 
 	else if sale_yr = 2017 then do;
-		%dollar_convert(saleprice,price_2017,2017,2020, series=CUUR0000SA0L2);
+		%dollar_convert(saleprice,price_2017,2017,&inflation_year., series=CUUR0000SA0L2);
 	end; 
 	else if sale_yr = 2018 then do;
-		%dollar_convert(saleprice,price_2018,2018,2020, series=CUUR0000SA0L2);
+		%dollar_convert(saleprice,price_2018,2018,&inflation_year., series=CUUR0000SA0L2);
 	end; 
 	else if sale_yr = 2019 then do;
-		%dollar_convert(saleprice,price_2019,2019,2020, series=CUUR0000SA0L2);
+		%dollar_convert(saleprice,price_2019,2019,&inflation_year., series=CUUR0000SA0L2);
 	end; 
 	else if sale_yr = 2020 then do;
-		%dollar_convert(saleprice,price_2020,2020,2020, series=CUUR0000SA0L2);
+		%dollar_convert(saleprice,price_2020,2020,&inflation_year., series=CUUR0000SA0L2);
 	end; 
 	else if sale_yr = 2021 then do;
-		%dollar_convert(saleprice,price_2020,2021,2020, series=CUUR0000SA0L2);
+		%dollar_convert(saleprice,price_2021,2021,&inflation_year., series=CUUR0000SA0L2);
+	end; 
+	else if sale_yr = 2022 then do;
+		%dollar_convert(saleprice,price_2022,2022,&inflation_year., series=CUUR0000SA0L2);
 	end; 
 
 	format cluster2017 clus17b.;
@@ -77,6 +83,8 @@ data property_sales;
 run;
 
 %let summarygeos = cluster2017 ward2022 city;
+%let first_yr = 2016;
+%let last_yr = 2022;
 
 %macro sales_tabs (housetype,nhood,tenure);
 
@@ -103,7 +111,7 @@ run;
 /* Sales trend summary */
 proc summary data = sales_filtered completetypes missing;
 	class &summarygeos. / order=data preloadfmt;
-	var sales_2016-sales_2020;
+	var sales_&first_yr.-sales_&last_yr.;
 	output out = sales_&housetype._&nhood._&tenure. (where=(_type_ in (1,2,4))) sum=;
 run;
 
@@ -120,7 +128,7 @@ run;
 /* Median price summary */
 proc summary data = sales_filtered completetypes missing;
 	class &summarygeos. / preloadfmt order=data;
-	var price_2016-price_2020;
+	var price_&first_yr.-price_&last_yr.;
 	output out = price_&housetype._&nhood._&tenure. (where=(_type_ in (1,2,4))) median=;
 run;
 
@@ -138,9 +146,9 @@ run;
 data appreciation_&housetype._&nhood._&tenure.;
 	set price_&housetype._&nhood._&tenure. ;
 
-	price_change = (price_2020-price_2016)/price_2016;
+	price_change = (price_&first_yr.-price_&last_yr.)/price_&last_yr.;
 
-	drop price_2017 price_2018 price_2019;
+	drop price_2017 price_2018 price_2019 price_2020 price_2021;
 run;
 
 
@@ -161,7 +169,7 @@ run;
 %macro export_tabs (data);
 
 proc export data=&data.
-    outfile="&_dcdata_l_path.\Requests\Prog\2022\&data..csv"
+    outfile="&_dcdata_l_path.\Requests\Prog\2023\&data..csv"
     dbms=csv
     replace;
 run;
