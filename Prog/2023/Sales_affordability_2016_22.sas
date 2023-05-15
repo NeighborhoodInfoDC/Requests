@@ -130,11 +130,11 @@ data create_flags;
 
 	*use HH Income numbers to calculate affordable or nonaffodable sales ;
 	if PITI_First <= (&hhinc_nhwht. / 12*.28) then white_first_afford=1; else white_first_afford=0; 
-		if PITI_Repeat <= (194743/ 12 *.28) then white_repeat_afford=1; else white_repeat_afford=0; 
+		if PITI_Repeat <= (&hhinc_nhwht./ 12 *.28) then white_repeat_afford=1; else white_repeat_afford=0; 
 	if PITI_First <= (&hhinc_blk. / 12 *.28) then black_first_afford=1; else black_first_afford=0; 
-		if PITI_Repeat <= (72915 / 12 *.28) then black_repeat_afford=1; else black_repeat_afford=0; 
+		if PITI_Repeat <= (&hhinc_blk. / 12 *.28) then black_repeat_afford=1; else black_repeat_afford=0; 
 	if PITI_First <= (&hhinc_hisp. / 12*.28) then hispanic_first_afford=1; else hispanic_first_afford=0; 
-		if PITI_Repeat <= (120441 / 12*.28 ) then hispanic_repeat_afford=1; else hispanic_repeat_afford=0; 
+		if PITI_Repeat <= (&hhinc_hisp. / 12*.28 ) then hispanic_repeat_afford=1; else hispanic_repeat_afford=0; 
 	/*if PITI_First <= (76271 / 12*.28 ) then aiom_first_afford=1; else aiom_first_afford=0; 
 		if PITI_Repeat <= (76271 / 12*.28 ) then aiom_repeat_afford=1; else aiom_repeat_afford=0; 
 	*/
