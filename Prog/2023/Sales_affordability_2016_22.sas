@@ -47,9 +47,9 @@ data create_flags;
 	eff_int_rate_2017= 4.06;
 	eff_int_rate_2018= 4.64;
 	eff_int_rate_2019= 4.01;
-	eff_int_rate_2020= 3.11;
-	eff_int_rate_2021= 2.96;
-	eff_int_rate_2022= 5.34;
+	eff_int_rate_2020= 3.16;
+	eff_int_rate_2021= 3.00;
+	eff_int_rate_2022= 5.48;
 
 	month_int_rate_2016 = (eff_int_rate_2016/12/100);
 	month_int_rate_2017 = (eff_int_rate_2017/12/100); 
