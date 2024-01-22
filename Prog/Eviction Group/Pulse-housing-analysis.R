@@ -88,6 +88,7 @@ clean_data <- function(data_week) {
            locks_changed,nhbd_danger,other_pressure,
            rent_change,rent_behind,months_behind,eviction_two_months,
            race, income,total_HH)
+    # filter(pressured != "Not reported")
 }
 
 clean_week_58 <- clean_data(week_58)
@@ -155,14 +156,31 @@ total_reason <- rent_increase %>%
   rbind(miss_rent, repairs,evictions_threat,locks_change,nhbd_danger,other_pressure) %>%
   drop_na()
 
-# rent payment status 
-rent_payment <- srvy_all %>%
+# Rent Payment Status  
+total_rent_payment <- srvy_all %>%
   group_by(rent_behind) %>%
-  summarise(total = survey_total()) %>%
+  summarise(proportion = survey_mean()) %>%
   mutate_if(is.numeric, round, digits = 2)
 
-# number of months behind on rent 
-# likelihood of evction
+# Of people behind on rent, the number of months behind on rent
+months_behind <- srvy_all %>%
+  filter(rent_behind == "Behind on rent") %>% #The survey only asks those who are behind on rent
+  group_by(months_behind) %>%
+  summarise(proportion = survey_mean()) %>%
+  mutate_if(is.numeric, round, digits = 2)
+
+# Likelihood of eviction
+eviction_behind_rent <-  srvy_all %>%
+  filter(rent_behind == "Behind on rent") %>% #The survey only asks those who are behind on rent
+  group_by(eviction_two_months) %>%
+  summarise(proportion = survey_mean()) %>%
+  mutate_if(is.numeric, round, digits = 2) 
+
+# Rent change 
+total_rent_change <-  srvy_all %>%
+  group_by(rent_change) %>%
+  summarise(proportion = survey_mean()) %>%
+  mutate_if(is.numeric, round, digits = 2) 
 
 # 4) Cross tabs 1-3 with race/ethnicity 
 
@@ -186,6 +204,16 @@ race_moved <- srvy_all %>%
   filter(proportion_se < 0.05) %>% # taking out big p values
   select(-proportion_se) %>%     
   pivot_wider(names_from=moved, values_from=proportion)
+
+# Race/Ethnicity behind on rent
+race_rent_payment <- srvy_all %>%
+  group_by(race, rent_behind) %>%
+  summarise(proportion = survey_mean()) %>%
+  mutate_if(is.numeric, round, digits = 2) %>%
+  filter(proportion_se < 0.05) %>% # taking out big p values
+  select(-proportion_se) %>%     
+  pivot_wider(names_from=rent_behind, values_from=proportion)
+
 
 # Race/Ethnicity by Reason
 
@@ -346,16 +374,10 @@ moved_reason <- moved_rent_increase %>%
 # Exporting in one xlsx
 
 all_PUF <- list('Total Pressure'=total_pressure,'Total Moved'=total_moved,'Total Reason'=total_reason, 'Reason Moved'=moved_reason,
-                'Race Pressure'=race_pressured,'Race Moved'=race_moved,'Race Reason'=race_reason,
-                'Has Children by Race Pressure'=race_child_pressure,'Has Children by Race Reason'=race_child_reason,
-                'Has Children by Race Moved'=race_child_moved,
-                'Income Pressure'=income_pressured,'Income Moved'=income_moved,'Income Reason'=income_reason,
-                'Has Children Pressure'=children_pressured,'Has Children Moved'=children_moved,'Has Children Reason'=children_reason,
-                'Sufficient Food Pressure'=food_pressured,'Sufficient Food Moved'=food_moved,'Sufficient Food Reason'=food_reason,
-                'SNAP Pressure'=SNAP_pressured,'SNAP Moved'=SNAP_moved,'SNAP Reason'=SNAP_reason,
-                'Natural Disaster Pressure'=ND_displace_pressure,'Natural Disaster Reason'=ND_displace_reason,'Natural Disaster Moved'=ND_displace_moved,
-                'ND by Type Moved'=ND_type_moved, 'ND by Type Pressured'=ND_type_pressured,
-                'Rent change Pressure'=rent_change_pressure,'Rent change Moved'=rent_change_moved,'Rent change Reason'=rent_change_reason)
-write.xlsx(all_PUF, file="PUF Cross Tabs Week 58-62.xlsx")
+                'Total Rent Payment'=total_rent_payment, 'Months Behind'=months_behind, 'Eviction Likelihood'=eviction_behind_rent,'Total Rent Change'=total_rent_change,
+                'Race Pressure'=race_pressured,'Race Rent Payment'=race_rent_payment,'Race Moved'=race_moved,'Race Reason'=race_reason)
+write.xlsx(all_PUF, file="DC PUF Cross Tabs Week 58-62.xlsx")
+
+
 
 
