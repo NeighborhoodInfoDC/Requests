@@ -1,5 +1,5 @@
 /**************************************************************************
- Program:  Gross_rent_2005_2018.sas
+ Program:  Gross_rent_2005_2022.sas
  Library:  Requests
  Project:  Urban-Greater DC
  Author:   P. Tatian
@@ -20,14 +20,14 @@
  Modifications: YS extended data to 2018
 **************************************************************************/
 
-%include "L:\SAS\Inc\StdLocal.sas";
+%include "\\sas1\DCdata\SAS\Inc\StdLocal.sas";
 
 ** Define libraries **;
 %DCData_lib( Requests )
 
 %let START_YR = 2005;
 %let END_YR = 2018;
-%let output_path = &_dcdata_default_path\Requests\Prog\2018;
+%let output_path = &_dcdata_default_path\Requests\Prog\2023;
 
 %macro rename_all( varA, varB );
 
