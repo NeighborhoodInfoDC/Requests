@@ -26,7 +26,7 @@
 %DCData_lib( Requests )
 
 %let START_YR = 2005;
-%let END_YR = 2022;
+%let END_YR = 2018;
 %let output_path = &_dcdata_default_path\Requests\Prog\2023;
 
 %let TOP_CODE = 2000;
@@ -37,82 +37,91 @@
 
   %local i;
   
-  %do i = &START_YR %to &START_YR;
+  %do i = &START_YR %to &END_YR;
   
     %Get_acs_detailed_table_api( 
       table=B25063, 
+      out=B25063_&i,
       year=&i, 
       sample=acs1, 
       for=state:11, 
       key=&_dcdata_census_api_key
     )
     
-  %File_info( data=B25063 )
-  
-  proc transpose data=B25063 out=B25063_tr;
-  run;
+    /* %File_info( data=B25063_&i ) */
+    
+    proc transpose data=B25063_&i out=B25063_&i._tr;
+    run;
 
-  %File_info( data=B25063_tr, printobs=100 )
-  
-  data Units&i._det;
-  
-    length temp $ 1000;
-  
-    set B25063_tr (rename=(col1=units&i));
+    /* %File_info( data=B25063_&i._tr, printobs=100 ) */
     
-    if upcase( reverse( _name_ ) ) =: 'E';
+    data Units&i._det;
     
-    temp = left( lowcase( compress( _label_, ':' ) ) );
+      length temp $ 1000;
     
-    if temp = 'total' then delete;
-    
-    temp = left( substr( temp, length( 'total with cash rent ' ) + 1 ) );
+      set B25063_&i._tr (rename=(col1=units&i));
       
-    if length( temp ) > 1 then do;
-    
-      put temp=;
+      if upcase( reverse( _name_ ) ) =: 'E';
       
-      if left( temp ) =: 'less than ' then do;
-        low = .;
-        high = input( scan( temp, 2, '$' ), comma16. ) - 1;
+      temp = left( lowcase( compress( _label_, ':' ) ) );
+      
+      if temp = 'total' then delete;
+      
+      temp = left( substr( temp, length( 'total with cash rent ' ) + 1 ) );
+        
+      if length( temp ) > 1 then do;
+      
+        if left( temp ) =: 'less than ' then do;
+          low = .;
+          high = input( scan( temp, 2, '$' ), comma16. ) - 1;
+        end;
+        else do;
+        
+          temp = compress( temp, 'abcdefghijklmnopqrstuvwxyz$,' ); 
+          
+          low = min( input( scan( temp, 1 ), 16. ), &TOP_CODE );
+          
+          if low < &TOP_CODE then 
+            high = input( scan( temp, 2 ), 16. );
+          else 
+            high = .;
+          
+        end;
+        
       end;
-      else do;
-      
-        temp = compress( temp, 'abcdefghijklmnopqrstuvwxyz$,' ); 
+      else 
+        delete;
         
-        low = min( input( scan( temp, 1 ), 16. ), &TOP_CODE );
-        
-        if low < &TOP_CODE then 
-          high = input( scan( temp, 2 ), 16. );
-        else 
-          high = .;
-        
-      end;
+    run;
       
-    end;
-    else 
-      delete;
-      
-  run;
+    /* %File_info( data=Units&i._det, printobs=100 ) */
     
-  %File_info( data=Units&i._det, printobs=100 )
-  
-  proc summary data=Units&i._det nway;
-    class low high / missing;
-    var Units&i;
-    output out=Units&i (drop=_freq_ _type_) sum=;
-  run;
-  
-  %File_info( data=Units&i, printobs=100 )
+    proc summary data=Units&i._det nway;
+      class low high / missing;
+      var Units&i;
+      output out=Units&i (drop=_freq_ _type_) sum=;
+    run;
+    
+    /* %File_info( data=Units&i, printobs=100 ) */
   
   %end;
   
+  ** Combine files **;
+  
+  data Units_all;
+  
+    merge
+      %do i = &START_YR %to &END_YR;
+        Units&i.
+      %end;
+    ;
+    by low high;
+    
+  run;
+  
+  %File_info( data=Units_all, printobs=100 )
+  
 %mend download_data;
-
-
-%download_data(  )
-
-ENDSAS;
 
 %macro rename_all( varA, varB );
 
@@ -138,6 +147,11 @@ ENDSAS;
   
 %mend label_all;
 
+
+** Generate summary data **;
+
+%download_data()
+
 data 
   Base
     (keep=rcount_output low high Units&START_YR-Units&END_YR UnitsAdj&START_YR-UnitsAdj&END_YR
@@ -150,15 +164,9 @@ data
      rename=(%rename_all(Carry_bck, UnitsAdj)))
   ;
 
-    rcount_input + 1;
+   rcount_input + 1;
 
-    infile datalines missover dlm='09'x;
-
-    input
-      %enum_all( Units )
-      Low
-      High
-     ;
+   set Units_all;
      
    ** Create low and high rent levels adjusted for inflation **;
    
@@ -227,6 +235,7 @@ data
    
    *drop i Low&START_YR-Low&END_YR High&START_YR-High&END_YR Carry&START_YR-Carry&END_YR;
 
+/*
 datalines;
 2211	1616	1481	1972	1923	1364	745	1086	1148	1195	1152	2889	1989	1106	0	100
 2324	2744	1551	1504	874	1070	1268	1191	1637	1010	709	991	595	1630	100	150
@@ -250,6 +259,7 @@ datalines;
 11767	11353	14381	16689	16373	22599	26570	27905	28618	28183	34371	30320	34081	32650	1500	2000
 7348	10110	12074	16365	17911	22618	25325	26934	34887	41867	41352	42337	45135	50103	2000	.
 ;
+*/
 
 run;
 
@@ -299,7 +309,7 @@ run;
 
 proc format;
   value rntrang
-    0-450 = 'Under $500'
+    ., low-450 = 'Under $500'
     500-650 = '$500 to $699'
     700-750 = '$700 to $799'
     800-900 = '$800 to $999'
