@@ -26,8 +26,93 @@
 %DCData_lib( Requests )
 
 %let START_YR = 2005;
-%let END_YR = 2018;
+%let END_YR = 2022;
 %let output_path = &_dcdata_default_path\Requests\Prog\2023;
+
+%let TOP_CODE = 2000;
+
+%include "C:\Projects\UISUG\Uiautos\Get_acs_detailed_table_api.sas";
+
+%macro download_data( );
+
+  %local i;
+  
+  %do i = &START_YR %to &START_YR;
+  
+    %Get_acs_detailed_table_api( 
+      table=B25063, 
+      year=&i, 
+      sample=acs1, 
+      for=state:11, 
+      key=&_dcdata_census_api_key
+    )
+    
+  %File_info( data=B25063 )
+  
+  proc transpose data=B25063 out=B25063_tr;
+  run;
+
+  %File_info( data=B25063_tr, printobs=100 )
+  
+  data Units&i._det;
+  
+    length temp $ 1000;
+  
+    set B25063_tr (rename=(col1=units&i));
+    
+    if upcase( reverse( _name_ ) ) =: 'E';
+    
+    temp = left( lowcase( compress( _label_, ':' ) ) );
+    
+    if temp = 'total' then delete;
+    
+    temp = left( substr( temp, length( 'total with cash rent ' ) + 1 ) );
+      
+    if length( temp ) > 1 then do;
+    
+      put temp=;
+      
+      if left( temp ) =: 'less than ' then do;
+        low = .;
+        high = input( scan( temp, 2, '$' ), comma16. ) - 1;
+      end;
+      else do;
+      
+        temp = compress( temp, 'abcdefghijklmnopqrstuvwxyz$,' ); 
+        
+        low = min( input( scan( temp, 1 ), 16. ), &TOP_CODE );
+        
+        if low < &TOP_CODE then 
+          high = input( scan( temp, 2 ), 16. );
+        else 
+          high = .;
+        
+      end;
+      
+    end;
+    else 
+      delete;
+      
+  run;
+    
+  %File_info( data=Units&i._det, printobs=100 )
+  
+  proc summary data=Units&i._det nway;
+    class low high / missing;
+    var Units&i;
+    output out=Units&i (drop=_freq_ _type_) sum=;
+  run;
+  
+  %File_info( data=Units&i, printobs=100 )
+  
+  %end;
+  
+%mend download_data;
+
+
+%download_data(  )
+
+ENDSAS;
 
 %macro rename_all( varA, varB );
 
