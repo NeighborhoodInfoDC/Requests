@@ -31,7 +31,21 @@
 
 %let TOP_CODE = 2000;
 
+** Rent range format for summary **;
+
+proc format;
+  value rent_range
+       0 -<  500 = 'Under $500'
+     500 -<  700 = '$500 to $699'
+     700 -<  800 = '$700 to $799'
+     800 -< 1000 = '$800 to $999'
+    1000 -< 1500 = '$1,000 to $1,499'
+    1500 -  high = '$1,500 or more';
+run;
+
 %include "C:\Projects\UISUG\Uiautos\Get_acs_detailed_table_api.sas";
+
+** Create macros **;
 
 %macro download_data( );
 
@@ -72,7 +86,7 @@
       if length( temp ) > 1 then do;
       
         if left( temp ) =: 'less than ' then do;
-          low = .;
+          low = 0;
           high = input( scan( temp, 2, '$' ), comma16. ) - 1;
         end;
         else do;
@@ -131,6 +145,7 @@
   
 %mend rename_all;
 
+/***
 %macro enum_all( varpre );
 
   %do i = &START_YR %to &END_YR;
@@ -138,6 +153,7 @@
   %end;
   
 %mend enum_all;
+***/
 
 %macro label_all( varpre );
 
@@ -307,16 +323,6 @@ run;
 
 %File_info( data=Gross_rent_&START_YR._&END_YR., printobs=50 )
 
-proc format;
-  value rntrang
-    ., low-450 = 'Under $500'
-    500-650 = '$500 to $699'
-    700-750 = '$700 to $799'
-    800-900 = '$800 to $999'
-    1000-1250 = '$1,000 to $1,499'
-    1500-2000 = '$1,500 or more';
-run;
-
 proc tabulate data=Gross_rent_&START_YR._&END_YR. format=comma10.0 noseps missing;
   class low;
   var Units&START_YR.-Units&END_YR.;
@@ -326,7 +332,7 @@ proc tabulate data=Gross_rent_&START_YR._&END_YR. format=comma10.0 noseps missin
     /** Columns **/
     sum=' ' * ( Units&START_YR.-Units&END_YR. )
   ;
-  format low rntrang.;
+  format low rent_range.;
   label 
     %label_all( Units )
   ;
@@ -344,7 +350,7 @@ proc tabulate data=Gross_rent_&START_YR._&END_YR. format=comma10.0 noseps missin
     /** Columns **/
     sum=' ' * ( UnitsAdj&START_YR.-UnitsAdj&END_YR. )
   ;
-  format low rntrang.;
+  format low rent_range.;
   label 
     %label_all( UnitsAdj )
   ;
