@@ -28,7 +28,7 @@
 %let state = 11;
 %let county = 001;
 %let START_YR = 2005;
-%let END_YR = 2018;
+%let END_YR = 2022;
 %let output_path = &_dcdata_default_path\Requests\Prog\2023;
 
 
@@ -56,7 +56,8 @@ run;
   
   %do i = &START_YR %to &END_YR;
   
-  %PUT _LOCAL_;
+    %** No ACS 1-year data in 2020 so skip **;
+    %if &i = 2020 %then %goto end_loop;
   
     %Get_acs_detailed_table_api( 
       table=B25063, 
@@ -133,6 +134,8 @@ run;
       quit;
       
     %end;
+    
+    %end_loop:
   
   %end;
   
@@ -142,7 +145,10 @@ run;
   
     merge
       %do i = &START_YR %to &END_YR;
-        Units&i.
+        %** No ACS 1-year data in 2020 so skip **;
+        %if &i ~= 2020 %then %do;
+          Units&i.
+        %end;
       %end;
     ;
     by low high;
@@ -199,6 +205,14 @@ data
    rcount_input + 1;
 
    set Units_all;
+   
+   %** If part of requested time series, impute 2020 data **;
+   
+   %if &START_YR <= 2019 and &END_YR >= 2021 %then %do;
+   
+     units2020 = ( units2019 + units2021 ) / 2;
+     
+   %end;
      
    ** Create low and high rent levels adjusted for inflation **;
    
