@@ -25,11 +25,12 @@
 ** Define libraries **;
 %DCData_lib( Requests )
 
+%let state = 11;
+%let county = 001;
 %let START_YR = 2005;
 %let END_YR = 2018;
 %let output_path = &_dcdata_default_path\Requests\Prog\2023;
 
-%let TOP_CODE = 2000;
 
 ** Rent range format for summary **;
 
@@ -49,16 +50,21 @@ run;
 
 %macro download_data( );
 
-  %local i;
+  %local i top_code;
+  
+  %let top_code = 999999999;
   
   %do i = &START_YR %to &END_YR;
+  
+  %PUT _LOCAL_;
   
     %Get_acs_detailed_table_api( 
       table=B25063, 
       out=B25063_&i,
       year=&i, 
       sample=acs1, 
-      for=state:11, 
+      for=county:&county,
+      in=state:&state,
       key=&_dcdata_census_api_key
     )
     
@@ -93,9 +99,9 @@ run;
         
           temp = compress( temp, 'abcdefghijklmnopqrstuvwxyz$,' ); 
           
-          low = min( input( scan( temp, 1 ), 16. ), &TOP_CODE );
+          low = min( input( scan( temp, 1 ), 16. ), &top_code );
           
-          if low < &TOP_CODE then 
+          if low < &top_code then 
             high = input( scan( temp, 2 ), 16. ) + 1;
           else 
             high = .;
@@ -117,6 +123,16 @@ run;
     run;
     
     /* %File_info( data=Units&i, printobs=100 ) */
+    
+    %if &i = &START_YR %then %do;
+    
+      ** Set top_code value based on earliest year read **;
+    
+      proc sql noprint;
+        select max(low) into :top_code from Units&i;
+      quit;
+      
+    %end;
   
   %end;
   
