@@ -87,7 +87,7 @@ run;
       
         if left( temp ) =: 'less than ' then do;
           low = 0;
-          high = input( scan( temp, 2, '$' ), comma16. ) - 1;
+          high = input( scan( temp, 2, '$' ), comma16. );
         end;
         else do;
         
@@ -96,7 +96,7 @@ run;
           low = min( input( scan( temp, 1 ), 16. ), &TOP_CODE );
           
           if low < &TOP_CODE then 
-            high = input( scan( temp, 2 ), 16. );
+            high = input( scan( temp, 2 ), 16. ) + 1;
           else 
             high = .;
           
