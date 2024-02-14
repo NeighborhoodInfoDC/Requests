@@ -49,7 +49,8 @@ run;
   
   %if &state = 11 %then %let county_name = District of Columbia;
   %else %let county_name = %sysfunc( putc( %trim(&state)%trim(&county), $cnty22allf. ) );
-  
+
+%MACRO SKIP;
   %do i = &START_YR %to &END_YR;
   
     %** No ACS 1-year data in 2020 so skip **;
@@ -136,7 +137,7 @@ run;
   
   ** Combine files **;
   
-  data Units_all;
+  data Requests.Units_all_&state._&county;
   
     merge
       %do i = &START_YR %to &END_YR;
@@ -149,35 +150,39 @@ run;
     by low high;
     
   run;
+%MEND SKIP;
   
-  /* %File_info( data=Units_all, printobs=100 ) */
+  %File_info( data=Requests.Units_all_&state._&county, contents=n, printobs=100 )
   
-  ** Calculate adjusted unit counts **;
-
-  data 
-    Base
-      (keep=rcount_output low high Units&START_YR-Units&END_YR UnitsAdj&START_YR-UnitsAdj&END_YR
-       Low&START_YR-Low&END_YR High&START_YR-High&END_YR)
-    Carry_fwd
-      (keep=rcount_output Carry_fwd&START_YR-Carry_fwd&END_YR
-       rename=(%rename_all(Carry_fwd, UnitsAdj)))
-    Carry_bck
-      (keep=rcount_output Carry_bck&START_YR-Carry_bck&END_YR
-       rename=(%rename_all(Carry_bck, UnitsAdj)))
-    ;
-
-     rcount_input + 1;
-
-     set Units_all;
+  ** Units_all_&state._&county **;
+  
+  data Units_all_&state._&county;
+  
+    set Requests.Units_all_&state._&county;
+    
+    retain key 1;
+    
+    %** If part of requested time series, impute 2020 data **;
      
-     %** If part of requested time series, impute 2020 data **;
+    %if &START_YR <= 2019 and &END_YR >= 2021 %then %do;
      
-     %if &START_YR <= 2019 and &END_YR >= 2021 %then %do;
-     
-       units2020 = ( units2019 + units2021 ) / 2;
+      units2020 = ( units2019 + units2021 ) / 2;
        
-     %end;
-       
+    %end;
+    
+  run;    
+  
+  title2 'Units_all_&state._&county';
+  proc means data=Units_all_&state._&county n sum;
+    var Units: ;
+  run;
+  
+  ** Calculate adjusted rent ranges **;
+
+  data Units_adj_ranges;
+
+     set Units_all_&state._&county;
+     
      ** Create low and high rent levels adjusted for inflation **;
      
      array a_low{&START_YR:&END_YR} Low&START_YR-Low&END_YR;
@@ -186,112 +191,93 @@ run;
      do i = &START_YR to &END_YR;
      
        %dollar_convert( Low, a_low{i}, i, &END_YR, series=CUUR0000SA0L2 )
-       %dollar_convert( High, a_high{i}, i, &END_YR, series=CUUR0000SA0L2 )
+       
+       if high > 0 then do;
+         %dollar_convert( High, a_high{i}, i, &END_YR, series=CUUR0000SA0L2 )
+       end;
+       else do;
+         a_high{i} = 999999;
+       end;
           
      end;
      
-     **retain Carry&START_YR-Carry&END_YR 0;
+     keep key Units&START_YR-Units&END_YR Low&START_YR-Low&END_YR High&START_YR-High&END_YR;
      
-     array a_units{&START_YR:&END_YR} Units&START_YR-Units&END_YR;
-     array a_unitsadj{&START_YR:&END_YR} UnitsAdj&START_YR-UnitsAdj&END_YR;
-     array a_carry_fwd{&START_YR:&END_YR} Carry_fwd&START_YR-Carry_fwd&END_YR;
-     array a_carry_bck{&START_YR:&END_YR} Carry_bck&START_YR-Carry_bck&END_YR;
-     array a_rcount{&START_YR:&END_YR} Rcount&START_YR-Rcount&END_YR;
-     
-     do i = &START_YR to &END_YR;
-     
-       if high = . then do;
-       
-         if a_low{i} < low then do;
-         
-           a_unitsadj{i} = a_units{i} * 0.5;
-           a_carry_bck{i} = a_units{i} * 0.5;
-             
-         end;
-         else do;
-         
-           a_unitsadj{i} = a_units{i};
-           
-         end;
-       
-       end;
-       else if a_high{i} > high then do;
-       
-         a_unitsadj{i} = a_units{i} * ( ( high - a_low{i} ) / ( a_high{i} - a_low{i} ) );
-         a_carry_fwd{i} = a_units{i} * ( ( a_high{i} - high ) / ( a_high{i} - a_low{i} ) );
-           
-       end;
-       else if a_high{i} <= high then do;
-       
-         a_unitsadj{i} = a_units{i} * ( ( a_high(i) - low ) / ( a_high{i} - a_low{i} ) );
-         a_carry_bck{i} = a_units{i} * ( ( low - a_low{i} ) / ( a_high{i} - a_low{i} ) );
-
-       end;
-       
-     end;
-     
-     rcount_output = rcount_input;
-     output base;
-     
-     if rcount_input > 1 then do;
-       rcount_output = rcount_input - 1;
-       output carry_bck;
-     end;
-     
-     if high ~= . then do;
-       rcount_output = rcount_input + 1;
-       output carry_fwd;
-     end;
-     
-     *drop i Low&START_YR-Low&END_YR High&START_YR-High&END_YR Carry&START_YR-Carry&END_YR;
-
+  run;
+  
+  title2 'Units_adj_ranges';
+  proc print data=Units_adj_ranges;
+    var units2005 low2005 high2005 units2022 low2022 high2022;
   run;
 
-  data All;
+  ** Full join of rent ranges with unit counts and adjusted ranges **;
+  
+  proc sql noprint;
+    create table Ranges_units_adj_ranges as
+    select Ranges.key, Ranges.low, Ranges.high, Units_adj_ranges.* 
+    from Units_all_&state._&county as Ranges full join Units_adj_ranges
+    on Ranges.key = Units_adj_ranges.key
+    order by low, low&END_YR;
+  quit;
+  
+  title2 'Ranges_units_adj_ranges';
+  proc print data=Ranges_units_adj_ranges (obs=100);
+    id low high;
+    by low high;
+    var units2005 low2005 high2005 units2022 low2022 high2022;
+  run;
+  
+  data UnitsAdj_all;
+  
+    set Ranges_units_adj_ranges;
+  
+    array a_low{&START_YR:&END_YR} Low&START_YR-Low&END_YR;
+    array a_high{&START_YR:&END_YR} High&START_YR-High&END_YR;
 
-    set Base Carry_fwd Carry_bck;
+    array a_units{&START_YR:&END_YR} Units&START_YR-Units&END_YR;
+    array a_unitsadj{&START_YR:&END_YR} UnitsAdj&START_YR-UnitsAdj&END_YR;
+    
+    do i = &START_YR to &END_YR;
+    
+      a_unitsadj{i} = a_units{i} * ( max( min( a_high{i}, high ) - max( a_low{i}, low ), 0 ) / ( a_high{i} - a_low{i} ) );
+        
+    end;
     
   run;
-
-  proc summary data=All nway;
-    class rcount_output;
-    id low high Units&START_YR-Units&END_YR;
-    var unitsadj: ;
-    output out=Gross_rent_&START_YR._&END_YR. (drop=_type_ _freq_) sum=;
+  
+  title2 'UnitsAdj_all';
+  proc print data=UnitsAdj_all (obs=100);
+    id low high;
+    by low high;
+    **where UnitsAdj2005 > 0;
+    where low <= 100;
+    var low high Units2005 Low2005 High2005 UnitsAdj2005;
+  run;
+  
+  proc means data=UnitsAdj_all n sum;
+    var UnitsAdj: ;
+  run;
+  
+  title2;
+  
+  proc summary data=UnitsAdj_all nway missing;
+    class low high;
+    var UnitsAdj: ;
+    output out=UnitsAdj_all_sum sum=;
+  run;
+  
+  title2 'UnitsAdj_all_sum';
+  proc print data=UnitsAdj_all_sum;
+    id low high;
+    var UnitsAdj: ;
+    sum UnitsAdj: ;
   run;
 
-  /*** UNCOMMENT TO CHECK ***
-
-  %let testyr = 2012;
-
-  proc print data=Base;
-    id rcount_output;
-    var low high low&testyr high&testyr units&testyr unitsadj&testyr;
-    sum units&testyr;
-  run;
-
-  proc print data=Carry_fwd;
-    id rcount_output;
-    var unitsadj&testyr ;
-  run;
-
-  proc print data=Carry_bck;
-    id rcount_output;
-    var unitsadj&testyr ;
-  run;
-
-  proc print data=All_sum;
-    id rcount_output low high;
-    var unitsadj&testyr ;
-    sum unitsadj&testyr ;
-  run;
-
-  /**********************************/
-
+  ** Create summary tables **;
 
   /* %File_info( data=Gross_rent_&START_YR._&END_YR., printobs=50 ) */
 
-  proc tabulate data=Gross_rent_&START_YR._&END_YR. format=comma10.0 noseps missing;
+  proc tabulate data=Units_all_&state._&county format=comma10.0 noseps missing;
     class low;
     var Units&START_YR.-Units&END_YR.;
     table 
@@ -310,7 +296,7 @@ run;
       
   ods csvall body="&output_path\Gross_rent_&START_YR._&END_YR._%trim(&state)_%trim(&county).csv";
 
-  proc tabulate data=Gross_rent_&START_YR._&END_YR. format=comma10.0 noseps missing;
+  proc tabulate data=UnitsAdj_all_sum format=comma10.0 noseps missing;
     class low;
     var UnitsAdj&START_YR.-UnitsAdj&END_YR.;
     table 
@@ -355,5 +341,5 @@ run;
 
 ** Generate summary data **;
 
-%download_data( state=11, county=001 )
+/*%download_data( state=11, county=001 )*/
 %download_data( state=24, county=031 )
