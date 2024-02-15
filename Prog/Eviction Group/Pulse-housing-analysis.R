@@ -16,6 +16,7 @@ library(srvyr)
 library(weights)
 
 # read in data
+week_63 <- read_csv("//sas1/dcdata/Libraries/Requests/Raw/Eviction Group/pulse2023_puf_63.csv")
 week_62 <- read_csv("//sas1/dcdata/Libraries/Requests/Raw/Eviction Group/pulse2023_puf_62.csv")
 week_61 <- read_csv("//sas1/dcdata/Libraries/Requests/Raw/Eviction Group/pulse2023_puf_61.csv")
 week_60 <- read_csv("//sas1/dcdata/Libraries/Requests/Raw/Eviction Group/pulse2023_puf_60.csv")
@@ -28,6 +29,7 @@ weights_59 <- read_csv("//sas1/dcdata/Libraries/Requests/Raw/Eviction Group/puls
 weights_60 <- read_csv("//sas1/dcdata/Libraries/Requests/Raw/Eviction Group/pulse2023_repwgt_puf_60.csv")
 weights_61 <- read_csv("//sas1/dcdata/Libraries/Requests/Raw/Eviction Group/pulse2023_repwgt_puf_61.csv")
 weights_62 <- read_csv("//sas1/dcdata/Libraries/Requests/Raw/Eviction Group/pulse2023_repwgt_puf_62.csv")
+weights_63 <- read_csv("//sas1/dcdata/Libraries/Requests/Raw/Eviction Group/pulse2023_repwgt_puf_63.csv")
 
 clean_data <- function(data_week) {
   data_week %>%
@@ -96,14 +98,15 @@ clean_week_59 <- clean_data(week_59)
 clean_week_60 <- clean_data(week_60)
 clean_week_61 <- clean_data(week_61)
 clean_week_62 <- clean_data(week_62)
+clean_week_63 <- clean_data(week_63)
 
-all_clean_week_58_62 <- clean_week_58 %>%
-  rbind(clean_week_59,clean_week_60,clean_week_61,clean_week_62)
+all_clean_week_58_63 <- clean_week_58 %>%
+  rbind(clean_week_59,clean_week_60,clean_week_61,clean_week_62,clean_week_63)
 
-all_weights_58_62 <- weights_58  %>%
-  rbind(weights_59,weights_60,weights_61,weights_62)
+all_weights_58_63 <- weights_58  %>%
+  rbind(weights_59,weights_60,weights_61,weights_62,weights_63)
 
-all_weeks_w_weights <- inner_join(all_clean_week_58_62, all_weights_58_62, by = c("SCRAM", "WEEK"))
+all_weeks_w_weights <- inner_join(all_clean_week_58_63, all_weights_58_63, by = c("SCRAM", "WEEK"))
 
 srvy_all <-
   as_survey_rep(
@@ -114,7 +117,7 @@ srvy_all <-
     mse = TRUE
   )
 
-## Weeks 58-62 cross tabs analysis
+## Weeks 58-63 cross tabs analysis
 
 # 1) Of all households who responded, those who felt pressure to move
 
@@ -376,7 +379,7 @@ moved_reason <- moved_rent_increase %>%
 all_PUF <- list('Total Pressure'=total_pressure,'Total Moved'=total_moved,'Total Reason'=total_reason, 'Reason Moved'=moved_reason,
                 'Total Rent Payment'=total_rent_payment, 'Months Behind'=months_behind, 'Eviction Likelihood'=eviction_behind_rent,'Total Rent Change'=total_rent_change,
                 'Race Pressure'=race_pressured,'Race Rent Payment'=race_rent_payment,'Race Moved'=race_moved,'Race Reason'=race_reason)
-write.xlsx(all_PUF, file="DC PUF Cross Tabs Week 58-62.xlsx")
+write.xlsx(all_PUF, file="DC PUF Cross Tabs Week 58-63.xlsx")
 
 
 
