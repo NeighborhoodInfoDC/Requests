@@ -5,7 +5,7 @@
 # Description: compile, clean, and analyze PUF census data for DC housing assistance analysis
 ######
 
-## Indicators: 1) rent payment status 2) number of months behind on rent 3) likelihood of evction
+## Indicators: 1) rent payment status 2) number of months behind on rent 3) likelihood of eviction
 # 3) informal pressure to move
 
 library(tidyverse)
@@ -22,6 +22,8 @@ week_61 <- read_csv("//sas1/dcdata/Libraries/Requests/Raw/Eviction Group/pulse20
 week_60 <- read_csv("//sas1/dcdata/Libraries/Requests/Raw/Eviction Group/pulse2023_puf_60.csv")
 week_59 <- read_csv("//sas1/dcdata/Libraries/Requests/Raw/Eviction Group/pulse2023_puf_59.csv")
 week_58 <- read_csv("//sas1/dcdata/Libraries/Requests/Raw/Eviction Group/pulse2023_puf_58.csv")
+cycle_01 <- read_csv("//sas1/dcdata/Libraries/Requests/Raw/Eviction Group/hps_04_00_01_puf.csv") %>%
+  rename(WEEK = CYCLE)
 
 # read in replicate weights
 weights_58 <- read_csv("//sas1/dcdata/Libraries/Requests/Raw/Eviction Group/pulse2023_repwgt_puf_58.csv")
@@ -30,12 +32,14 @@ weights_60 <- read_csv("//sas1/dcdata/Libraries/Requests/Raw/Eviction Group/puls
 weights_61 <- read_csv("//sas1/dcdata/Libraries/Requests/Raw/Eviction Group/pulse2023_repwgt_puf_61.csv")
 weights_62 <- read_csv("//sas1/dcdata/Libraries/Requests/Raw/Eviction Group/pulse2023_repwgt_puf_62.csv")
 weights_63 <- read_csv("//sas1/dcdata/Libraries/Requests/Raw/Eviction Group/pulse2023_repwgt_puf_63.csv")
+weights_01 <- read_csv("//sas1/dcdata/Libraries/Requests/Raw/Eviction Group/hps_04_00_01_repwgt_puf.csv") %>%
+  rename(WEEK = CYCLE)
 
-clean_data <- function(data_week) {
+clean_data <- function(data_week, num_period) {
   data_week %>%
     filter(EST_ST == "11") %>%
     mutate(pressured = ifelse(MOVEWHY1 == 1|MOVEWHY2 == 1| MOVEWHY3 == 1|MOVEWHY4 == 1|MOVEWHY5 == 1|MOVEWHY6 == 1|MOVEWHY7 == 1,
-                              "Pressure to Move", 
+                              "Pressure", 
                               ifelse(MOVEWHY8 == 1, "No pressure", "Not reported")),
            increase_rent = case_when(MOVEWHY1 == 1 ~ "Increased rent"), 
            missed_rent = case_when(MOVEWHY2 == 1 ~ "Missed Rent"), 
@@ -89,57 +93,67 @@ clean_data <- function(data_week) {
            pressured,moved,increase_rent,missed_rent,repairs_not_made,eviction_threatened,
            locks_changed,nhbd_danger,other_pressure,
            rent_change,rent_behind,months_behind,eviction_two_months,
-           race, income,total_HH)
-    # filter(pressured != "Not reported")
+           race, income,total_HH) %>%
+    mutate(period = {{num_period}})
 }
 
-clean_week_58 <- clean_data(week_58)
-clean_week_59 <- clean_data(week_59)
-clean_week_60 <- clean_data(week_60)
-clean_week_61 <- clean_data(week_61)
-clean_week_62 <- clean_data(week_62)
-clean_week_63 <- clean_data(week_63)
+clean_week_58 <- clean_data(week_58, "1")
+clean_week_59 <- clean_data(week_59, "1")
+clean_week_60 <- clean_data(week_60, "2")
+clean_week_61 <- clean_data(week_61, "2")
+clean_week_62 <- clean_data(week_62, "3")
+clean_week_63 <- clean_data(week_63, "3")
+clean_cycle_01 <- clean_data(cycle_01, "4") 
 
-all_clean_week_58_63 <- clean_week_58 %>%
-  rbind(clean_week_59,clean_week_60,clean_week_61,clean_week_62,clean_week_63)
+all_clean <- clean_week_58 %>%
+  rbind(clean_week_59,clean_week_60,clean_week_61,clean_week_62,clean_week_63,clean_cycle_01)
 
-all_weights_58_63 <- weights_58  %>%
-  rbind(weights_59,weights_60,weights_61,weights_62,weights_63)
+all_weights <- weights_58  %>%
+  rbind(weights_59,weights_60,weights_61,weights_62,weights_63,weights_01)
 
-all_weeks_w_weights <- inner_join(all_clean_week_58_63, all_weights_58_63, by = c("SCRAM", "WEEK"))
+all_PUF <- inner_join(all_clean, all_weights, by = c("SCRAM", "WEEK"))
 
 srvy_all <-
   as_survey_rep(
-    all_weeks_w_weights,
+    all_PUF,
     repweights = dplyr::matches("HWEIGHT[0-9]+"),
     weights = HWEIGHT,
     type = "BRR",
     mse = TRUE
   )
 
-## Weeks 58-63 cross tabs analysis
+## Analysis on PUF since June 2023 when pressure to move added to survey 
 
 # 1) Of all households who responded, those who felt pressure to move
 
 total_pressure <- srvy_all %>%
-  group_by(pressured) %>%
+  filter(pressured != "Not reported") %>% # denominator only people who reported if pressured or not
+  group_by(period, pressured) %>%
   summarise(proportion = survey_mean()) %>%
-  mutate_if(is.numeric, round, digits = 2)
+  filter(proportion_se < 0.05) %>% # taking out obs with large standard errors
+  select(-proportion_se) %>%     
+  mutate_if(is.numeric, round, digits = 2) %>%
+  filter(pressured == "Pressure") %>%
+  pivot_wider(names_from = period, values_from = proportion)
 
 # 2) Of households that faced pressure, those who had to move in past 6 months due to pressure
 
 total_moved <- srvy_all %>%
-  filter(pressured == "Pressure to Move") %>%
-  group_by(moved) %>%
+  filter(pressured == "Pressure") %>%
+  group_by(period, moved) %>%
   summarise(proportion = survey_mean()) %>%
-  mutate_if(is.numeric, round, digits = 2)
+  filter(proportion_se < 0.05) %>% # taking out obs with large standard errors
+  select(-proportion_se) %>%     
+  mutate_if(is.numeric, round, digits = 2) %>%
+  filter(moved == "Moved from Pressure") %>%
+  pivot_wider(names_from = period, values_from = proportion)
 
 # 3) Of households who felt pressured to move, what were the reasons? 
 
 reasons_fun <- function(reason_input) {
   srvy_all %>%
-    filter(pressured == "Pressure to Move") %>%
-    group_by({{reason_input}}) %>%
+    filter(pressured == "Pressure") %>%
+    group_by(period, {{reason_input}}) %>%
     summarise(proportion = survey_mean()) %>%
     filter(proportion_se < 0.05) %>% # taking out big p values
     select(-proportion_se) %>%     
@@ -157,45 +171,65 @@ other_pressure <- reasons_fun(other_pressure)
 
 total_reason <- rent_increase %>%
   rbind(miss_rent, repairs,evictions_threat,locks_change,nhbd_danger,other_pressure) %>%
-  drop_na()
+  drop_na() %>%
+  pivot_wider(names_from = period, values_from = proportion)
 
 # Rent Payment Status  
 total_rent_payment <- srvy_all %>%
-  group_by(rent_behind) %>%
+  group_by(period, rent_behind) %>%
   summarise(proportion = survey_mean()) %>%
-  mutate_if(is.numeric, round, digits = 2)
+  filter(proportion_se < 0.05) %>% # taking out big p values
+  select(-proportion_se) %>%     
+  mutate_if(is.numeric, round, digits = 2) %>%
+  filter(rent_behind == "Behind on rent") %>%
+  pivot_wider(names_from = period, values_from = proportion)
 
 # Of people behind on rent, the number of months behind on rent
 months_behind <- srvy_all %>%
   filter(rent_behind == "Behind on rent") %>% #The survey only asks those who are behind on rent
-  group_by(months_behind) %>%
+  group_by(period, months_behind) %>%
   summarise(proportion = survey_mean()) %>%
-  mutate_if(is.numeric, round, digits = 2)
+  filter(proportion_se < 0.05) %>% # taking out big p values
+  select(-proportion_se) %>%
+  mutate_if(is.numeric, round, digits = 2) %>%
+  filter(months_behind != "Did not report") %>%
+  filter(!is.na(months_behind)) %>%
+  pivot_wider(names_from = period, values_from = proportion)
 
 # Likelihood of eviction
 eviction_behind_rent <-  srvy_all %>%
   filter(rent_behind == "Behind on rent") %>% #The survey only asks those who are behind on rent
-  group_by(eviction_two_months) %>%
+  group_by(period, eviction_two_months) %>%
   summarise(proportion = survey_mean()) %>%
-  mutate_if(is.numeric, round, digits = 2) 
+  filter(proportion_se < 0.05) %>% # taking out big p values
+  select(-proportion_se) %>%
+  mutate_if(is.numeric, round, digits = 2) %>%
+  filter(eviction_two_months != "Did not report") %>%
+  pivot_wider(names_from = period, values_from = proportion)
 
 # Rent change 
 total_rent_change <-  srvy_all %>%
-  group_by(rent_change) %>%
+  group_by(period, rent_change) %>%
   summarise(proportion = survey_mean()) %>%
-  mutate_if(is.numeric, round, digits = 2) 
+  filter(proportion_se < 0.05) %>% # taking out big p values
+  select(-proportion_se) %>%
+  mutate_if(is.numeric, round, digits = 2) %>%
+  filter(rent_change != "Did not report") %>%
+  pivot_wider(names_from = period, values_from = proportion)
 
 # 4) Cross tabs 1-3 with race/ethnicity 
 
 # Race/Ethnicity pressured total
 
 race_pressured <- srvy_all %>%
-  group_by(race, pressured) %>%
+  filter(pressured != "Not reported") %>% # denominator only people who reported if pressured or not
+  group_by(period, race, pressured) %>%
   summarise(proportion = survey_mean()) %>%
   mutate_if(is.numeric, round, digits = 2) %>%
   filter(proportion_se < 0.05) %>% # taking out big p values
   select(-proportion_se) %>%     
-  pivot_wider(names_from=pressured, values_from=proportion)
+  filter(pressured == "Pressure") %>%
+  pivot_wider(names_from=period, values_from=proportion)
 
 # Race/Ethnicity moved
 
@@ -342,9 +376,9 @@ rent_change_reason <- rent_change_rent_inc %>%
 
 moved_reason_fun <- function(reason_input, reason_string) {
   srvy_all %>%
-    filter(pressured == "Pressure to Move") %>%
+    filter(pressured == "Pressure") %>%
     filter({{reason_input}} == {{reason_string}}) %>%
-    group_by(moved) %>%
+    group_by(period, moved) %>%
     summarise(proportion = survey_mean()) %>%
     filter(proportion_se < 0.05) %>% # taking out big p values
     select(-proportion_se) %>% 
@@ -367,12 +401,13 @@ moved_other_pressure <- moved_reason_fun(other_pressure, "Other pressure") %>%
   rename(`Other pressure` = proportion)
 
 moved_reason <- moved_rent_increase %>%
-  left_join(moved_miss_rent, by="moved") %>%
-  left_join(moved_repairs, by="moved") %>%
-  left_join(moved_evictions_threat, by="moved") %>%
-  left_join(moved_locks_change, by="moved") %>%
-  left_join(moved_nhbd_danger, by="moved") %>%
-  left_join(moved_other_pressure, by="moved")
+  left_join(moved_miss_rent, by= c("moved","period")) %>%
+  left_join(moved_repairs, by= c("moved","period")) %>%
+  left_join(moved_evictions_threat, by= c("moved","period")) %>%
+  left_join(moved_locks_change, by= c("moved","period")) %>%
+  left_join(moved_nhbd_danger, by= c("moved","period")) %>%
+  left_join(moved_other_pressure, by= c("moved","period")) %>%
+  filter(moved == "Moved from Pressure")
 
 # Exporting in one xlsx
 
@@ -381,6 +416,11 @@ all_PUF <- list('Total Pressure'=total_pressure,'Total Moved'=total_moved,'Total
                 'Race Pressure'=race_pressured,'Race Rent Payment'=race_rent_payment,'Race Moved'=race_moved,'Race Reason'=race_reason)
 write.xlsx(all_PUF, file="DC PUF Cross Tabs Week 58-63.xlsx")
 
+DC_updated_PUF  <- list('Total Pressure'=total_pressure,'Total Moved'=total_moved,'Total Reason'=total_reason, 
+                        'Reason Moved'=moved_reason,'Total Rent Payment'=total_rent_payment, 
+                        'Months Behind'=months_behind, 'Eviction Likelihood'=eviction_behind_rent,
+                        'Total Rent Change'=total_rent_change,'Race Pressure'=race_pressured)
+write.xlsx(DC_updated_PUF, file="DC (state) PUF Cross Tabs.xlsx")
 
 
 
