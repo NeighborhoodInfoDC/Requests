@@ -46,8 +46,7 @@ run;
   %let top_code = 999999999;
   
   %if &state = 11 %then %let county_name = District of Columbia;
-  %else %let county_name = %bquote( %sysfunc( putc( &state.&county, $cnty22allf. ) ) );
-  /**%else %let county_name = %sysfunc( putc( %trim(&state)%trim(&county), $cnty22allf. ) );**/
+  %else %let county_name = %bquote( %sysfunc( left( %quote( %sysfunc( putc( &state.&county, $cnty22allf. ) ) ) ) ) );
 
   %do i = &START_YR %to &END_YR;
   
@@ -338,20 +337,11 @@ run;
 
 ** Generate summary data **;
 
-/*
 %download_data( state=11, county=001 )
 
-*/
-
-/* %download_data( state=24, county=031 ) */
-/* %download_data( state=24, county=033 ) */
+%download_data( state=24, county=031 )
+%download_data( state=24, county=033 )
 
 %download_data( state=51, county=013 )
 
-/*
 %download_data( state=51, county=059 )
-%download_data( state=51, county=510 )
-%download_data( state=51, county=600 )
-%download_data( state=51, county=610 )
-%download_data( state=51, county=683 )
-%download_data( state=51, county=685 )
