@@ -37,8 +37,6 @@ proc format;
     2000 -  high = '$2,000 or more';
 run;
 
-%include "C:\Projects\UISUG\Uiautos\Get_acs_detailed_table_api.sas";
-
 ** Create macros **;
 
 %macro download_data( state=, county= );
@@ -48,9 +46,9 @@ run;
   %let top_code = 999999999;
   
   %if &state = 11 %then %let county_name = District of Columbia;
-  %else %let county_name = %sysfunc( putc( %trim(&state)%trim(&county), $cnty22allf. ) );
+  %else %let county_name = %bquote( %sysfunc( putc( &state.&county, $cnty22allf. ) ) );
+  /**%else %let county_name = %sysfunc( putc( %trim(&state)%trim(&county), $cnty22allf. ) );**/
 
-%MACRO SKIP;
   %do i = &START_YR %to &END_YR;
   
     %** No ACS 1-year data in 2020 so skip **;
@@ -150,7 +148,6 @@ run;
     by low high;
     
   run;
-%MEND SKIP;
   
   %File_info( data=Requests.Units_all_&state._&county, contents=n, printobs=100 )
   
@@ -291,7 +288,7 @@ run;
       %label_all( Units )
     ;
     title2 "Renter-Occupied Housing Units by Gross Rent (UNADJUSTED)";
-    title3 "&county_name";
+    title3 "%unquote(&county_name)";
   run;
       
   ods csvall body="&output_path\Gross_rent_&START_YR._&END_YR._%trim(&state)_%trim(&county).csv";
@@ -310,7 +307,7 @@ run;
       %label_all( UnitsAdj )
     ;
     title2 "Renter-Occupied Housing Units by Gross Rent (constant &END_YR. $)";
-    title3 "&county_name";
+    title3 "%unquote(&county_name)";
   run;
 
   ods csvall close;
@@ -341,5 +338,20 @@ run;
 
 ** Generate summary data **;
 
-/*%download_data( state=11, county=001 )*/
-%download_data( state=24, county=031 )
+/*
+%download_data( state=11, county=001 )
+
+*/
+
+/* %download_data( state=24, county=031 ) */
+/* %download_data( state=24, county=033 ) */
+
+%download_data( state=51, county=013 )
+
+/*
+%download_data( state=51, county=059 )
+%download_data( state=51, county=510 )
+%download_data( state=51, county=600 )
+%download_data( state=51, county=610 )
+%download_data( state=51, county=683 )
+%download_data( state=51, county=685 )
