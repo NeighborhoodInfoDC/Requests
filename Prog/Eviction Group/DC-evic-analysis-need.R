@@ -26,6 +26,8 @@ dc_pums_22 <- get_pums(
   show_call = TRUE, 
   recode = TRUE)
 
+## NEED TO PUT ALL $ IN 2020 VALUE!
+
 ## Filter for only head of occupied households, create rent burden variable, and add 2022 income category bins
 clean_pums <- dc_pums_22 %>%
   filter(VACS=="0", # not vacant
@@ -39,38 +41,22 @@ clean_pums <- dc_pums_22 %>%
 total_hh_dc <- clean_pums %>%
   summarize(total_hh = sum(WGTP)) # total households 315,785 matches ACS 5 year for total households
 
-total_owners_dc <- clean_pums %>%
-  filter(TEN == 1 | TEN == 2) %>%
-  summarize(total_owner = sum(WGTP))
+renters_below_30_AMI <- clean_pums %>%
+  filter(TEN == 3 | TEN == 4, 
+         inc_cat == "below 30 AMI") %>%
+  summarize(total_below_30AMI = sum(WGTP))
 
-renters_not_burden <- clean_pums %>%
-  filter(TEN == 3 | TEN == 4) %>%
-  filter(rent_burden == "not rent burden") %>%
-  summarize(total_not_rent_burden = sum(WGTP))
-
-renters_above_80AMI <- clean_pums %>%
-  filter(TEN == 3 | TEN == 4,
-         rent_burden == "rent burden", 
-         inc_cat == "80_120AMI" | inc_cat == "120_200AMI" | inc_cat == "200plusAMI") %>%
-  summarize(total_above_80_AMI = sum(WGTP))
-
-renters_above_50AMI <- clean_pums %>%
-  filter(TEN == 3 | TEN == 4,
-         rent_burden == "rent burden", 
-         inc_cat == "50_80AMI" | inc_cat == "80_120AMI" | inc_cat == "120_200AMI" | inc_cat == "200plusAMI") %>%
-  summarize(total_above_50_AMI = sum(WGTP))
-
-total_dc_need <- total_hh_dc %>%
-  cbind(total_owners_dc, renters_not_burden, renters_above_80AMI, renters_above_50AMI) %>%
-  mutate(total_need_80AMI = total_hh-total_owner-total_not_rent_burden-total_above_80_AMI,
-         total_need_50AMI = total_hh-total_owner-total_not_rent_burden-total_above_50_AMI)
-
-need_by_AMI <- clean_pums %>%
+renters_30_50 <- clean_pums %>%
   filter(TEN == 3 | TEN == 4,
          rent_burden == "rent burden",
-         inc_cat == "below 30 AMI" | inc_cat == "30_40AMI" | inc_cat == "40_50AMI") %>%
+         inc_cat == "30_40AMI" | inc_cat == "40_50AMI") %>%
   group_by(inc_cat) %>%
-  summarize(hh_AMI = sum(WGTP))
+  summarize(total_rent_burden = sum(WGTP)) 
+
+estimate_voucher_cost <- clean_pums %>%
+  filter(TEN == 3 | TEN == 4, 
+         inc_cat == "below 30 AMI") %>%
+  
 
 # export the totals above
 df_list <- list('Total' = total_dc_need, 'By AMI' = need_by_AMI)
