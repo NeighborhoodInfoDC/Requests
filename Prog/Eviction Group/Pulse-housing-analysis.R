@@ -198,8 +198,8 @@ months_behind <- srvy_all %>%
 
 # Likelihood of eviction
 eviction_behind_rent <-  srvy_all %>%
-  filter(rent_behind == "Behind on rent") %>% #The survey only asks those who are behind on rent
-  group_by(period, eviction_two_months) %>%
+  #filter(rent_behind == "Behind on rent") %>% #The survey only asks those who are behind on rent
+  group_by(period, income, eviction_two_months) %>%
   summarise(proportion = survey_mean()) %>%
   filter(proportion_se < 0.05) %>% # taking out big p values
   select(-proportion_se) %>%
