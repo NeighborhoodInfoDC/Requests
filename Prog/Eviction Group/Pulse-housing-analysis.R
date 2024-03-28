@@ -88,7 +88,18 @@ clean_data <- function(data_week, num_period) {
                                            EVICT == -99 | EVICT == -88 ~ "Did not report"),
     ) %>%
     filter(TENURE == 3 | TENURE == 4) %>% # 3 == Rented; 4 == Occupied without payment of rent
-    rename(total_HH = THHLD_NUMPER,) %>%
+    rename(total_HH = THHLD_NUMPER) %>%
+    # income = case_when(INCOME == 1 ~ "Less than $25,000",  
+    #                    INCOME == 2 ~ "$25,000 - $34,999",
+    #                    INCOME == 3 ~ "$35,000 - $49,999",
+    #                    INCOME == 4 ~ "$50,000 - $74,999",
+    #                    INCOME == 5 ~ "$75,000 - $99,999",
+    #                    INCOME == 6 ~ "$100,000 - $149,999",
+    #                    INCOME == 7 ~ "$150,000 - $199,999",
+    #                    INCOME == 8 ~ "$200,000 and above",
+    #                    INCOME == -99 | INCOME == -88 ~ "Did not report"),
+    # Create income categories with total_HH and INCOME
+    
     select(SCRAM,HWEIGHT,PWEIGHT,WEEK,EST_ST,
            pressured,moved,increase_rent,missed_rent,repairs_not_made,eviction_threatened,
            locks_changed,nhbd_danger,other_pressure,
