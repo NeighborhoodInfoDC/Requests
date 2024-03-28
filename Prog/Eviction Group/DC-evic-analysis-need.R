@@ -52,7 +52,8 @@ rentburden_inccat <- clean_pums %>% # low income renters by AMI levels and rent 
   pivot_wider(names_from = inc_cat, values_from = Total) %>%
   bind_rows(summarise(., across(where(is.numeric), sum), 
                       across(where(is.character), ~'Total'))) %>% #creating total row 
-  select(rent_burden, `below 30 AMI`, `30_40AMI`, `40_50AMI`) #rearranging columns
+  select(rent_burden, `below 30 AMI`, `30_40AMI`, `40_50AMI`) %>% #rearranging columns
+  mutate_if(is.numeric, round, -2)
 
 estimate_voucher_cost <- clean_pums %>% # estimating cost of voucher if HH's paid 30% of their income 
   filter(inc_cat == "below 30 AMI",
@@ -60,7 +61,10 @@ estimate_voucher_cost <- clean_pums %>% # estimating cost of voucher if HH's pai
   mutate(voucher_cost = GRNTP - inc_month_30) %>% # estimating voucher cost if current rent minus 30% of HH monthly income (inc_month_30 created in clean_pums)
   summarize(across(c(voucher_cost), 
                    list(weighted_avg = ~weighted.mean(., w = WGTP), #calculating weighted avg of voucher_cost var
-                        weighted_sum = ~ sum(. * WGTP)))) #calculating weighted sum of voucher_cost var 
+                        weighted_sum = ~ sum(. * WGTP)))) %>% #calculating weighted sum of voucher_cost var 
+  mutate(voucher_total_cost_year = voucher_cost_weighted_sum*12,
+         voucher_avg_year = voucher_cost_weighted_avg*12) %>%
+  mutate_if(is.numeric, round, -2)
 
 estimate_shallow <- clean_pums %>% # estimating the number of HH who would not be rent burden if received DC Flex ($8,400 a year) and spent towards rent 
   filter(rent_burden == "Rent Burden",
@@ -73,7 +77,8 @@ estimate_shallow <- clean_pums %>% # estimating the number of HH who would not b
   group_by(new_rent_burden, inc_cat) %>%
   summarize(Total = sum(WGTP)) %>%
   pivot_wider(names_from = inc_cat, values_from = Total) %>%
-  mutate(Total = `30_40AMI` + `40_50AMI`)
+  mutate(Total = `30_40AMI` + `40_50AMI`) %>%
+  mutate_if(is.numeric, round, -2)
 
 # export the totals above
 df_list <- list('Rent Burden by AMI' = rentburden_inccat, 'Voucher Cost Estimate' = estimate_voucher_cost, 'Shallow Subsidy Estimate' = estimate_shallow)
