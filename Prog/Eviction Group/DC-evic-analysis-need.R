@@ -36,10 +36,15 @@ clean_pums <- dc_pums_22 %>%
     GRNTP = GRNTP*(ADJHSG/1000000), # adjusting to match years prior to 2022 to 2022 $ value for gross rent and household income 
     HINCP = HINCP*(ADJINC),
     inc_month_30 = (HINCP*0.30)/12, # 30% of monthly income 
+    inc_month_50 = (HINCP*0.50)/12, # 50% of monthly income
     rent_burden = case_when(
       inc_month_30 <= GRNTP ~ "Rent Burden", # If 30% of monthly income less than or equal to gross monthly rent cost, HH is rent burden 
       HINCP <= 0 & GRNTP > 0 ~ "Rent Burden", # If HH income is less than or equal to 0 and the HH pays rent, HH is rent burden
-      TRUE ~ "Not Rent Burden")) %>% # All else households not rent burden 
+      TRUE ~ "Not Rent Burden"), # All else households not rent burden
+    severe_rent_burden = case_when(
+      inc_month_50 <= GRNTP ~ "Severe Rent Burden", 
+      HINCP <= 0 & GRNTP > 0 ~ "Severe Rent Burden", # If HH income is less than or equal to 0 and the HH pays rent, HH is rent burden
+      TRUE ~ "Not Severely Rent Burden")) %>%  
   dmv_hh_inc() # to have HH income bins from function in DC-HH-inc-cat.R
 
 total_hh_dc <- clean_pums %>% # testing weights to ensure match to ACS 5 year data for total renter, occupied households 
@@ -53,6 +58,16 @@ rentburden_inccat <- clean_pums %>% # low income renters by AMI levels and rent 
   bind_rows(summarise(., across(where(is.numeric), sum), 
                       across(where(is.character), ~'Total'))) %>% #creating total row 
   select(rent_burden, `below 30 AMI`, `30_40AMI`, `40_50AMI`) %>% #rearranging columns
+  mutate_if(is.numeric, round, -2)
+
+severe_rentburden_inccat <- clean_pums %>% # low income renters by AMI levels and rent burden 
+  filter(inc_cat == "below 30 AMI" | inc_cat == "30_40AMI" | inc_cat == "40_50AMI") %>% 
+  group_by(inc_cat, severe_rent_burden) %>%
+  summarize(Total = sum(WGTP)) %>% #summing by HH weight
+  pivot_wider(names_from = inc_cat, values_from = Total) %>%
+  bind_rows(summarise(., across(where(is.numeric), sum), 
+                      across(where(is.character), ~'Total'))) %>% #creating total row 
+  select(severe_rent_burden, `below 30 AMI`, `30_40AMI`, `40_50AMI`) %>% #rearranging columns
   mutate_if(is.numeric, round, -2)
 
 estimate_voucher_cost <- clean_pums %>% # estimating cost of voucher if HH's paid 30% of their income 
@@ -81,5 +96,5 @@ estimate_shallow <- clean_pums %>% # estimating the number of HH who would not b
   mutate_if(is.numeric, round, -2)
 
 # export the totals above
-df_list <- list('Rent Burden by AMI' = rentburden_inccat, 'Voucher Cost Estimate' = estimate_voucher_cost, 'Shallow Subsidy Estimate' = estimate_shallow)
+df_list <- list('Rent Burden by AMI' = rentburden_inccat, 'Severe Rent Burden by AMI' = severe_rentburden_inccat, 'Voucher Cost Estimate' = estimate_voucher_cost, 'Shallow Subsidy Estimate' = estimate_shallow)
 write.xlsx(df_list, file = "Eviction Housing Analysis PUMS Estimates.xlsx")
