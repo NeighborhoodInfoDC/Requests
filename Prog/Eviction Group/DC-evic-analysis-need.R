@@ -70,6 +70,14 @@ severe_rentburden_inccat <- clean_pums %>% # low income renters by AMI levels an
   select(severe_rent_burden, `below 30 AMI`, `30_40AMI`, `40_50AMI`) %>% #rearranging columns
   mutate_if(is.numeric, round, -2)
 
+sample_population <- clean_pums %>% # creating sampled population that is similar to the estimated vouchers needed (22,000)
+  filter(inc_cat == "below 30 AMI",
+         rent_burden == "Rent Burden") %>%
+  sample_n(850) 
+test_sample_population <- sample_population %>%
+  group_by(inc_cat, rent_burden) %>%
+  summarize(Total = sum(WGTP))
+
 estimate_voucher_cost <- clean_pums %>% # estimating cost of voucher if HH's paid 30% of their income 
   filter(inc_cat == "below 30 AMI",
          rent_burden == "Rent Burden") %>%
