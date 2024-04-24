@@ -4,20 +4,17 @@
 # Author: Elizabeth Burton
 # Created: 1/16/2024
 
-# Description: Estimate # households in DC that need housing assistance. For eviction co-leader group 
-# housing assistance analysis
+# Description: Estimate # households in DC that need housing assistance. For eviction co-leader group housing assistance analysis
 ##################
 
 # Load libraries and functions
 library(tidyverse)
 library(tidycensus)
-library(skimr)
-library(data.table)
 library(openxlsx)
 library(Hmisc)
 
 # Household income bins function
-source("C:/Users/eburton/Documents/GitHub/Requests/Prog/Eviction Group/DC-HH-inc-cat.R") # script where household income limits created
+source("//sas1/dcdata/Libraries/Requests/Prog/Eviction Group/DC-HH-inc-cat.R") # script where household income limits created
 
 dc_pums_22 <- get_pums(
   variables = c("PUMA10","PUMA20", "TEN", "TYPEHUGQ", "SPORDER", "VALP", "NP", "HINCP", "VACS", "GRNTP","RAC1P", "HISP", "GRPIP","ADJHSG","ADJINC"),
@@ -46,7 +43,7 @@ clean_pums <- dc_pums_22 %>%
       inc_month_50 <= GRNTP ~ "Severe Rent Burden", 
       HINCP <= 0 & GRNTP > 0 ~ "Severe Rent Burden", # If HH income is less than or equal to 0 and the HH pays rent, HH is rent burden
       TRUE ~ "Not Severely Rent Burden")) %>%  
-  dmv_hh_inc() # to have HH income bins from function in DC-HH-inc-cat.R
+  dmv_hh_inc() # attach HH income bins from function in DC-HH-inc-cat.R
 
 total_hh_dc <- clean_pums %>% # testing weights to ensure match to ACS 5 year data for total renter, occupied households 
   summarise(total_hh = sum(WGTP)) # 184,459 matches ACS 5 year (184,920) 
@@ -75,17 +72,17 @@ voucher_estimate <- clean_pums %>% # estimating cost of voucher if HH's paid 30%
   filter(inc_cat == "below 30 AMI",
          rent_burden == "Rent Burden") %>%
   mutate(voucher_cost = GRNTP - inc_month_30) %>% # estimating voucher cost if current rent minus 30% of HH monthly income (inc_month_30 created in clean_pums)
-  filter(voucher_cost > 83) #removing when cost burden difference is onl 1,000 or less a year (likely people in subsidized units)
+  filter(voucher_cost > 83) #removing when cost burden difference is only 1,000 or less a year (likely people in subsidized units)
   
 estimate_voucher_cost <- voucher_estimate %>%
   summarise(across(c(voucher_cost), 
                    list(weighted_avg = ~weighted.mean(., w = WGTP), #calculating weighted avg of voucher_cost var
                         weighted_sum = ~sum(. * WGTP)))) %>% #calculating weighted sum of voucher_cost var 
-  mutate(voucher_total_cost_year = voucher_cost_weighted_sum*12,
+  mutate(voucher_total_cost_year = voucher_cost_weighted_sum*12, #creating annual est from monthly est 
          voucher_avg_year = voucher_cost_weighted_avg*12) %>%
   mutate_if(is.numeric, round, -2)
 
-voucher_quantile <- voucher_estimate %>%
+voucher_quantile <- voucher_estimate %>% #trying to understand range/skew of weighted average calculated above
   reframe(weighted_quant = wtd.quantile(voucher_cost, weights=WGTP, 
                                           probs=c(0, .25, .5, .75, 1), normwt=TRUE, na.rm=TRUE)) %>%
   mutate(voucher_total_cost_year = weighted_quant*12) %>%
@@ -108,16 +105,16 @@ subsidy_summed <- estimate_shallow %>% # creating tidy data frame to compare cat
   mutate(Total = `30_40AMI` + `40_50AMI`) %>%
   mutate_if(is.numeric, round, -2)
 
-num_still_rent_burden <- estimate_shallow %>% # People still rent burden 40% AMI and below for voucher or ERAP estimate
+num_still_rent_burden <- estimate_shallow %>% # households still rent burden 40% AMI and below
   filter(new_rent_burden == "Still Rent Burden") %>%
   group_by(inc_cat) %>%
   summarise(total=sum(WGTP)) 
 
-mean_still_rent_burden <- estimate_shallow %>% # How much housing subsidy do these households need?
+mean_still_rent_burden <- estimate_shallow %>% # Estimate the subsidy needed by calculating gap between monthly HH income and current rent
   filter(new_rent_burden == "Still Rent Burden") %>%
   summarise(across(c(rent_diff), 
-                   list(weighted_avg = ~weighted.mean(., w = WGTP), #calculating weighted avg of voucher_cost var
-                        weighted_sum = ~sum(. * WGTP)))) %>% #calculating weighted sum of voucher_cost var 
+                   list(weighted_avg = ~weighted.mean(., w = WGTP), #calculating weighted avg of rent_diff var
+                        weighted_sum = ~sum(. * WGTP)))) %>% #calculating weighted sum of rent_diff var 
   mutate(voucher_total_cost_year = rent_diff_weighted_sum*12,
          voucher_avg_year = rent_diff_weighted_avg*12) %>%
   mutate_if(is.numeric, round, -2)
@@ -125,4 +122,4 @@ mean_still_rent_burden <- estimate_shallow %>% # How much housing subsidy do the
 # export the totals above
 df_list <- list('Rent Burden by AMI' = rentburden_inccat, 'Severe Rent Burden by AMI' = severe_rentburden_inccat, 'Voucher Cost Estimate' = estimate_voucher_cost, 
                 'Shallow Subsidy Estimate' = subsidy_summed, 'Still Rent Burden 30-40 AMI' = num_still_rent_burden)
-write.xlsx(df_list, file = "Eviction Housing Analysis PUMS Estimates.xlsx")
+write.xlsx(df_list, file = "//sas1/dcdata/Libraries/Requests/Prog/Eviction Group/Eviction Housing Analysis PUMS Estimates.xlsx")
