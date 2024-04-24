@@ -108,12 +108,12 @@ subsidy_summed <- estimate_shallow %>% # creating tidy data frame to compare cat
   mutate(Total = `30_40AMI` + `40_50AMI`) %>%
   mutate_if(is.numeric, round, -2)
 
-num_still_rent_burden <- estimate_shallow %>%
+num_still_rent_burden <- estimate_shallow %>% # People still rent burden 40% AMI and below for voucher or ERAP estimate
   filter(new_rent_burden == "Still Rent Burden") %>%
-  group_by(severe_rent_burden) %>%
+  group_by(inc_cat) %>%
   summarise(total=sum(WGTP)) 
 
-mean_still_rent_burden <- estimate_shallow %>%
+mean_still_rent_burden <- estimate_shallow %>% # How much housing subsidy do these households need?
   filter(new_rent_burden == "Still Rent Burden") %>%
   summarise(across(c(rent_diff), 
                    list(weighted_avg = ~weighted.mean(., w = WGTP), #calculating weighted avg of voucher_cost var
@@ -123,5 +123,6 @@ mean_still_rent_burden <- estimate_shallow %>%
   mutate_if(is.numeric, round, -2)
 
 # export the totals above
-df_list <- list('Rent Burden by AMI' = rentburden_inccat, 'Severe Rent Burden by AMI' = severe_rentburden_inccat, 'Voucher Cost Estimate' = estimate_voucher_cost, 'Shallow Subsidy Estimate' = estimate_shallow)
+df_list <- list('Rent Burden by AMI' = rentburden_inccat, 'Severe Rent Burden by AMI' = severe_rentburden_inccat, 'Voucher Cost Estimate' = estimate_voucher_cost, 
+                'Shallow Subsidy Estimate' = subsidy_summed, 'Still Rent Burden 30-40 AMI' = num_still_rent_burden)
 write.xlsx(df_list, file = "Eviction Housing Analysis PUMS Estimates.xlsx")
