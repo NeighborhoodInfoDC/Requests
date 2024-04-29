@@ -50,19 +50,13 @@ clean_data <- data %>%
                                            EVICT == 3 ~ "not very likely", 
                                            EVICT == 4 ~ "not likely at all",
                                            EVICT == -99 | EVICT == -88 ~ "Did not report"),
-           inc_cat=case_when(INCOME == 1 | INCOME == 2 & THHLD_NUMPER==1 ~ "below 40 AMI", #based on HUD incomes limits for income & household size 
-                             INCOME == 1 | INCOME == 2 & THHLD_NUMPER==2 ~ "below 40 AMI",
-                             INCOME == 1 | INCOME == 2 | INCOME == 3 & THHLD_NUMPER==3 ~ "below 40 AMI",
-                             INCOME == 1 | INCOME == 2 | INCOME == 3 & THHLD_NUMPER==4 ~ "below 40 AMI",
-                             INCOME == 1 | INCOME == 2 | INCOME == 3 & THHLD_NUMPER==5 ~ "below 40 AMI",
-                             INCOME == 1 | INCOME == 2 | INCOME == 3 | INCOME == 4 & THHLD_NUMPER==6 ~ "below 40 AMI",
-                             INCOME == 1 | INCOME == 2 | INCOME == 3 | INCOME == 4 & THHLD_NUMPER==7 ~ "below 40 AMI",
-                             INCOME == 1 | INCOME == 2 | INCOME == 3 | INCOME == 4 & THHLD_NUMPER>7 ~ "below 40 AMI",
-                             TRUE ~ "above 40 AMI")) %>%
+           inc_cat=case_when(INCOME == 1 | INCOME == 2 | INCOME == 3 ~ "below 40 AMI", #0-$49,999; #based on HUD 2024 incomes limits for income & household size 
+                                   INCOME == 4 & THHLD_NUMPER >= 2 ~ "below 40 AMI", #50,000-75,000
+                                   TRUE ~ "above 40 AMI")) %>%
   select(SCRAM,HWEIGHT,PWEIGHT,WEEK,CYCLE,EST_ST,
          pressured,moved,increase_rent,missed_rent,repairs_not_made,eviction_threatened,
          locks_changed,nhbd_danger,other_pressure,
-         rent_behind,eviction_two_months,income,inc_cat,THHLD_NUMPER) 
+         rent_behind,eviction_two_months,income,inc_cat,THHLD_NUMPER, INCOME,test_inc_cat) 
 
 all_PUF <- inner_join(clean_data, rep_weights, by = c("SCRAM", "WEEK", "CYCLE")) # need to join by week/cycle for replicate weights
 
@@ -77,6 +71,7 @@ srvy_all <-
 
 # 1) Households who think they are likely to face an eviction in the next two months
 eviction_behind_rent <-  srvy_all %>%
+  #filter(INCOME != -99 | INCOME != -88) %>% # remove unreported income levels
   group_by(inc_cat, eviction_two_months) %>%
   summarise(proportion = survey_mean()) %>%
   filter(proportion_se < 0.05) %>% # taking out obs with large standard errors
