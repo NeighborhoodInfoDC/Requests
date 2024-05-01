@@ -12,7 +12,10 @@ library(data.table)
 library(srvyr)
 library(weights)
 
-# Read in data and replicate weights
+# Read in data and replicate weights: using week 57-week 63 surveys (May 2023-Oct 2023) and cycle 01 (Jan-Feb 2024)
+## list.files() extracts the names of all .csv files at the specified path. 
+## map_dfr() and read_csv read in each .csv file and combine them all into a single dataset, called data. 
+## Resulting data has 629,582 rows and 283 columns, and rep_weights has 823,537 rows and 163 columns.
 data <- list.files(path="//sas1/dcdata/Libraries/Requests/Raw/Eviction Group/", pattern = "[.]csv$", full.names=TRUE ) %>% 
   map_dfr(read_csv)
 
@@ -35,33 +38,36 @@ clean_data <- data %>%
            other_pressure = case_when(MOVEWHY7 == 1 ~ "Other pressure"),
            moved = case_when(MOVED == 1 ~ "Moved from Pressure", 
                              MOVED == 2 ~ "Did not move from Pressure",
-                             MOVED == -99 | MOVED == -88 ~ "Did not report"),
+                             MOVED == -99 | MOVED == -88 ~ "not reported"),
            income = case_when(INCOME == 1 ~ "$25,000 below",  
                             INCOME == 2 | INCOME == 3 ~ "$25,000-$49,999",
                             INCOME == 4 ~ "$50,000-$74,999",
                             INCOME == 5 ~ "$75,000-$99,999",
                             INCOME == 6 | INCOME == 7 | INCOME == 8 ~ "$100,000 above",
-                            INCOME == -99 | INCOME == -88 ~ "Not reported"),
+                            INCOME == -99 | INCOME == -88 ~ "not reported"),
            rent_behind = case_when(RENTCUR == 1 ~ "Not behind on rent",
                                    RENTCUR == 2 ~ "Behind on rent",
-                                   RENTCUR == -99 | RENTCUR == -88 ~ "Did not report"),
+                                   RENTCUR == -99 | RENTCUR == -88 ~ "not reported"),
            eviction_two_months = case_when(EVICT == 1 ~ "very likely", 
                                            EVICT == 2 ~ "somewhat likely", 
                                            EVICT == 3 ~ "not very likely", 
                                            EVICT == 4 ~ "not likely at all",
-                                           EVICT == -99 | EVICT == -88 ~ "Did not report"),
+                                           EVICT == -99 | EVICT == -88 ~ "not reported"),
            inc_cat=case_when(INCOME == 1 | INCOME == 2 | INCOME == 3 ~ "below 40 AMI", #0-$49,999; #based on HUD 2024 incomes limits for income & household size 
                              INCOME == 4 & THHLD_NUMPER >= 2 ~ "below 40 AMI", #50,000-75,000 & 2 person household or more
                              INCOME == 5 & THHLD_NUMPER >= 7 ~ "below 40 AMI", #75-100k & 7 person household or more
-                             INCOME == -99 | INCOME == -88 ~ "Not reported",
+                             INCOME == -99 | INCOME == -88 ~ "not reported",
                              TRUE ~ "above 40 AMI")) %>%
   select(SCRAM,HWEIGHT,PWEIGHT,WEEK,CYCLE,EST_ST,
          pressured,moved,increase_rent,missed_rent,repairs_not_made,eviction_threatened,
          locks_changed,nhbd_danger,other_pressure,
-         rent_behind,eviction_two_months,income,inc_cat,THHLD_NUMPER, INCOME) 
+         rent_behind,eviction_two_months,income,inc_cat,THHLD_NUMPER,INCOME) 
 
-all_PUF <- inner_join(clean_data, rep_weights, by = c("SCRAM", "WEEK", "CYCLE")) # need to join by week/cycle for replicate weights
+# Join data and replicate weights by ID, week, and cycle (weeks 57-63 use WEEK but cycle 01 uses CYCLE)
+all_PUF <- inner_join(clean_data, rep_weights, by = c("SCRAM", "WEEK", "CYCLE")) 
 
+# as_survey_rep() function creates a survey design object that can be used with replicate weights; 
+# use balanced repeated replication (BRR) for the variance estimation method and calculate the mean squared errors (MSEs) for the survey estimates.
 srvy_all <- 
   as_survey_rep(
     all_PUF,
@@ -73,17 +79,19 @@ srvy_all <-
 
 # 1) Households who think they are likely to face an eviction in the next two months
 eviction_behind_rent <-  srvy_all %>%
-  filter(inc_cat != "Not reported") %>% # remove unreported income levels
-  group_by(inc_cat, eviction_two_months) %>%
+  filter(rent_behind != "not reported", # remove respondents who did not answer rent_behind question (which indicates if eviction question shown)
+         inc_cat != "not reported") %>% # remove unreported income levels
+  group_by(inc_cat, eviction_two_months) %>% # eviction question only showed to respondents behind on rent but we want % of all renters for analysis so keeping denominator all renters
   summarise(proportion = survey_mean()) %>%
   filter(proportion_se < 0.05) %>% # taking out obs with large standard errors
   select(-proportion_se) %>%
   mutate_if(is.numeric, round, digits = 2) %>%
-  filter(eviction_two_months != "Did not report") %>%
   pivot_wider(names_from = inc_cat, values_from = proportion) 
 
 # 2) Households who felt pressure to move
 total_pressure <- srvy_all %>%
+  filter(inc_cat != "not reported", # remove unreported income levels
+         WEEK != 57) %>% # pressure question started week 58, so removing 57
   group_by(inc_cat, pressured) %>%
   summarise(proportion = survey_mean()) %>%
   filter(proportion_se < 0.05) %>% # taking out obs with large standard errors
@@ -93,6 +101,8 @@ total_pressure <- srvy_all %>%
 
 # 3) Households who physically moved from pressure they felt in the past 6 months
 total_moved <- srvy_all %>%
+  filter(inc_cat != "not reported", # remove unreported income levels
+         WEEK != 57) %>% # pressure question started week 58, so removing 57
   group_by(inc_cat, moved) %>%
   summarise(proportion = survey_mean()) %>%
   filter(proportion_se < 0.05) %>% # taking out obs with large standard errors
@@ -101,14 +111,15 @@ total_moved <- srvy_all %>%
   pivot_wider(names_from = inc_cat, values_from = proportion)
 
 # 4) Reasons households felt pressured to move 
-reasons_fun <- function(reason_input) { # respondents can choose multiple reasons 
+reasons_fun <- function(reason_input) { # respondents can choose multiple reasons so created a function to estimate share of HH felt pressure across all reasons then rbind for when respondents had multiple reasons
   srvy_all %>%
+    filter(inc_cat != "not reported") %>% # remove unreported income levels
     group_by(inc_cat, {{reason_input}}) %>%
     summarise(proportion = survey_mean()) %>%
     filter(proportion_se < 0.05) %>% # taking out obs with large standard errors
     select(-proportion_se) %>%     
-    mutate_if(is.numeric, round, digits = 2) %>%
-    rename(reason={{reason_input}})
+    mutate_if(is.numeric, round, digits = 2) %>% # rounding to two decimal places
+    rename(reason={{reason_input}}) #input reasons below, such as increase_rent
 }
 
 rent_increase <- reasons_fun(increase_rent)
@@ -120,22 +131,22 @@ nhbd_danger <- reasons_fun(nhbd_danger)
 other_pressure <- reasons_fun(other_pressure)
 
 total_reason <- rent_increase %>%
-  rbind(miss_rent, repairs,evictions_threat,locks_change,nhbd_danger,other_pressure) %>%
-  drop_na() %>%
+  rbind(miss_rent, repairs,evictions_threat,locks_change,nhbd_danger,other_pressure) %>% # columns named the same so just rbind
+  drop_na() %>% 
   pivot_wider(names_from = inc_cat, values_from = proportion)
 
 # 5) Households behind in rent payments
-total_rent_payment <- srvy_all %>%
+total_rent_payment <- srvy_all %>% 
+  filter(inc_cat != "not reported") %>% # remove unreported income levels
   group_by(inc_cat, rent_behind) %>%
   summarise(proportion = survey_mean()) %>%
   filter(proportion_se < 0.05) %>% # taking out obs with large standard errors
   select(-proportion_se) %>%     
-  mutate_if(is.numeric, round, digits = 2) %>%
-  filter(rent_behind == "Behind on rent") %>%
+  mutate_if(is.numeric, round, digits = 2) %>% # rounding to two decimal places
   pivot_wider(names_from = inc_cat, values_from = proportion)
 
 # Exporting in one xlsx
 all_PUF <- list('Eviction Likelihood'=eviction_behind_rent,'Total Pressure'=total_pressure,'Total Moved'=total_moved,'Total Reason'=total_reason,
                 'Total Rent Payment'=total_rent_payment)
-write.xlsx(all_PUF, file="//sas1/dcdata/Libraries/Requests/Prog/Eviction Group/DC PUF Tabulation June 2023-February 2024.xlsx")
+write.xlsx(all_PUF, file="//sas1/dcdata/Libraries/Requests/Prog/Eviction Group/DC PUF Tabulation May 2023-February 2024.xlsx")
 
