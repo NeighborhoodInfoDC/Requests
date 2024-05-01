@@ -16,7 +16,7 @@ library(Hmisc)
 # Household income bins function
 source("//sas1/dcdata/Libraries/Requests/Prog/Eviction Group/DC-HH-inc-cat.R") # script where household income limits created
 
-dc_pums_22 <- get_pums(
+dc_pums_22 <- get_pums( # loading PUMS for DC 2018-2022 5 yr ACS
   variables = c("PUMA10","PUMA20", "TEN", "TYPEHUGQ", "SPORDER", "VALP", "NP", "HINCP", "VACS", "GRNTP","RAC1P", "HISP", "GRPIP","ADJHSG","ADJINC"),
   state="DC", 
   survey="acs5", 
@@ -26,7 +26,7 @@ dc_pums_22 <- get_pums(
 
 ## Filter for only head of occupied households, create rent burden variable, and add 2022 income category bins
 clean_pums <- dc_pums_22 %>%
-  filter(VACS=="0", # not vacant
+  filter(VACS=="0", # not vacant, this value could be "b" for other users
          SPORDER == 1, # person 1 in household
          TEN == 3 | TEN == 4) %>% #renter
   mutate(across(-c(SERIALNO), as.numeric), # all numeric vars besides SERIALNO
@@ -52,11 +52,11 @@ rentburden_inccat <- clean_pums %>% # low income renters by AMI levels and rent 
   filter(inc_cat == "below 30 AMI" | inc_cat == "30_40AMI" | inc_cat == "40_50AMI") %>% 
   group_by(inc_cat, rent_burden) %>%
   summarise(Total = sum(WGTP)) %>% #summing by HH weight
-  pivot_wider(names_from = inc_cat, values_from = Total) %>%
+  pivot_wider(names_from = inc_cat, values_from = Total) %>% #widening dataframe for inc_cat to be column labels
   bind_rows(summarise(., across(where(is.numeric), sum), 
                       across(where(is.character), ~'Total'))) %>% #creating total row 
   select(rent_burden, `below 30 AMI`, `30_40AMI`, `40_50AMI`) %>% #rearranging columns
-  mutate_if(is.numeric, round, -2)
+  mutate_if(is.numeric, round, -2) #rounding to nearest hundreds
 
 severe_rentburden_inccat <- clean_pums %>% # low income renters by AMI levels and rent burden 
   filter(inc_cat == "below 30 AMI" | inc_cat == "30_40AMI" | inc_cat == "40_50AMI") %>% 
@@ -66,27 +66,27 @@ severe_rentburden_inccat <- clean_pums %>% # low income renters by AMI levels an
   bind_rows(summarise(., across(where(is.numeric), sum), 
                       across(where(is.character), ~'Total'))) %>% #creating total row 
   select(severe_rent_burden, `below 30 AMI`, `30_40AMI`, `40_50AMI`) %>% #rearranging columns
-  mutate_if(is.numeric, round, -2)
+  mutate_if(is.numeric, round, -2) #rounding to nearest hundreds
 
 voucher_estimate <- clean_pums %>% # estimating cost of voucher if HH's paid 30% of their income 
   filter(inc_cat == "below 30 AMI",
-         rent_burden == "Rent Burden") %>%
+         rent_burden == "Rent Burden") %>% #only want HH 30% AMI and below who are rent burden
   mutate(voucher_cost = GRNTP - inc_month_30) %>% # estimating voucher cost if current rent minus 30% of HH monthly income (inc_month_30 created in clean_pums)
-  filter(voucher_cost > 83) #removing when cost burden difference is only 1,000 or less a year (likely people in subsidized units)
+  filter(voucher_cost > 83) #removing when cost burden difference is only 1,000 or less a year (1,000=83*12 - voucher cost is monthly value) (likely people in subsidized units)
   
-estimate_voucher_cost <- voucher_estimate %>%
+estimate_voucher_cost <- voucher_estimate %>% #estimating per voucher cost with weighted average
   summarise(across(c(voucher_cost), 
                    list(weighted_avg = ~weighted.mean(., w = WGTP), #calculating weighted avg of voucher_cost var
                         weighted_sum = ~sum(. * WGTP)))) %>% #calculating weighted sum of voucher_cost var 
   mutate(voucher_total_cost_year = voucher_cost_weighted_sum*12, #creating annual est from monthly est 
          voucher_avg_year = voucher_cost_weighted_avg*12) %>%
-  mutate_if(is.numeric, round, -2)
+  mutate_if(is.numeric, round, -2) #rounding to nearest hundreds
 
-voucher_quantile <- voucher_estimate %>% #trying to understand range/skew of weighted average calculated above
+voucher_quantile <- voucher_estimate %>% #trying to understand range/skew of weighted average calculated above (not exporting)
   reframe(weighted_quant = wtd.quantile(voucher_cost, weights=WGTP, 
                                           probs=c(0, .25, .5, .75, 1), normwt=TRUE, na.rm=TRUE)) %>%
   mutate(voucher_total_cost_year = weighted_quant*12) %>%
-  mutate_if(is.numeric, round, -2)
+  mutate_if(is.numeric, round, -2) #rounding to nearest hundreds
 
 estimate_shallow <- clean_pums %>% # estimating the number of HH who would not be rent burden if received DC Flex ($8,400 a year) and spent towards rent 
   filter(rent_burden == "Rent Burden",
@@ -103,7 +103,7 @@ subsidy_summed <- estimate_shallow %>% # creating tidy data frame to compare cat
   summarise(Total = sum(WGTP)) %>%
   pivot_wider(names_from = inc_cat, values_from = Total) %>%
   mutate(Total = `30_40AMI` + `40_50AMI`) %>%
-  mutate_if(is.numeric, round, -2)
+  mutate_if(is.numeric, round, -2) #rounding to nearest hundreds
 
 num_still_rent_burden <- estimate_shallow %>% # households still rent burden 40% AMI and below
   filter(new_rent_burden == "Still Rent Burden") %>%
@@ -115,11 +115,11 @@ mean_still_rent_burden <- estimate_shallow %>% # Estimate the subsidy needed by 
   summarise(across(c(rent_diff), 
                    list(weighted_avg = ~weighted.mean(., w = WGTP), #calculating weighted avg of rent_diff var
                         weighted_sum = ~sum(. * WGTP)))) %>% #calculating weighted sum of rent_diff var 
-  mutate(voucher_total_cost_year = rent_diff_weighted_sum*12,
-         voucher_avg_year = rent_diff_weighted_avg*12) %>%
-  mutate_if(is.numeric, round, -2)
+  mutate(voucher_total_cost_year = rent_diff_weighted_sum*12, #annual amounts, rent_diff_weighted_sum create in summarise step above with weighted_sum
+         voucher_avg_year = rent_diff_weighted_avg*12) %>% #annual amounts, rent_diff_weighted_avg create in summarise step above with weighted_avg
+  mutate_if(is.numeric, round, -2) #rounding to nearest hundreds
 
 # export the totals above
 df_list <- list('Rent Burden by AMI' = rentburden_inccat, 'Severe Rent Burden by AMI' = severe_rentburden_inccat, 'Voucher Cost Estimate' = estimate_voucher_cost, 
-                'Shallow Subsidy Estimate' = subsidy_summed, 'Still Rent Burden 30-40 AMI' = num_still_rent_burden)
+                'Shallow Subsidy Estimate' = subsidy_summed, 'Still Rent Burden 30-40 AMI' = num_still_rent_burden) # creating list to export in xlsx
 write.xlsx(df_list, file = "//sas1/dcdata/Libraries/Requests/Prog/Eviction Group/Eviction Housing Analysis PUMS Estimates.xlsx")
