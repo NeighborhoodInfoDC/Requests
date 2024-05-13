@@ -23,8 +23,10 @@
 data working_pipeline_data; 
  set PresCat.dc_pipeline_2022_07;
  u_LRSP_units = input(LRSP_units_new, 8.);
+ if not(missing(Proportional_HPTF_30_AMI)) then u_HPTF_units = units_0_to_30; 
+ else u_HPTF_units = .; 
 run; 
 
 proc print data=working_pipeline_data; 
- sum u_LRSP_units units_0_to_30;
+ sum u_LRSP_units units_0_to_30 u_HPTF_units;
 run;
