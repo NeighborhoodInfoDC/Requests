@@ -53,100 +53,104 @@ clean_data <- data %>%
                                            EVICT == 3 ~ "not very likely", 
                                            EVICT == 4 ~ "not likely at all",
                                            EVICT == -99 | EVICT == -88 ~ "not reported"),
-           inc_cat=case_when(INCOME == 1 | INCOME == 2 | INCOME == 3 ~ "below 40 AMI", #0-$49,999; #based on HUD 2024 incomes limits for income & household size 
-                             INCOME == 4 & THHLD_NUMPER >= 2 ~ "below 40 AMI", #50,000-75,000 & 2 person household or more
-                             INCOME == 5 & THHLD_NUMPER >= 7 ~ "below 40 AMI", #75-100k & 7 person household or more
-                             INCOME == -99 | INCOME == -88 ~ "not reported",
-                             TRUE ~ "above 40 AMI")) %>%
+           income_bins = case_when(THHLD_NUMPER == 4 & INCOME == 4 ~ "household_four", 
+                                   THHLD_NUMPER == 5 & INCOME == 4 ~ "household_five", 
+                                   THHLD_NUMPER == 6 & INCOME == 4 ~ "household_six", 
+                                   THHLD_NUMPER == 8 & INCOME == 5 ~ "household_eight", 
+                                   TRUE ~ "No")) %>%
   select(SCRAM,HWEIGHT,PWEIGHT,WEEK,CYCLE,EST_ST,
          pressured,moved,increase_rent,missed_rent,repairs_not_made,eviction_threatened,
          locks_changed,nhbd_danger,other_pressure,
-         rent_behind,eviction_two_months,income,inc_cat,THHLD_NUMPER,INCOME) 
+         rent_behind,eviction_two_months,income,income_bins,THHLD_NUMPER,INCOME) 
 
-# Join data and replicate weights by ID, week, and cycle (weeks 57-63 use WEEK but cycle 01 uses CYCLE)
-all_PUF <- inner_join(clean_data, rep_weights, by = c("SCRAM", "WEEK", "CYCLE")) 
+# Taking random samples based on the proportion provided in sample_frac to select below 40% AMI sample
+HH_four <- clean_data %>%
+  filter(income_bins == "household_four") %>%
+  sample_frac(.48) %>% 
+  mutate(inc_cat = case_when(income_bins == "household_four" ~ "below 40 AMI"))
 
-# as_survey_rep() function creates a survey design object that can be used with replicate weights; 
-# use balanced repeated replication (BRR) for the variance estimation method and calculate the mean squared errors (MSEs) for the survey estimates.
-srvy_all <- 
-  as_survey_rep(
-    all_PUF,
-    repweights = dplyr::matches("HWEIGHT[0-9]+"),
-    weights = HWEIGHT,
-    type = "BRR",
-    mse = TRUE
-  )
+HH_five <- clean_data %>%
+  filter(income_bins == "household_five") %>%
+  sample_frac(.67) %>%
+  mutate(inc_cat = case_when(income_bins == "household_five" ~ "below 40 AMI"))
+
+HH_six <- clean_data %>%
+  filter(income_bins == "household_six") %>%
+  sample_frac(.87) %>%
+  mutate(inc_cat = case_when(income_bins == "household_six" ~ "below 40 AMI"))
+
+HH_eight <- clean_data %>%
+  filter(income_bins == "household_five") %>%
+  sample_frac(.27) %>%
+  mutate(inc_cat = case_when(income_bins == "household_eight" ~ "below 40 AMI"))
+
+HH_AMI <- rbind(HH_four, HH_five, HH_six, HH_eight) %>%
+  select(SCRAM, inc_cat)
+
+final_clean_data <- clean_data %>%
+  left_join(HH_AMI, by = "SCRAM") %>%
+  mutate(inc_cat_new = case_when(
+    INCOME == 1 | INCOME == 2 | INCOME == 3 ~ "below 40 AMI", #0-$49,999; #based on HUD 2024 incomes limits for income & household size
+    INCOME == 4 & THHLD_NUMPER >= 7 ~ "below 40 AMI", #50,000-75,000 & 2 person household or more
+    inc_cat == "below 40 AMI" ~ "below 40 AMI",
+    TRUE ~ "above 40 AMI"))
 
 # 1) Households who think they are likely to face an eviction in the next two months
-eviction_behind_rent <-  srvy_all %>%
-  filter(rent_behind != "not reported", # remove respondents who did not answer rent_behind question (which indicates if eviction question shown)
-         inc_cat != "not reported") %>% # remove unreported income levels
-  group_by(inc_cat, eviction_two_months) %>% # eviction question only showed to respondents behind on rent but we want % of all renters for analysis so keeping denominator all renters
-  summarise(proportion = survey_mean()) %>%
-  filter(proportion_se < 0.05) %>% # taking out obs with large standard errors
-  select(-proportion_se) %>%
-  mutate_if(is.numeric, round, digits = 2) %>%
-  pivot_wider(names_from = inc_cat, values_from = proportion) 
+total_eviction <-  final_clean_data %>% # 5% of renter pop report somewhat likely or very likely to be evicted
+  filter(rent_behind != "not reported") %>% # remove respondents who did not answer rent_behind question (which indicates if eviction question shown)
+  group_by(eviction_two_months) %>% # eviction question only showed to respondents behind on rent but we want % of all renters for analysis so keeping denominator all renters
+  summarise(count = sum(HWEIGHT)) %>%
+  ungroup() %>%
+  mutate(proportion = count / sum(count)) %>%
+  mutate_if(is.numeric, round, digits = 2) # rounding to two decimal places
 
-# 2) Households who felt pressure to move
-total_pressure <- srvy_all %>%
-  filter(inc_cat != "not reported", # remove unreported income levels
-         WEEK != 57) %>% # pressure question started week 58, so removing 57
-  group_by(inc_cat, pressured) %>%
-  summarise(proportion = survey_mean()) %>%
-  filter(proportion_se < 0.05) %>% # taking out obs with large standard errors
-  select(-proportion_se) %>%     
-  mutate_if(is.numeric, round, digits = 2) %>%
-  pivot_wider(names_from = inc_cat, values_from = proportion)
+eviction_AMI <- all_PUF %>% ## 3% of the renter population is HH at 40% ami and below who report facing eviction in next two months.
+  filter(rent_behind != "not reported") %>% # remove respondents who did not answer rent_behind question (which indicates if eviction question shown)
+  group_by(inc_cat_new, eviction_two_months) %>%
+  summarise(count = sum(HWEIGHT)) %>%
+  ungroup() %>%
+  mutate(proportion = count / sum(count)) %>%
+  mutate_if(is.numeric, round, digits = 2) # rounding to two decimal places
 
-# 3) Households who physically moved from pressure they felt in the past 6 months
-total_moved <- srvy_all %>%
-  filter(inc_cat != "not reported", # remove unreported income levels
-         WEEK != 57) %>% # pressure question started week 58, so removing 57
-  group_by(inc_cat, moved) %>%
-  summarise(proportion = survey_mean()) %>%
-  filter(proportion_se < 0.05) %>% # taking out obs with large standard errors
-  select(-proportion_se) %>%     
-  mutate_if(is.numeric, round, digits = 2) %>%
-  pivot_wider(names_from = inc_cat, values_from = proportion)
+# 2) Households behind in rent payments
+total_behind_rent <- final_clean_data %>% # 14% of renter population report behind in rent
+  group_by(rent_behind) %>%
+  summarise(count = sum(HWEIGHT)) %>%
+  ungroup() %>%
+  mutate(proportion = count / sum(count)) %>%
+  mutate_if(is.numeric, round, digits = 2) # rounding to two decimal places
 
-# 4) Reasons households felt pressured to move 
-reasons_fun <- function(reason_input) { # respondents can choose multiple reasons so created a function to estimate share of HH felt pressure across all reasons then rbind for when respondents had multiple reasons
-  srvy_all %>%
-    filter(inc_cat != "not reported") %>% # remove unreported income levels
-    group_by(inc_cat, {{reason_input}}) %>%
-    summarise(proportion = survey_mean()) %>%
-    filter(proportion_se < 0.05) %>% # taking out obs with large standard errors
-    select(-proportion_se) %>%     
-    mutate_if(is.numeric, round, digits = 2) %>% # rounding to two decimal places
-    rename(reason={{reason_input}}) #input reasons below, such as increase_rent
-}
+behind_rent_AMI <- final_clean_data %>% ## 11% of the renter population is HH at 40% ami and below and report behind in rent
+  group_by(inc_cat_new, rent_behind) %>%
+  summarise(count = sum(HWEIGHT)) %>%
+  ungroup() %>%
+  mutate(proportion = count / sum(count)) %>%
+  mutate_if(is.numeric, round, digits = 2) # rounding to two decimal places
 
-rent_increase <- reasons_fun(increase_rent)
-miss_rent <- reasons_fun(missed_rent)
-repairs <- reasons_fun(repairs_not_made)
-evictions_threat <- reasons_fun(eviction_threatened)
-locks_change <- reasons_fun(locks_changed)
-nhbd_danger <- reasons_fun(nhbd_danger)
-other_pressure <- reasons_fun(other_pressure)
+# 3) Households who felt pressure to move
+total_pressure <- final_clean_data %>% #13% of renter HH who have 40% AMI or below, reported pressure to move
+  filter(WEEK != 57) %>% # pressure question started week 58, so removing 57
+  group_by(inc_cat_new, pressured) %>%
+  summarise(count = sum(HWEIGHT)) %>%
+  ungroup() %>%
+  mutate(proportion = count / sum(count)) %>%
+  mutate_if(is.numeric, round, digits = 2) # rounding to two decimal places
 
-total_reason <- rent_increase %>%
-  rbind(miss_rent, repairs,evictions_threat,locks_change,nhbd_danger,other_pressure) %>% # columns named the same so just rbind
-  drop_na() %>% 
-  pivot_wider(names_from = inc_cat, values_from = proportion)
-
-# 5) Households behind in rent payments
-total_rent_payment <- srvy_all %>% 
-  filter(inc_cat != "not reported") %>% # remove unreported income levels
-  group_by(inc_cat, rent_behind) %>%
-  summarise(proportion = survey_mean()) %>%
-  filter(proportion_se < 0.05) %>% # taking out obs with large standard errors
-  select(-proportion_se) %>%     
-  mutate_if(is.numeric, round, digits = 2) %>% # rounding to two decimal places
-  pivot_wider(names_from = inc_cat, values_from = proportion)
+# 4) Households who physically moved from pressure they felt in the past 6 months
+total_moved <- final_clean_data %>%
+  filter(WEEK != 57) %>% # pressure question started week 58, so removing 57
+  group_by(inc_cat_new, moved) %>%
+  summarise(count = sum(HWEIGHT)) %>%
+  ungroup() %>%
+  mutate(proportion = count / sum(count)) %>%
+  mutate_if(is.numeric, round, digits = 2) # rounding to two decimal places
 
 # Exporting in one xlsx
-all_PUF <- list('Eviction Likelihood'=eviction_behind_rent,'Total Pressure'=total_pressure,'Total Moved'=total_moved,'Total Reason'=total_reason,
-                'Total Rent Payment'=total_rent_payment)
+all_PUF <- list('Total Eviction Likelihood'=total_eviction,
+                'AMI Eviction Likelihood'=eviction_AMI,
+                'Total Behind Rent'=total_behind_rent,
+                'AMI Behind Rent'=behind_rent_AMI,
+                'AMI Pressure'=total_pressure,
+                'AMI Moved'=total_moved)
 write.xlsx(all_PUF, file="//sas1/dcdata/Libraries/Requests/Prog/Eviction Group/DC PUF Tabulation May 2023-February 2024.xlsx")
 
