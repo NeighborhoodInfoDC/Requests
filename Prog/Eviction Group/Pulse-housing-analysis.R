@@ -19,9 +19,6 @@ library(weights)
 data <- list.files(path="//sas1/dcdata/Libraries/Requests/Raw/Eviction Group/", pattern = "[.]csv$", full.names=TRUE ) %>% 
   map_dfr(read_csv)
 
-rep_weights <- list.files(path="//sas1/dcdata/Libraries/Requests/Raw/Eviction Group/weights/", full.names=TRUE ) %>% 
-  map_dfr(read_csv) 
-
 # Create categorical variables 
 clean_data <- data %>%
   filter(EST_ST == "11", # DC only
@@ -98,52 +95,65 @@ final_clean_data <- clean_data %>%
 # 1) Households who think they are likely to face an eviction in the next two months
 total_eviction <-  final_clean_data %>% # 5% of renter pop report somewhat likely or very likely to be evicted
   filter(rent_behind != "not reported") %>% # remove respondents who did not answer rent_behind question (which indicates if eviction question shown)
-  group_by(eviction_two_months) %>% # eviction question only showed to respondents behind on rent but we want % of all renters for analysis so keeping denominator all renters
+  group_by(WEEK, eviction_two_months) %>% # eviction question only showed to respondents behind on rent but we want % of all renters for analysis so keeping denominator all renters
   summarise(count = sum(HWEIGHT)) %>%
   ungroup() %>%
+  group_by(WEEK) %>%
   mutate(proportion = count / sum(count)) %>%
-  mutate_if(is.numeric, round, digits = 2) # rounding to two decimal places
+  mutate_if(is.numeric, round, digits = 2) %>% # rounding to two decimal places 
+  group_by(eviction_two_months) %>%
+  summarise(average = mean(proportion))
 
-eviction_AMI <- all_PUF %>% ## 3% of the renter population is HH at 40% ami and below who report facing eviction in next two months.
+eviction_AMI <- final_clean_data %>% ## 3% of the renter population is HH at 40% ami and below who report facing eviction in next two months.
   filter(rent_behind != "not reported") %>% # remove respondents who did not answer rent_behind question (which indicates if eviction question shown)
-  group_by(inc_cat_new, eviction_two_months) %>%
+  group_by(WEEK, inc_cat_new, eviction_two_months) %>%
   summarise(count = sum(HWEIGHT)) %>%
-  ungroup() %>%
+  group_by(WEEK) %>%
   mutate(proportion = count / sum(count)) %>%
-  mutate_if(is.numeric, round, digits = 2) # rounding to two decimal places
+  group_by(inc_cat_new, eviction_two_months) %>%
+  summarise(average = mean(proportion)) %>%
+  mutate_if(is.numeric, round, digits = 2) # rounding to two decimal places 
 
 # 2) Households behind in rent payments
 total_behind_rent <- final_clean_data %>% # 14% of renter population report behind in rent
-  group_by(rent_behind) %>%
+  group_by(WEEK,rent_behind) %>%
   summarise(count = sum(HWEIGHT)) %>%
-  ungroup() %>%
+  group_by(WEEK)%>%
   mutate(proportion = count / sum(count)) %>%
-  mutate_if(is.numeric, round, digits = 2) # rounding to two decimal places
+  group_by(rent_behind) %>%
+  summarise(average = mean(proportion)) %>%
+  mutate_if(is.numeric, round, digits = 2) # rounding to two decimal places 
 
 behind_rent_AMI <- final_clean_data %>% ## 11% of the renter population is HH at 40% ami and below and report behind in rent
-  group_by(inc_cat_new, rent_behind) %>%
+  group_by(WEEK, inc_cat_new, rent_behind) %>%
   summarise(count = sum(HWEIGHT)) %>%
-  ungroup() %>%
+  group_by(WEEK) %>%
   mutate(proportion = count / sum(count)) %>%
-  mutate_if(is.numeric, round, digits = 2) # rounding to two decimal places
-
+  group_by(inc_cat_new,rent_behind) %>%
+  summarise(average = mean(proportion)) %>% #averaging across the surveys 
+  mutate_if(is.numeric, round, digits = 2) # rounding to two decimal places 
+  
 # 3) Households who felt pressure to move
 total_pressure <- final_clean_data %>% #13% of renter HH who have 40% AMI or below, reported pressure to move
   filter(WEEK != 57) %>% # pressure question started week 58, so removing 57
-  group_by(inc_cat_new, pressured) %>%
+  group_by(WEEK,inc_cat_new, pressured) %>%
   summarise(count = sum(HWEIGHT)) %>%
-  ungroup() %>%
+  group_by(WEEK) %>%
   mutate(proportion = count / sum(count)) %>%
-  mutate_if(is.numeric, round, digits = 2) # rounding to two decimal places
+  group_by(inc_cat_new,pressured) %>%
+  summarise(average = mean(proportion)) %>% #averaging across the surveys 
+  mutate_if(is.numeric, round, digits = 2) # rounding to two decimal places 
 
 # 4) Households who physically moved from pressure they felt in the past 6 months
 total_moved <- final_clean_data %>%
   filter(WEEK != 57) %>% # pressure question started week 58, so removing 57
-  group_by(inc_cat_new, moved) %>%
+  group_by(WEEK,inc_cat_new, moved) %>%
   summarise(count = sum(HWEIGHT)) %>%
-  ungroup() %>%
+  group_by(WEEK) %>%
   mutate(proportion = count / sum(count)) %>%
-  mutate_if(is.numeric, round, digits = 2) # rounding to two decimal places
+  group_by(inc_cat_new, moved) %>%
+  summarise(average = mean(proportion)) %>% #averaging across the surveys 
+  mutate_if(is.numeric, round, digits = 2) # rounding to two decimal places 
 
 # Exporting in one xlsx
 all_PUF <- list('Total Eviction Likelihood'=total_eviction,
