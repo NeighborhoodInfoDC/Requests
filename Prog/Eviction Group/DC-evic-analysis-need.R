@@ -33,15 +33,20 @@ clean_pums <- dc_pums_22 %>%
     year=substr(SERIALNO, 1, 4),
     GRNTP = GRNTP*(ADJHSG/1000000), # adjusting to match years prior to 2022 to 2022 $ value for gross rent and household income 
     HINCP = HINCP*(ADJINC),
+    testing_rent_burden = case_when(GRPIP>=30 ~ "rent_burden",
+          HINCP<=0 & GRNTP>0 ~ "rent_burden", #counting people with zero or negative household income (who pay rent) as cost burden
+          GRPIP<30 ~ "not rent burden"), #GRPIP is gross rent as a percentage of household income past 12 months
     inc_month_30 = (HINCP*0.30)/12, # 30% of monthly income 
     inc_month_50 = (HINCP*0.50)/12, # 50% of monthly income
     rent_burden = case_when(
       inc_month_30 <= GRNTP ~ "Rent Burden", # If 30% of monthly income less than or equal to gross monthly rent cost, HH is rent burden 
       HINCP <= 0 & GRNTP > 0 ~ "Rent Burden", # If HH income is less than or equal to 0 and the HH pays rent, HH is rent burden
+      HINCP == 0 & GRNTP == 0 ~ "Not Rent Burden",
       TRUE ~ "Not Rent Burden"), # All else households not rent burden
     severe_rent_burden = case_when(
       inc_month_50 <= GRNTP ~ "Severe Rent Burden", 
       HINCP <= 0 & GRNTP > 0 ~ "Severe Rent Burden", # If HH income is less than or equal to 0 and the HH pays rent, HH is rent burden
+      HINCP == 0 & GRNTP == 0 ~ "Not Severely Rent Burden",
       TRUE ~ "Not Severely Rent Burden")) %>%  
   dmv_hh_inc() # attach HH income bins from function in DC-HH-inc-cat.R
 
@@ -56,6 +61,16 @@ rentburden_inccat <- clean_pums %>% # low income renters by AMI levels and rent 
   bind_rows(summarise(., across(where(is.numeric), sum), 
                       across(where(is.character), ~'Total'))) %>% #creating total row 
   select(rent_burden, `below 30 AMI`, `30_40AMI`, `40_50AMI`) %>% #rearranging columns
+  mutate_if(is.numeric, round, -2) #rounding to nearest hundreds
+
+test_rentburden_inccat <- clean_pums %>% # low income renters by AMI levels and rent burden 
+  filter(inc_cat == "below 30 AMI" | inc_cat == "30_40AMI" | inc_cat == "40_50AMI") %>% 
+  group_by(inc_cat, testing_rent_burden) %>%
+  summarise(Total = sum(WGTP)) %>% #summing by HH weight
+  pivot_wider(names_from = inc_cat, values_from = Total) %>% #widening dataframe for inc_cat to be column labels
+  bind_rows(summarise(., across(where(is.numeric), sum), 
+                      across(where(is.character), ~'Total'))) %>% #creating total row 
+  select(testing_rent_burden, `below 30 AMI`, `30_40AMI`, `40_50AMI`) %>% #rearranging columns
   mutate_if(is.numeric, round, -2) #rounding to nearest hundreds
 
 severe_rentburden_inccat <- clean_pums %>% # low income renters by AMI levels and rent burden 
