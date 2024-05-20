@@ -41,12 +41,12 @@ clean_pums <- dc_pums_22 %>%
     rent_burden = case_when(
       inc_month_30 <= GRNTP ~ "Rent Burden", # If 30% of monthly income less than or equal to gross monthly rent cost, HH is rent burden 
       HINCP <= 0 & GRNTP > 0 ~ "Rent Burden", # If HH income is less than or equal to 0 and the HH pays rent, HH is rent burden
-      HINCP == 0 & GRNTP == 0 ~ "Not Rent Burden",
+      GRNTP <= 0 ~ "Not Rent Burden", # If not paying rent, not cost burden
       TRUE ~ "Not Rent Burden"), # All else households not rent burden
     severe_rent_burden = case_when(
       inc_month_50 <= GRNTP ~ "Severe Rent Burden", 
       HINCP <= 0 & GRNTP > 0 ~ "Severe Rent Burden", # If HH income is less than or equal to 0 and the HH pays rent, HH is rent burden
-      HINCP == 0 & GRNTP == 0 ~ "Not Severely Rent Burden",
+      GRNTP <= 0 ~ "Not Severely Rent Burden", # If not paying rent, not cost burden
       TRUE ~ "Not Severely Rent Burden")) %>%  
   dmv_hh_inc() # attach HH income bins from function in DC-HH-inc-cat.R
 
