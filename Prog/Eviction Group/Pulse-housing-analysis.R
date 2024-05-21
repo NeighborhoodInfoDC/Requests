@@ -112,9 +112,9 @@ eviction_AMI <- final_clean_data %>% ## 3% of the renter population is HH at 40%
   group_by(WEEK, inc_cat_new, eviction_two_months) %>%
   summarise(count = sum(HWEIGHT)) %>%
   group_by(WEEK) %>%
-  mutate(proportion = count / sum(count)) %>%
+  # mutate(proportion = count / sum(count)) %>%
   group_by(inc_cat_new, eviction_two_months) %>%
-  summarise(average = mean(proportion)) %>%
+  summarise(sum = sum(count)) %>%
   mutate_if(is.numeric, round, digits = 2) # rounding to two decimal places 
 
 # 2) Households behind in rent payments
@@ -131,9 +131,10 @@ behind_rent_AMI <- final_clean_data %>% ## 11% of the renter population is HH at
   group_by(WEEK, inc_cat_new, rent_behind) %>%
   summarise(count = sum(HWEIGHT)) %>%
   group_by(WEEK) %>%
-  mutate(proportion = count / sum(count)) %>%
+  # mutate(proportion = count / sum(count)) %>%
   group_by(inc_cat_new,rent_behind) %>%
-  summarise(average = mean(proportion)) %>% #averaging across the surveys 
+  # summarise(average = mean(proportion)) %>% #averaging across the surveys 
+  summarise(sum = sum(count)) %>%
   mutate_if(is.numeric, round, digits = 2) # rounding to two decimal places 
 
 # 3) Households 2+ months behind in re
@@ -152,9 +153,10 @@ behind_2_months_AMI <- final_clean_data %>% ## 11% of the renter population is H
   group_by(WEEK) %>%
   mutate(proportion = count / sum(count)) %>%
   group_by(inc_cat_new,behind_two_months) %>%
-  summarise(average = mean(proportion)) %>% #averaging across the surveys 
+  summarise(average = mean(proportion), #averaging across the surveys
+            sum = sum(count)) %>% 
   mutate_if(is.numeric, round, digits = 2) # rounding to two decimal places 
-  
+
 # 4) Households who felt pressure to move
 total_pressure <- final_clean_data %>% #13% of renter HH who have 40% AMI or below, reported pressure to move
   filter(WEEK != 57) %>% # pressure question started week 58, so removing 57
