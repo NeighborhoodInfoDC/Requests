@@ -45,9 +45,9 @@ clean_data <- data %>%
            rent_behind = case_when(RENTCUR == 1 ~ "Not behind on rent",
                                    RENTCUR == 2 ~ "Behind on rent",
                                    RENTCUR == -99 | RENTCUR == -88 ~ "not reported"),
-           behind_two_months = case_when(TMNTHSBHND >= 2 ~"Behind 2+ months rent", 
+           behind_two_months = case_when(TMNTHSBHND >= 1 ~"Behind 2+ months rent", 
                                          TMNTHSBHND == -99 | TMNTHSBHND == -88 ~ "not reported",
-                                         TRUE ~ "Not behind on rent"),
+                                         TRUE ~ "Not 2+ months behind on rent"),
            eviction_two_months = case_when(EVICT == 1 ~ "very likely", 
                                            EVICT == 2 ~ "somewhat likely", 
                                            EVICT == 3 ~ "not very likely", 
@@ -63,10 +63,11 @@ clean_data <- data %>%
          locks_changed,nhbd_danger,other_pressure,
          rent_behind,behind_two_months,eviction_two_months,income,income_bins,THHLD_NUMPER,TMNTHSBHND,INCOME) 
 
-# Taking random samples based on the proportion provided in sample_frac to select below 40% AMI sample
+# Taking random samples based on the proportion provided in sample_frac (using Pulse income bins to create share of population that would be below that)
+# to select below 40% AMI sample
 HH_four <- clean_data %>%
   filter(income_bins == "household_four") %>%
-  sample_frac(.48) %>% 
+  sample_frac(.48) %>%
   mutate(inc_cat = case_when(income_bins == "household_four" ~ "below 40 AMI"))
 
 HH_five <- clean_data %>%
@@ -89,10 +90,10 @@ HH_AMI <- rbind(HH_four, HH_five, HH_six, HH_eight) %>%
 
 final_clean_data <- clean_data %>%
   left_join(HH_AMI, by = "SCRAM") %>%
-  mutate(inc_cat_new = case_when(
-    INCOME == 1 | INCOME == 2 | INCOME == 3 ~ "below 40 AMI", #0-$49,999; #based on HUD 2024 incomes limits for income & household size
-    INCOME == 4 & THHLD_NUMPER >= 7 ~ "below 40 AMI", #50,000-75,000 & 2 person household or more
-    inc_cat == "below 40 AMI" ~ "below 40 AMI",
+  mutate(inc_cat_new = case_when( #assigning the rest of the below 40% AMI
+    INCOME == 1 | INCOME == 2 | INCOME == 3 ~ "below 40 AMI", # all households 0-$49,999; #based on HUD 2024 incomes limits for income & household size
+    INCOME == 4 & THHLD_NUMPER >= 7 ~ "below 40 AMI", #7 person HH & income 50-75,000 is 40% AMI
+    inc_cat == "below 40 AMI" ~ "below 40 AMI", # coding above random samples as below 40% AMI
     TRUE ~ "above 40 AMI"))
 
 # 1) Households who think they are likely to face an eviction in the next two months
@@ -100,61 +101,64 @@ total_eviction <-  final_clean_data %>% # 5% of renter pop report somewhat likel
   filter(rent_behind != "not reported") %>% # remove respondents who did not answer rent_behind question (which indicates if eviction question shown)
   group_by(WEEK, eviction_two_months) %>% # eviction question only showed to respondents behind on rent but we want % of all renters for analysis so keeping denominator all renters
   summarise(count = sum(HWEIGHT)) %>%
-  ungroup() %>%
   group_by(WEEK) %>%
   mutate(proportion = count / sum(count)) %>%
-  mutate_if(is.numeric, round, digits = 2) %>% # rounding to two decimal places 
   group_by(eviction_two_months) %>%
-  summarise(average = mean(proportion))
+  summarise(average = mean(proportion),
+            sum = sum(count)) %>%
+  mutate_if(is.numeric, round, digits = 2) # rounding to two decimal places 
 
 eviction_AMI <- final_clean_data %>% ## 3% of the renter population is HH at 40% ami and below who report facing eviction in next two months.
-  filter(rent_behind != "not reported") %>% # remove respondents who did not answer rent_behind question (which indicates if eviction question shown)
+  filter(rent_behind != "not reported") %>% 
   group_by(WEEK, inc_cat_new, eviction_two_months) %>%
   summarise(count = sum(HWEIGHT)) %>%
   group_by(WEEK) %>%
-  # mutate(proportion = count / sum(count)) %>%
+  mutate(proportion = count / sum(count)) %>%
   group_by(inc_cat_new, eviction_two_months) %>%
-  summarise(sum = sum(count)) %>%
+  summarise(sum = sum(count),
+            average = mean(proportion)) %>%
   mutate_if(is.numeric, round, digits = 2) # rounding to two decimal places 
 
 # 2) Households behind in rent payments
 total_behind_rent <- final_clean_data %>% # 14% of renter population report behind in rent
-  group_by(WEEK,rent_behind) %>%
+  group_by(WEEK, rent_behind) %>% 
   summarise(count = sum(HWEIGHT)) %>%
-  group_by(WEEK)%>%
+  group_by(WEEK) %>%
   mutate(proportion = count / sum(count)) %>%
   group_by(rent_behind) %>%
-  summarise(average = mean(proportion)) %>%
+  summarise(average = mean(proportion),
+            sum = sum(count)) %>%
   mutate_if(is.numeric, round, digits = 2) # rounding to two decimal places 
 
 behind_rent_AMI <- final_clean_data %>% ## 11% of the renter population is HH at 40% ami and below and report behind in rent
   group_by(WEEK, inc_cat_new, rent_behind) %>%
   summarise(count = sum(HWEIGHT)) %>%
-  group_by(WEEK) %>%
-  # mutate(proportion = count / sum(count)) %>%
+  group_by(WEEK) %>% 
+  mutate(proportion = count / sum(count)) %>% #share per survey
   group_by(inc_cat_new,rent_behind) %>%
-  # summarise(average = mean(proportion)) %>% #averaging across the surveys 
-  summarise(sum = sum(count)) %>%
+  summarise(sum = sum(count), #summing across surveys
+            average = mean(proportion)) %>% #average across surveys
   mutate_if(is.numeric, round, digits = 2) # rounding to two decimal places 
 
-# 3) Households 2+ months behind in re
+# 3) Households 2+ months behind in rent payments 
 total_behind_2_months <- final_clean_data %>% # 14% of renter population report behind in rent
-  group_by(WEEK,behind_two_months) %>%
+  group_by(WEEK, behind_two_months) %>% 
   summarise(count = sum(HWEIGHT)) %>%
-  group_by(WEEK)%>%
+  group_by(WEEK) %>%
   mutate(proportion = count / sum(count)) %>%
   group_by(behind_two_months) %>%
-  summarise(average = mean(proportion)) %>%
+  summarise(average = mean(proportion),
+            sum = sum(count)) %>%
   mutate_if(is.numeric, round, digits = 2) # rounding to two decimal places 
 
 behind_2_months_AMI <- final_clean_data %>% ## 11% of the renter population is HH at 40% ami and below and report behind in rent
   group_by(WEEK, inc_cat_new, behind_two_months) %>%
   summarise(count = sum(HWEIGHT)) %>%
-  group_by(WEEK) %>%
-  mutate(proportion = count / sum(count)) %>%
+  group_by(WEEK) %>% 
+  mutate(proportion = count / sum(count)) %>% #share per survey
   group_by(inc_cat_new,behind_two_months) %>%
-  summarise(average = mean(proportion), #averaging across the surveys
-            sum = sum(count)) %>% 
+  summarise(sum = sum(count), #summing across surveys
+            average = mean(proportion)) %>% #average across surveys
   mutate_if(is.numeric, round, digits = 2) # rounding to two decimal places 
 
 # 4) Households who felt pressure to move
