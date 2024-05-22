@@ -45,7 +45,8 @@ clean_data <- data %>%
            rent_behind = case_when(RENTCUR == 1 ~ "Not behind on rent",
                                    RENTCUR == 2 ~ "Behind on rent",
                                    RENTCUR == -99 | RENTCUR == -88 ~ "not reported"),
-           behind_two_months = case_when(TMNTHSBHND >= 1 ~"Behind 2+ months rent", 
+           behind_two_months = case_when(TMNTHSBHND >= 2 ~ "Behind 2+ months rent", 
+                                         EVICT == 1 | EVICT == 2 ~ "Behind 2+ months rent", 
                                          TMNTHSBHND == -99 | TMNTHSBHND == -88 ~ "not reported",
                                          TRUE ~ "Not 2+ months behind on rent"),
            eviction_two_months = case_when(EVICT == 1 ~ "very likely", 
@@ -97,7 +98,7 @@ final_clean_data <- clean_data %>%
     TRUE ~ "above 40 AMI"))
 
 # 1) Households who think they are likely to face an eviction in the next two months
-total_eviction <-  final_clean_data %>% # 5% of renter pop report somewhat likely or very likely to be evicted
+total_eviction <- final_clean_data %>% # 5% of renter pop report somewhat likely or very likely to be evicted
   filter(rent_behind != "not reported") %>% # remove respondents who did not answer rent_behind question (which indicates if eviction question shown)
   group_by(WEEK, eviction_two_months) %>% # eviction question only showed to respondents behind on rent but we want % of all renters for analysis so keeping denominator all renters
   summarise(count = sum(HWEIGHT)) %>%
