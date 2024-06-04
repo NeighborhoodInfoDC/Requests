@@ -1,14 +1,14 @@
 /**************************************************************************
- Program:  Quick_analysis.sas
+ Program:  sum_dc_pipeline.sas
  Library:  PresCat
  Project:  Urban-Greater DC
- Author:   P. Tatian
- Created:  03/16/23
+ Author:   Elizabeth Burton
+ Created:  5/20/24
  Version:  SAS 9.4
  Environment:  Local Windows session (desktop)
  GitHub issue:  ???
  
- Description:
+ Description: Summing up total 30% AMI units and below from DC HPTF for the housing subsidy brief. 
 
  Modifications:
 **************************************************************************/
