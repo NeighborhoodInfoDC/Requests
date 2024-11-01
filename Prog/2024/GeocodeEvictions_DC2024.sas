@@ -45,6 +45,7 @@ data evictions_addresses;
   format EVICTION_DATE mmddyy10.;
   
   label
+    street_address = "Full street address for eviction case"
     Case_num = "Eviction case number"
   ;
   
