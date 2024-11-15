@@ -39,7 +39,7 @@ data evictions_addresses;
 
 
   if not( missing( zip ) ) then zip_char = put( zip, z5.0 );
-  if disposition='cancelled' then disposition= 'canceled';
+  if UPCASE( disposition )='CANCELLED' then disposition= 'CANCELED';
   
   informat _all_ ;
   format _all_ ;
