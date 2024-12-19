@@ -5,7 +5,7 @@
  Author:   P. Tatian
  Created:  02/12/2024
  Version:  SAS 9.4
- Environment:  Windows
+ Environment: Remote Windows session (SAS1)
  
  Description:  Creates adjusted gross rent ranges for 
  DC rental housing units by gross rent trend chart. 
@@ -16,7 +16,7 @@
  Modifications: 
 **************************************************************************/
 
-%include "\\sas1\DCdata\SAS\Inc\StdLocal.sas";
+%include "F:\DCData\SAS\Inc\StdRemote.sas";
 
 ** Define libraries **;
 %DCData_lib( Requests )
@@ -343,5 +343,4 @@ run;
 %download_data( state=24, county=033 )
 
 %download_data( state=51, county=013 )
-
 %download_data( state=51, county=059 )
