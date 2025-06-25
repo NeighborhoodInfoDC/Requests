@@ -137,7 +137,8 @@
 %let file_list = ;
 
 ** Fill in the folder location where the export files should be saved **;
-%let out_folder = &_dcdata_default_path\Requests\Raw\2025\92_Real_property_data;
+** The CSV files are large, so the data are saved to the users's local drive rather than SAS1 **;
+%let out_folder = &_dcdata_l_path\Requests\Raw\2025\92_Real_property_data;
 
 ** Export individual data sets **;
 %Export( data=RealProp.ownerpt_2001_10b )
