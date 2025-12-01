@@ -9,7 +9,17 @@
  GitHub issue:  101
  
  Description:  Export data with faith-based property owners including
-total parcel size, building lot size, "unused" land, and zoning.
+ total parcel size, building lot size, "unused" land, and zoning.
+ 
+ Uses 
+  - Zoning Boundaries (Zoning Regulations of 2016) downloaded from opendata.dc.gov
+    (https://opendata.dc.gov/datasets/fd7c1d709bca4a9295b6fa5ec7d62446_32/explore?location=38.893674%2C-77.014456%2C11.82)
+  - Proc Gproject to convert MD state plan to WGS coordinates
+    (https://documentation.sas.com/doc/en/pgmsascdc/9.4_3.5/grmapref/n0h81palrr0ucqn11g9r0y3incml.htm)
+  - Proc Mapimport to import zoning shapefile
+    (https://documentation.sas.com/doc/en/pgmsascdc/9.4_3.5/grmapref/p0qsj9oazola04n10usle21dvk67.htm)
+  - Proc Ginside to perform spatial merge of parcel coordinates with zoning polygons
+    (https://documentation.sas.com/doc/en/pgmsascdc/9.4_3.5/grmapref/p1frskc294tbapn1wwumr6m4d3ka.htm)
 
  Modifications:
 **************************************************************************/
@@ -19,7 +29,24 @@ total parcel size, building lot size, "unused" land, and zoning.
 ** Define libraries **;
 %DCData_lib( Requests )
 %DCData_lib( RealProp )
+%DCData_lib( MAR )
 
+** Review geo coordinate entries for Proc Gproject **;
+
+proc print data=sashelp.proj4def;
+  where upcase( desc ) contains "MARYLAND";
+  id name;
+  var desc;
+run;
+
+
+proc print data=sashelp.proj4def;
+  where upcase( desc ) contains "WGS 84" and upcase( desc ) contains "MERCATOR";
+  id name;
+  var desc;
+run;
+
+** Get Cama data and calculate Bldg_footprint **;
 
 data Bldg_footprint_bldg;
 
@@ -42,15 +69,18 @@ proc summary data=Bldg_footprint_bldg;
   output out=Bldg_footprint_ssl sum=;
 run;
   
+** Get data for parcels owned by faith-baseed entities **;
 
-
-data Faith_based_landowners;
+data Faith_based_landowners_mdsp;
 
   merge
     Realprop.Parcel_base 
       (keep=ssl premiseadd in_last_ownerpt ui_proptype landarea
        where=(in_last_ownerpt)
        in=in1)
+    Realprop.Parcel_geo
+      (keep=ssl x_coord y_coord ward2022 cluster2017 anc2023
+       rename=(x_coord=x y_coord=y))
     Realprop.Parcel_base_who_owns 
       (keep=ssl ownername_full ownercat
        where=(ownercat='100')
@@ -79,22 +109,69 @@ data Faith_based_landowners;
 
 run;
 
+%File_info( data=Faith_based_landowners_mdsp, printobs=5 )
+
+
+** Reproject MD state plane coordinates to WGS 84 to align with zoning map shapefile **;
+
+proc gproject data=Faith_based_landowners_mdsp out=Faith_based_landowners_wgs84
+  from="EPSG:3559" to="EPSG:3857" dupok;
+  id x y;
+run;
+
+%File_info( data=Faith_based_landowners_wgs84, printobs=5 )
+
+
+** Import zoning map shapefile **;
+
+proc mapimport out=Zoning_map create_id_ contents
+  datafile="&_dcdata_r_path\OCTO\Maps\Zoning_Boundaries_(Zoning_Regulations_of_2016).shp";
+run;
+
+%File_info( data=Zoning_map, printobs=5 )
+
+
+** Join zoning map with parcel coordinates **;
+
+goptions reset=global border;
+
+proc ginside includeborder dropmapvars
+  data=Faith_based_landowners_wgs84 
+  map=Zoning_map
+  out=Faith_based_landowners_full;
+  id _id_ zoning zone_descr zoning_web;
+run;
+ 
+%File_info( data=Faith_based_landowners_full, printobs=5, freqvars=ui_proptype zoning )
+
+proc univariate data=Faith_based_landowners_full plot nextrobs=20;
+  var landarea bldg_footprint unused_land;
+  id ssl;
+run;
+
+run;
+
+
+**** Export data ****;
+
 ** Reorder fields for export **;
 
 data Faith_based_landowners;
 
-  retain Ownercat SSL ui_proptype Premiseadd Ownername_full Num_buildings Landarea Bldg_footprint Unused_land;
+  retain 
+    Ownercat SSL ui_proptype zoning zone_descr zoning_web Premiseadd Ownername_full Num_buildings Landarea Bldg_footprint Unused_land
+    Ward2022 Anc2023 Cluster2017;
 
-  set Faith_based_landowners;
+  set Faith_based_landowners_full (drop=x y _ONBORDER_ _ID_);
   
-run;
-
-
-%File_info( data=Faith_based_landowners, freqvars=ui_proptype )
-
-proc univariate data=Faith_based_landowners plot nextrobs=20;
-  var landarea bldg_footprint unused_land;
-  id ssl;
+  format Cluster2017 $clus17f.;
+  
+  label
+    premiseadd = 'Property street address'
+    zoning = 'Zoning designation'
+    zone_descr = 'Zoning description' 
+    zoning_web = 'Link to zoning website';
+  
 run;
 
 
@@ -215,8 +292,7 @@ run;
 %let file_list = ;
 
 ** Fill in the folder location where the export files should be saved **;
-** The CSV files are large, so the data are saved to the users's local drive rather than SAS1 **;
-%let out_folder = &_dcdata_default_path\Requests\Raw\2025;
+%let out_folder = &_dcdata_default_path\Requests\Raw\2025\Faith_based_landowners;
 
 ** Export individual data sets **;
 %Export( data=Faith_based_landowners )
