@@ -69,7 +69,7 @@ map_result <- ggplot() +
   geom_sf(data = rfk, aes(geometry = geometry), colour = "red", fill = "red")
 map_result
 
-ggsave(filename = "//Sas1/dcdata/Libraries/RFK/Requests/Prog/2026/RFK/resultrfk_tract_map.png",
+ggsave(filename = "//Sas1/dcdata/Libraries/RFK/Requests/Prog/2026/RFK/result/rfk_tract_map.png",
        plot = map_result,
        device = "png",
        width = 6.5,
@@ -83,6 +83,6 @@ tract_list <- tract2 %>%
   select(TRACT, GEOID, distance_to_rfk, in_a_mile) %>%
   st_drop_geometry()
 
-write.csv(tract_list, "//Sas1/dcdata/Libraries/RFK/Requests/Prog/2026/RFK/rfk_distance_tracts.csv")
+write.csv(tract_list, "//Sas1/dcdata/Libraries/RFK/Requests/Prog/2026/RFK/result/rfk_distance_tracts.csv")
 ```
 
