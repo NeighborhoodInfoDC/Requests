@@ -1,0 +1,88 @@
+---
+title: "RFK Block Geography"
+author: "Katie Visalli"
+date: "2026-05-06"
+output: html_document
+---
+Select census tracts that are within a mile of the RFK Stadium 
+Lot 805 in Square 1128
+
+Data From:
+Square Shapefile: https://arcg.is/1TeO1b5
+Census Tract Shapefile: https://arcg.is/1LjHaH2
+RFK Stadium Parcel: https://www.ncpc.gov/files/projects/2026/8721_New_Stadium_at_RFK_Campus_Submission_Materials_Feb2026.pdf Page 5
+
+
+```{r}
+library(tidyverse)
+library(sf)
+library(ggplot2)
+```
+
+```{r}
+squares <- st_read("//Sas1/dcdata/Libraries/RFK/Requests/Prog/2026/RFK/Data/Square_Boundaries.shp")
+
+tracts <- st_read("//Sas1/dcdata/Libraries/RFK/Requests/Prog/2026/RFK/Data/Census_Tracts_in_2020.shp")
+```
+```{r}
+map_squares <- ggplot() + 
+  geom_sf(data = squares, aes(geometry = geometry), colour = "black", fill = NA)
+map_squares
+
+map_tracts <- ggplot() + 
+  geom_sf(data = tracts, aes(geometry = geometry), colour = "red", fill = NA)
+map_tracts
+
+map_both <- ggplot() + 
+  geom_sf(data = tracts, aes(geometry = geometry), colour = "red", fill = NA) + 
+  geom_sf(data = squares, aes(geometry = geometry), colour = "black", fill = NA)
+map_both
+
+```
+Find Lot 805 in Square 1128 in DC Parcel Data
+
+There are two squares named 1128 in the data. One was updated in 2025 and has the same outline shape alone as the outline on page 5 of the concept review. So using it as my RFK square and ignoring the other, which is right next to, but much smaller than the 2025 version of 1128.
+
+```{r}
+squares2 <- squares %>%
+  mutate(rfk = if_else(SQUARE == "1128" & OBJECTID == "1744567", 1, 0))
+
+map_squares <- ggplot() + 
+  geom_sf(data = squares2, aes(geometry = geometry, fill = rfk), color = NA)
+map_squares
+
+rfk <- squares2 %>%
+  filter(rfk == 1)
+```
+
+Find shortest distance from each census tract to the RFK square
+```{r}
+tract2 <- tracts %>%
+  mutate(distance_to_rfk = as.numeric(st_distance(., rfk))) %>%
+  mutate(in_a_mile = if_else(distance_to_rfk <= 1609.34, 1, 0))
+```
+
+map result
+```{r}
+map_result <- ggplot() + 
+  geom_sf(data = tract2, aes(geometry = geometry, fill = in_a_mile), colour = "white") + 
+  geom_sf(data = rfk, aes(geometry = geometry), colour = "red", fill = "red")
+map_result
+
+ggsave(filename = "//Sas1/dcdata/Libraries/RFK/Requests/Prog/2026/RFK/resultrfk_tract_map.png",
+       plot = map_result,
+       device = "png",
+       width = 6.5,
+       dpi = 1000)
+
+```
+
+export results
+```{r}
+tract_list <- tract2 %>%
+  select(TRACT, GEOID, distance_to_rfk, in_a_mile) %>%
+  st_drop_geometry()
+
+write.csv(tract_list, "//Sas1/dcdata/Libraries/RFK/Requests/Prog/2026/RFK/rfk_distance_tracts.csv")
+```
+
