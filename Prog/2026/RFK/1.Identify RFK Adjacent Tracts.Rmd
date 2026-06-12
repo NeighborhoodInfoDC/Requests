@@ -17,14 +17,57 @@ RFK Stadium Parcel: https://www.ncpc.gov/files/projects/2026/8721_New_Stadium_at
 library(tidyverse)
 library(sf)
 library(ggplot2)
+library(urbnthemes)
+library(urbnmapr)
+set_urbn_defaults(style = "map")
 ```
 
-```{r}
-squares <- st_read("//Sas1/dcdata/Libraries/RFK/Requests/Prog/2026/RFK/Data/Square_Boundaries.shp")
+```{r load data}
+squares <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Square_Boundaries/Square_Boundaries.shp")
 
-tracts <- st_read("//Sas1/dcdata/Libraries/RFK/Requests/Prog/2026/RFK/Data/Census_Tracts_in_2020.shp")
+tracts <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Census_Tracts_in_2020/Census_Tracts_in_2020.shp")
+
+wards <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Ward_-_2022/Ward_-_2022.shp")
+
+dc <- wards %>%
+  st_combine()
+
+anc <- st_read("//sas1/dcdata/Libraries/OCTO/Maps/Advisory_Neighborhood_Commissions_from_2023.shp")
+
+roads <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Roads/Roads.shp")
+
+metro <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Metro_Stations_Regional/Metro_Stations_Regional.shp") %>%
+  mutate(line1 = case_when(LINE == "blue, yellow"~ "yellow",
+                           LINE == "blue, orange, silver"~ "blue",
+                           LINE == "blue, silver"~ "blue",
+                           LINE == "green, yellow, orange, blue, silver"~ "green",
+                           LINE == "green, yellow"~ "green",
+                           LINE == "red, green, yellow" ~ "green",
+                           LINE == "red, blue, orange, silver"~ "red", 
+                           LINE == "red, green" ~ "green", 
+                           LINE == "orange, silver" ~ "orange"
+                           ),
+         line_name = if_else(is.na(line1), LINE, line1), 
+         line_color = if_else(line_name == "silver", "grey", line_name))
+dc_metro <- metro %>%
+  st_filter(., dc, .predicate = st_intersects)
+
+bus <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Metro_Bus_Stops_2023_-_2025/Metro_Bus_Stops_2023_-_2025.shp")
+
+national_parks <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/National_Parks/National_Parks.shp") %>%
+  mutate(parks = "National Parks")
+
+wards <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Ward_-_2022/Ward_-_2022.shp")
+
+build_permits <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Building_Permits_in_2025/Building_Permits_in_2025.shp")
+rfk_permit <- build_permits %>%
+  filter(OBJECTID == 1097829048) %>%
+  #filter(FULL_ADDRE == "2400 EAST CAPITOL ST SE, WASHINGTON, DC 20003") %>%
+  mutate(label = "RFK Stadium Development")
+
 ```
-```{r}
+
+```{r test maps}
 map_squares <- ggplot() + 
   geom_sf(data = squares, aes(geometry = geometry), colour = "black", fill = NA)
 map_squares
@@ -33,17 +76,36 @@ map_tracts <- ggplot() +
   geom_sf(data = tracts, aes(geometry = geometry), colour = "red", fill = NA)
 map_tracts
 
-map_both <- ggplot() + 
-  geom_sf(data = tracts, aes(geometry = geometry), colour = "red", fill = NA) + 
-  geom_sf(data = squares, aes(geometry = geometry), colour = "black", fill = NA)
-map_both
+map_anc <- ggplot() + 
+  geom_sf(data = anc, aes(geometry = geometry), colour = "black", fill = NA)
+map_anc
+
+map_roads <- ggplot() + 
+  geom_sf(data = roads, aes(geometry = geometry), colour = "grey", fill = NA)
+map_roads
+
+map_metro <- ggplot() + 
+  geom_sf(data = metro, aes(geometry = geometry), colour = "black", fill = NA)
+map_metro
+
+map_bus <- ggplot() + 
+  geom_sf(data = bus, aes(geometry = geometry), colour = "grey", fill = NA)
+map_bus
+
+map_parks <- ggplot() + 
+  geom_sf(data = national_parks, aes(geometry = geometry), colour = NA, fill = "green")
+map_parks
+
+map_wards <- ggplot() + 
+  geom_sf(data = wards, aes(geometry = geometry), colour = "black", fill = NA)
+map_wards
 
 ```
 Find Lot 805 in Square 1128 in DC Parcel Data
 
 There are two squares named 1128 in the data. One was updated in 2025 and has the same outline shape alone as the outline on page 5 of the concept review. So using it as my RFK square and ignoring the other, which is right next to, but much smaller than the 2025 version of 1128.
 
-```{r}
+```{r find stadium}
 squares2 <- squares %>%
   mutate(rfk = if_else(SQUARE == "1128" & OBJECTID == "1744567", 1, 0))
 
@@ -52,37 +114,227 @@ map_squares <- ggplot() +
 map_squares
 
 rfk <- squares2 %>%
-  filter(rfk == 1)
+  filter(rfk == 1) %>%
+  mutate(label = "RFK Stadium & Campus")
 ```
 
 Find shortest distance from each census tract to the RFK square
 ```{r}
 tract2 <- tracts %>%
   mutate(distance_to_rfk = as.numeric(st_distance(., rfk))) %>%
-  mutate(in_a_mile = if_else(distance_to_rfk <= 1609.34, 1, 0))
+  mutate(in_a_mile = if_else(distance_to_rfk <= 1609.34, 1, 0)) %>%
+# Add census tracts 7803, 7806, and 7809 (Minnesota Ave Metro), Kennilworth and Eastwood gardens
+# and remove the arboretum, 11100
+  mutate(rfk_group = if_else(in_a_mile == 1, 1, 0), 
+         rfk_group = if_else(TRACT %in% c("007803", "007806", "007809"), 1, rfk_group), 
+         rfk_group = if_else(TRACT == "011100", 0, rfk_group), 
+         east_of_anacostia = if_else(TRACT %in% c("007709", "007708", "007601", "007604", "009901", "007703", "009604", "009603", "009602", "007803", "009601", "007806", "007809"), 1, 0), 
+         west_of_anacostia = if_else(rfk_group == 1 & east_of_anacostia == 0, 1, 0), 
+         rfk_sub_group = case_when(east_of_anacostia == 1 ~ "RFK-East of Anacostia", 
+                                   west_of_anacostia == 1 ~ "RFK-West of Anacostia"))
+
+rfk_tracts <- tract2 %>%
+  filter(rfk_group == 1)
+
+rfk_outline <- rfk_tracts %>%
+  st_union()
 ```
 
 map result
 ```{r}
 map_result <- ggplot() + 
-  geom_sf(data = tract2, aes(geometry = geometry, fill = in_a_mile), colour = "white") + 
+  geom_sf(data = rfk_tracts, aes(geometry = geometry, fill = rfk_sub_group), colour = "white") + 
   geom_sf(data = rfk, aes(geometry = geometry), colour = "red", fill = "red")
 map_result
 
-ggsave(filename = "//Sas1/dcdata/Libraries/RFK/Requests/Prog/2026/RFK/result/rfk_tract_map.png",
-       plot = map_result,
+# ggsave(filename = "//Sas1/dcdata/Libraries/RFK/Requests/Prog/2026/RFK/result/rfk_tract_map.png",
+#        plot = map_result,
+#        device = "png",
+#        width = 6.5,
+#        dpi = 1000)
+
+```
+
+```{r zoom-in area}
+
+# Filter to Ward 7
+ward7 <- wards %>%
+  filter(WARD_ID == "7")
+
+ward6 <- wards %>%
+  filter(WARD_ID == "6")
+
+#Find ward 7 coordinates, for zooming in on area
+ward7coords = as.data.frame(unique(st_coordinates(ward7)))
+
+#find rfk coordinates, for zooming in on area
+rfk_coords = as.data.frame(unique(st_coordinates(rfk_tracts)))
+
+#find x where y is max in ward 6 for x minnimum
+ward6coords = as.data.frame(unique(st_coordinates(ward6))) %>%
+  filter(Y == max(Y))
+
+
+#minimmum of Y
+ymin = min(ward7coords$Y)
+ymax = max(ward7coords$Y)
+xmin = ward6coords$X
+xmax = max(ward7coords$X)
+
+#DC Coordinates
+dccoords = as.data.frame(unique(st_coordinates(wards)))
+
+dcymin = min(dccoords$Y)
+dcymax = max(dccoords$Y)
+dcxmin = min(dccoords$X)
+dcxmax = max(dccoords$X)
+
+#Zoomed-in Metro Stops
+
+```
+
+
+```{r export map}
+full_map <- ggplot() + 
+  #RFK focus area
+  geom_sf(data = rfk_tracts, aes(geometry = geometry, fill = rfk_sub_group), colour = NA) + 
+  geom_sf(data = rfk_outline, color = "#000000", size = 1, fill = NA)  + 
+  #National Parks
+  geom_sf(data = national_parks, aes(geometry = geometry, fill = parks), colour = NA, alpha = 0.5) +
+  #RFK Development
+  geom_sf(data = rfk, aes(geometry = geometry, fill = label), colour = NA)  +
+  #Wards
+  geom_sf(data = wards, aes(geometry = geometry), colour = "#000000", fill = NA)  +
+  #Metro Stops
+  geom_sf(data = dc_metro, aes(geometry = geometry, colour = line_color), fill = NA, size = 2) +
+  scale_color_identity(guide = "legend", name = "Metro Stops")+ 
+  #Area legend
+  scale_fill_manual(breaks = c("RFK Stadium & Campus", "RFK-West of Anacostia", "RFK-East of Anacostia", "National Parks"), values = c("#ec008b", "#fce39e", "#a2d4ec", "#98cf90"), name = "Legend") +
+  #Ward names
+  geom_sf_text(data = wards, aes(geometry = geometry, label = paste0("Ward ", WARD_ID)), colour = "#000000", size = 3) +
+  #Filter to DC
+  coord_sf(
+    xlim = c(dcxmin, dcxmax), 
+    ylim = c(dcymin, dcymax),
+    expand = FALSE)
+full_map
+
+ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/full_map.png",
+       plot = full_map,
        device = "png",
        width = 6.5,
        dpi = 1000)
 
+
+#Zoomed in Map with ANC
+full_map_zoom_anc <- ggplot() + 
+  #RFK focus area
+  geom_sf(data = rfk_tracts, aes(geometry = geometry, fill = rfk_sub_group), colour = NA) + 
+  geom_sf(data = rfk_outline, color = "#000000", size = 1, fill = NA)  + 
+  #National Parks
+  geom_sf(data = national_parks, aes(geometry = geometry, fill = parks), colour = NA, alpha = 0.5) +
+  #RFK Development
+  geom_sf(data = rfk, aes(geometry = geometry, fill = label), colour = NA) + 
+  #Area legend
+  scale_fill_manual(breaks = c("RFK Stadium & Campus", "RFK-West of Anacostia", "RFK-East of Anacostia", "National Parks"), values = c("#ec008b", "#fce39e", "#a2d4ec", "#98cf90"), name = "Legend") +
+  #ANC
+  geom_sf(data = anc, aes(geometry = geometry), colour = "#332d2f", fill = NA) +
+  geom_sf_text(data = anc, aes(geometry = geometry, label = paste0(NAME)), colour = "#332d2f", size = 3) +
+  #Wards
+  geom_sf(data = wards, aes(geometry = geometry), colour = "#000000", fill = NA) +
+  geom_sf(data = rfk, aes(geometry = geometry, fill = label), colour = NA) + 
+  #Metro stops
+  geom_sf(data = dc_metro, aes(geometry = geometry, colour = line_color), fill = NA, size = 2) +
+  scale_color_identity(guide = "legend", name = "Metro Stops") +
+  #Zoom in
+  coord_sf(
+    xlim = c(xmin, xmax), 
+    ylim = c(ymin, ymax),
+    expand = FALSE)
+full_map_zoom_anc
+
+
+ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/full_map_zoom_anc.png",
+       plot = full_map_zoom_anc,
+       device = "png",
+       width = 6.5,
+       dpi = 1000)
+
+
+#Zoomed in Map with census tracts
+full_map_zoom_tract <- ggplot() + 
+  #RFK focus area
+  geom_sf(data = rfk_tracts, aes(geometry = geometry, fill = rfk_sub_group), colour = NA) + 
+  geom_sf(data = rfk_outline, color = "#000000", size = 1, fill = NA)  + 
+  #National Parks
+  geom_sf(data = national_parks, aes(geometry = geometry, fill = parks), colour = NA, alpha = 0.5) +
+  #RFK Development
+  geom_sf(data = rfk, aes(geometry = geometry, fill = label), colour = NA) + 
+  #Area legend
+  scale_fill_manual(breaks = c("RFK Stadium & Campus", "RFK-West of Anacostia", "RFK-East of Anacostia", "National Parks"), values = c("#ec008b", "#fce39e", "#a2d4ec", "#98cf90"), name = "Legend") +
+  #Consus Tracts
+  geom_sf(data = tract2, aes(geometry = geometry), fill = NA, colour = "#332d2f") +
+  #Ward
+  geom_sf(data = wards, aes(geometry = geometry), colour = "#000000", fill = NA) +
+  #Metro
+  geom_sf(data = dc_metro, aes(geometry = geometry, colour = line_color), fill = NA, size = 2) +
+  scale_color_identity(guide = "legend", name = "Metro Stops") +
+  #Zoom in
+  coord_sf(
+    xlim = c(xmin, xmax), 
+    ylim = c(ymin, ymax),
+    expand = FALSE)
+full_map_zoom_tract
+
+
+ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/full_map_zoom_tract.png",
+       plot = full_map_zoom_tract,
+       device = "png",
+       width = 6.5,
+       dpi = 1000)
+
+#Zoomed in map with roads
+full_map_zoom_roads <- ggplot() + 
+  #RFK focus area
+  geom_sf(data = rfk_tracts, aes(geometry = geometry, fill = rfk_sub_group), colour = NA) + 
+  geom_sf(data = rfk_outline, color = "#000000", size = 1, fill = NA)  + 
+  #National Parks
+  geom_sf(data = national_parks, aes(geometry = geometry, fill = parks), colour = NA, alpha = 0.5) +
+  #RFK Development
+  geom_sf(data = rfk, aes(geometry = geometry, fill = label), colour = NA) + 
+  #Area legend
+  scale_fill_manual(breaks = c("RFK Stadium & Campus", "RFK-West of Anacostia", "RFK-East of Anacostia", "National Parks"), values = c("#ec008b", "#fce39e", "#a2d4ec", "#98cf90"), name = "Legend") +
+  #Roads
+  geom_sf(data = roads, aes(geometry = geometry), colour = "#9d9d9d", fill = NA, size = 0.05) +
+  #Wards
+  geom_sf(data = wards, aes(geometry = geometry), colour = "#000000", fill = NA) + 
+  #Metro
+  geom_sf(data = dc_metro, aes(geometry = geometry, colour = line_color), fill = NA, size = 2) +
+  scale_color_identity(guide = "legend", name = "Metro Stops") +
+  #Zoom in
+  coord_sf(
+    xlim = c(xmin, xmax), 
+    ylim = c(ymin, ymax),
+    expand = FALSE)
+full_map_zoom_roads
+
+
+ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/full_map_zoom_roads.png",
+       plot = full_map_zoom_roads,
+       device = "png",
+       width = 6.5,
+       dpi = 1000)
+
+
 ```
+
 
 export results
 ```{r}
 tract_list <- tract2 %>%
-  select(TRACT, GEOID, distance_to_rfk, in_a_mile) %>%
+  select(TRACT, GEOID, rfk_group, rfk_sub_group) %>%
   st_drop_geometry()
 
-write.csv(tract_list, "//Sas1/dcdata/Libraries/RFK/Requests/Prog/2026/RFK/result/rfk_distance_tracts.csv")
+write.csv(tract_list, "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/rfk_distance_tracts.csv")
 ```
 

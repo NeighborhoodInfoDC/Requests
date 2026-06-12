@@ -125,14 +125,12 @@ run;
 * Merge RFK identified census tracts with ACS data;
 proc import 
 	out = rfk_tracts 
-	datafile = "\\sas1\dcdata\Libraries\RFK\Requests\Prog\2026\RFK\result\rfk_distance_tracts.csv"
+	datafile = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/rfk_distance_tracts.csv"
 	DBMS = csv;
 run;
 
 data rfk_tracts;
 set rfk_tracts;
-if in_a_mile = 1 then rfk_group = "in RFK group";
-else if in_a_mile = 0 then rfk_group = "out RFK";
 tract2 = GEOID * 1;
 run;
 
@@ -143,10 +141,10 @@ left join rfk_tracts as b
 on a.tract2 = b.tract2;
 quit;
 
-*create Summary Statistics, census tracts in and out of the RFK area;
-proc sql; create table summary_stats as select
+*create Summary Statistics, census tracts in RFK sub groups (East & West of Anacostia);
+proc sql; create table sub_summary_stats as select
 /* census tract */
-	in_a_mile, count(tract) as tracts,
+	rfk_sub_group, count(tract) as tracts,
 /*population, age*/
 	sum(totpop_2020_24) as total_population, sum(totalcivhhpop_2020_24) as population_16over, sum(pop65andoveryears_2020_24) as population_65over,
 /* work Force */
@@ -215,12 +213,89 @@ proc sql; create table summary_stats as select
 	sum(incmbyrentercst_75_99k_2020_24) as renterinc_75_99k,
 	sum(incmbyrentercst_gt100k_2020_24) as renterinc_gt100k
 from tracts2
-group by in_a_mile;
+group by rfk_sub_group;
+quit;
+
+proc print data = sub_summary_stats;
+run;
+
+*create Summary Statistics, census tracts in and out of the RFK area;
+proc sql; create table summary_stats as select
+/* census tract */
+	rfk_group, count(tract) as tracts,
+/*population, age*/
+	sum(totpop_2020_24) as total_population, sum(totalcivhhpop_2020_24) as population_16over, sum(pop65andoveryears_2020_24) as population_65over,
+/* work Force */
+	sum(popemployedworkers_2020_24) as employed, 
+	sum(popunemployed_2020_24) as unemployed,
+/*Race & Ethnicity*/
+	sum(popalonew_2020_24) as white, sum(popaloneiom_2020_24) as another_race, sum(popaloneh_2020_24) as latino, sum(popaloneb_2020_24) as black, sum(popalonea_2020_24) as AANHPI,
+/* Households by size and family type */
+	sum(nonfamilyhh1person_2020_24) as nonfam1,
+	sum(nonfamilyhh2person_2020_24) as nonfam2,
+	sum(nonfamilyhh3person_2020_24) as nonfam3,
+	sum(nonfamilyhh4person_2020_24) as nonfam4,
+	sum(nonfamilyhh5person_2020_24) as nonfam5,
+	sum(nonfamilyhh6person_2020_24) as nonfam6,
+	sum(nonfamilyhh7person_2020_24) as nonfam7,
+	sum(familyhh2person_2020_24) as family2,
+	sum(familyhh3person_2020_24) as family3,
+	sum(familyhh4person_2020_24) as family4,
+	sum(familyhh5person_2020_24) as family5,
+	sum(familyhh6person_2020_24) as family6,
+	sum(familyhh7person_2020_24) as family7,
+/* Housing Units */
+	sum(numhsgunits_2020_24) as housing_units, sum(numrenteroccupiedhu_2020_24) as renter_occupied_units, sum(numowneroccupiedhu_2020_24) as owner_occupied_units,
+	sum(numvacanthsgunits_2020_24) as vacant_units, sum(numvacanthsgunitsforsale_2020_24) as vacant_owner_units, sum(numvacanthsgunitsforrent_2020_24) as vacant_rent_units,
+/* Gross Rent */
+	sum(grossrent100_149_2020_24) as grossrent100_149_2020_24,
+	sum(grossrent150_199_2020_24) as grossrent150_199_2020_24,
+	sum(grossrent200_249_2020_24) as grossrent200_249_2020_24,
+	sum(grossrent250_299_2020_24) as grossrent250_299_2020_24,
+	sum(grossrent300_349_2020_24) as grossrent300_349_2020_24,
+	sum(grossrent350_349_2020_24) as grossrent350_349_2020_24,
+	sum(grossrent400_449_2020_24) as grossrent400_449_2020_24,
+	sum(grossrent450_499_2020_24) as grossrent450_499_2020_24,
+	sum(grossrent500_549_2020_24) as grossrent500_549_2020_24,
+	sum(grossrent550_599_2020_24) as grossrent550_599_2020_24,	
+	sum(grossrent600_649_2020_24) as grossrent600_649_2020_24,
+	sum(grossrent650_699_2020_24) as grossrent650_699_2020_24,
+	sum(grossrent700_749_2020_24) as grossrent700_749_2020_24,
+	sum(grossrent750_799_2020_24) as grossrent750_799_2020_24,
+	sum(grossrent800_899_2020_24) as grossrent800_899_2020_24,
+	sum(grossrent900_999_2020_24) as grossrent900_999_2020_24,
+	sum(grossrent1000_1249_2020_24) as grossrent1000_1249_2020_24,
+	sum(grossrent1250_1499_2020_24) as grossrent1250_1499_2020_24,
+	sum(grossrent1500_1999_2020_24) as grossrent1500_1999_2020_24,
+	sum(grossrent2000_2499_2020_24) as grossrent2000_2499_2020_24,
+	sum(grossrent2500_2999_2020_24) as grossrent2500_2999_2020_24,
+	sum(grossrent3000_3499_2020_24) as grossrent3000_3499_2020_24,
+	sum(grossrentgt3500_2020_24) as grossrentgt3500_2020_24,
+/* Cost Burdens */
+	sum(numrentercostburden_2020_24) as renters_costburden_30, sum(numrentseverecostburden_2020_24) as renters_cost_burden_50,
+	sum(numownercostburden_2020_24) as owners_costburden_30, sum(numownseverecostburden_2020_24) as owners_cost_burden_50,
+/* Incomes by Tenure */
+	sum(incmbyownercst_lt10k_2020_24) as ownerinc_lt10k, 
+	sum(incmbyownercst_10_19k_2020_24) as ownerinc_10_19k,
+	sum(incmbyownercst_20_34k_2020_24) as ownerinc_20_34k,
+	sum(incmbyownercst_35_49k_2020_24) as ownerinc_35_49k,
+	sum(incmbyownercst_50_74k_2020_24) as ownerinc_50_74k,
+	sum(incmbyownercst_75_99k_2020_24) as ownerinc_75_99k,
+	sum(incmbyownercst_100_149_2020_24) as ownerinc_100_149k,
+	sum(incmbyownercst_gt150k_2020_24) as ownerinc_gt150k, 
+	sum(incmbyrentercst_lt10k_2020_24) as renterinc_lt10k, 
+	sum(incmbyrentercst_10_19k_2020_24) as renterinc_10_19k,
+	sum(incmbyrentercst_20_34k_2020_24) as renterinc_20_34k,
+	sum(incmbyrentercst_35_49k_2020_24) as renterinc_35_49k,
+	sum(incmbyrentercst_50_74k_2020_24) as renterinc_50_74k,
+	sum(incmbyrentercst_75_99k_2020_24) as renterinc_75_99k,
+	sum(incmbyrentercst_gt100k_2020_24) as renterinc_gt100k
+from tracts2
+group by rfk_group;
 quit;
 
 proc print data = summary_stats;
 run;
-
 
 *create Summary Statistics, by Ward;
 proc sql; create table summary_stats_ward as select
