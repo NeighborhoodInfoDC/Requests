@@ -1,0 +1,43 @@
+---
+title: "Properties in RFK Areas"
+author: "Katie Visalli"
+date: "2026-06-24"
+output: html_document
+---
+
+Property ownership
+Source: Realprop.Parcel_base_who_owns
+Universe: All active [in_last_ownerpt=1] residential [ui_proptype=10,11,12,13,19] property parcels
+
+Parcels by property type [ui_proptype] and owner type [ownercat]
+Single family houses [ui_proptype=10] by owner-occupancy [owner_occ_sale]
+Single family houses [ui_proptype=10] with senior homestead exemption [hstd_code=5]
+Condominium units [ui_proptype=11] by owner-occupancy [owner_occ_sale]
+Condominium units [ui_proptype=11] with senior homestead exemption [hstd_code=5]
+
+```{r set up}
+library(tidyverse)
+library(tidylog)
+library(sf)
+```
+
+
+```{r Load data}
+property_data <- read.csv("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/owner_data.csv")
+
+square_shape <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Square_Boundaries/Square_Boundaries.shp")
+
+rfk_tracts <- read.csv("//Sas1/dcdata/Libraries/Requests/Prog/2026/RFK/result/rfk_tracts.csv")
+
+tract_shape <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Census_Tracts_in_2020/Census_Tracts_in_2020.shp")
+
+ward_shape <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Ward_-_2022/Ward_-_2022.shp")
+
+rfk_shape <- tract_shape %>%
+  mutate(GEOID=as.numeric(GEOID)) %>%
+  select(GEOID) %>%
+  left_join(rfk_tracts, by = "GEOID")
+
+```
+
+Use shapefiles of census tracts and 
