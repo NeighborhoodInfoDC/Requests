@@ -1,5 +1,5 @@
 ---
-title: "Subsidized HOusing step 2"
+title: "Subsidized Housing step 2"
 author: "Katie Visalli"
 date: "2026-06-25"
 output: html_document
@@ -121,8 +121,37 @@ writeData(wb, "tab_buildings_rfk", tab_buildings_rfk)
 saveWorkbook(wb, "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/subsidized results.xlsx")
 
 ```
+
+```{r coords of zoomed in area}
+
+# Filter to Ward 7
+ward7 <- ward_shape %>%
+  filter(WARD_ID == "7")
+
+ward6 <- ward_shape %>%
+  filter(WARD_ID == "6")
+
+#Find ward 7 coordinates, for zooming in on area
+ward7coords = as.data.frame(unique(st_coordinates(ward7)))
+
+
+#find x where y is max in ward 6 for x minnimum
+ward6coords = as.data.frame(unique(st_coordinates(ward6))) %>%
+  filter(Y == max(Y))
+
+
+#minimmum of Y
+ymin = min(ward7coords$Y)
+ymax = max(ward7coords$Y)
+xmin = ward6coords$X
+xmax = max(ward7coords$X)
+
+
+```
+
+
 ```{r map}
-#show 
+#show subsidized units
 proj_type_map <- ggplot() +
   #RFK tracts
   geom_sf(data = rfk_only_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = "black") +
@@ -141,7 +170,31 @@ ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/proj_ty
        width = 6.5,
        dpi = 1000)
 
+#show subsidized units ZOOMED IN
+proj_type_map_zoom <- ggplot() +
+  #RFK tracts
+  geom_sf(data = rfk_only_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = "black") +
+#ward outline
+  geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
+  #subsidized units
+  geom_sf(data = subsidized_housing_sf, aes(geometry = geometry, size = Proj_Units_Tot, color = ProgCatName), alpha = 0.5) + 
+  scale_color_manual(values = c(blues[5], reds[5], "purple", pinks[2], pinks[2], greys[6], yellows[5], yellows[8], greens[5], greens[5]), name = "Subsidy Type") +
+  scale_fill_manual(values = c(greys[2], greys[3]), name = "RFK Adjacent Area") +
+  scale_size(name = "Number of Subsidized Units") +
+  #Zoom in
+  coord_sf(
+    xlim = c(xmin, xmax), 
+    ylim = c(ymin, ymax),
+    expand = FALSE) 
+proj_type_map_zoom
 
+ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/proj_type_map_zoom.png",
+       plot = proj_type_map_zoom,
+       device = "png",
+       width = 6.5,
+       dpi = 1000)
+
+#simplified version
 proj_type_map2 <- ggplot() +
   #RFK tracts
   geom_sf(data = rfk_only_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = "black") +
@@ -154,7 +207,30 @@ proj_type_map2 <- ggplot() +
 proj_type_map2
 
 ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/proj_type_map2.png",
-       plot = proj_type_map,
+       plot = proj_type_map2,
+       device = "png",
+       width = 6.5,
+       dpi = 1000)
+
+#Simplified version - ZOOMED IN
+proj_type_map2_zoom <- ggplot() +
+  #RFK tracts
+  geom_sf(data = rfk_only_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = "black") +
+#ward outline
+  geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
+  #subsidized units
+  geom_sf(data = subsidized_housing_sf, aes(geometry = geometry, color = ProgCatName)) + 
+  scale_color_manual(values = c(blues[5], reds[5], "purple", pinks[2], pinks[2], greys[6], yellows[5], yellows[8], greens[5], greens[5]), name = "Subsidy Type") +
+  scale_fill_manual(values = c(greys[2], greys[3]), name = "RFK Adjacent Area")  +
+  #Zoom in
+  coord_sf(
+    xlim = c(xmin, xmax), 
+    ylim = c(ymin, ymax),
+    expand = FALSE)
+proj_type_map2_zoom
+
+ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/proj_type_map2_zoom.png",
+       plot = proj_type_map2_zoom,
        device = "png",
        width = 6.5,
        dpi = 1000)
