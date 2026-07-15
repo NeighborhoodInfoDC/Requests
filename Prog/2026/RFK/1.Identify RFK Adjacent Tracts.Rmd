@@ -14,6 +14,9 @@ RFK Stadium Parcel: https://www.ncpc.gov/files/projects/2026/8721_New_Stadium_at
 
 
 ```{r}
+
+#install.packages("ggspatial")
+
 library(tidyverse)
 library(sf)
 library(ggplot2)
@@ -22,7 +25,6 @@ library(urbnmapr)
 set_urbn_defaults(style = "map")
 library(ggspatial)
 
-install.packages("ggspatial")
 ```
 
 ```{r load data}
@@ -38,6 +40,9 @@ dc <- wards %>%
 anc <- st_read("//sas1/dcdata/Libraries/OCTO/Maps/Advisory_Neighborhood_Commissions_from_2023.shp")
 
 roads <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Roads/Roads.shp")
+
+water <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Waterbodies_2023/Waterbodies_2023.shp") %>%
+  mutate(water = "Waterways")
 
 metro <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Metro_Stations_Regional/Metro_Stations_Regional.shp") %>%
   mutate(line1 = case_when(LINE == "blue, yellow"~ "yellow",
@@ -209,6 +214,8 @@ full_map <- ggplot() +
   geom_sf(data = rfk_tracts, aes(geometry = geometry, fill = rfk_sub_group), colour = NA) + 
   #National Parks
   geom_sf(data = national_parks, aes(geometry = geometry, fill = parks), colour = NA, alpha = 0.5) +
+  #Water
+  geom_sf(data = water, aes(geometry = geometry, fill = water), colour = NA, alpha = 0.5) +
   #RFK Development
   geom_sf(data = rfk, aes(geometry = geometry, fill = label), colour = NA)  +
   #Wards
@@ -217,7 +224,7 @@ full_map <- ggplot() +
   geom_sf(data = dc_metro, aes(geometry = geometry, colour = line_color), fill = NA, size = 2) +
   scale_color_identity(guide = "legend", name = "Metro Stops")+ 
   #Area legend
-  scale_fill_manual(breaks = c("RFK Stadium & Campus", "RFK-West of Anacostia", "RFK-East of Anacostia", "National Parks"), values = c("#000000", "#fdbf11", "#ec008b", "#98cf90"), name = "Legend") +
+  scale_fill_manual(breaks = c("RFK Stadium & Campus", "RFK-West of Anacostia", "RFK-East of Anacostia", "National Parks", "Waterways"), values = c("#000000", "#fdbf11", "#ec008b", "#98cf90", "#73BFE2"), name = "Legend") +
   #Ward names
   geom_sf_text(data = wards, aes(geometry = geometry, label = paste0("Ward ", WARD_ID)), colour = "#5c5859", size = 3) + 
   #RFK area outline
@@ -231,7 +238,8 @@ full_map <- ggplot() +
   annotation_scale()
 full_map
 
-ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/full_map.png",
+ggsave(#filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Results/Geography & ACS/full_map.png",
+       filename = "C:/Users/kvisalli/Box/Greater DC/Projects/RFK Stadium Analysis/Results/Geography & ACS/full_map.png",
        plot = full_map,
        device = "png",
        width = 6.5,
@@ -282,10 +290,12 @@ full_map_zoom_tract <- ggplot() +
   geom_sf(data = rfk_tracts, aes(geometry = geometry, fill = rfk_sub_group), colour = NA) + 
   #National Parks
   geom_sf(data = national_parks, aes(geometry = geometry, fill = parks), colour = NA, alpha = 0.5) +
+  #Water
+  geom_sf(data = water, aes(geometry = geometry, fill = water), colour = NA, alpha = 0.5) +
   #RFK Development
   geom_sf(data = rfk, aes(geometry = geometry, fill = label), colour = NA) + 
   #Area legend
-  scale_fill_manual(breaks = c("RFK Stadium & Campus", "RFK-West of Anacostia", "RFK-East of Anacostia", "National Parks"), values = c("#000000", "#fdbf11", "#ec008b", "#98cf90"), name = "Legend") +
+  scale_fill_manual(breaks = c("RFK Stadium & Campus", "RFK-West of Anacostia", "RFK-East of Anacostia", "National Parks", "Waterways"), values = c("#000000", "#fdbf11", "#ec008b", "#98cf90", "#73BFE2"), name = "Legend") +
   #Census Tracts
   geom_sf(data = tract2, aes(geometry = geometry), fill = NA, colour = "#5c5859") +
   #Ward
@@ -305,7 +315,8 @@ full_map_zoom_tract <- ggplot() +
 full_map_zoom_tract
 
 
-ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/full_map_zoom_tract.png",
+ggsave(#filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Results/Geography & ACS/full_map_zoom_tract.png",
+       filename = "C:/Users/kvisalli/Box/Greater DC/Projects/RFK Stadium Analysis/Results/Geography & ACS/full_map_zoom_tract.png",
        plot = full_map_zoom_tract,
        device = "png",
        width = 6.5,
@@ -317,10 +328,12 @@ full_map_zoom_roads <- ggplot() +
   geom_sf(data = rfk_tracts, aes(geometry = geometry, fill = rfk_sub_group), colour = NA) + 
   #National Parks
   geom_sf(data = national_parks, aes(geometry = geometry, fill = parks), colour = NA, alpha = 0.5) +
+  #Water
+  geom_sf(data = water, aes(geometry = geometry, fill = water), colour = NA, alpha = 0.5) +
   #RFK Development
   geom_sf(data = rfk, aes(geometry = geometry, fill = label), colour = NA) + 
   #Area legend
-  scale_fill_manual(breaks = c("RFK Stadium & Campus", "RFK-West of Anacostia", "RFK-East of Anacostia", "National Parks"), values = c("#000000", "#fdbf11", "#ec008b", "#98cf90"), name = "Legend") +
+  scale_fill_manual(breaks = c("RFK Stadium & Campus", "RFK-West of Anacostia", "RFK-East of Anacostia", "National Parks", "Waterways"), values = c("#000000", "#fdbf11", "#ec008b", "#98cf90", "#73BFE2"), name = "Legend") +
   #Roads
   geom_sf(data = roads, aes(geometry = geometry), colour = "#5c5859", fill = NA, size = 0.05) +
   # #Wards
@@ -340,7 +353,8 @@ full_map_zoom_roads <- ggplot() +
 full_map_zoom_roads
 
 
-ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/full_map_zoom_roads.png",
+ggsave(#filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Results/Geography & ACS/full_map_zoom_roads.png",
+       filename = "C:/Users/kvisalli/Box/Greater DC/Projects/RFK Stadium Analysis/Results/Geography & ACS/full_map_zoom_roads.png",
        plot = full_map_zoom_roads,
        device = "png",
        width = 6.5,

@@ -247,88 +247,34 @@ proc export data=project_assisted_units
 run;
 
 
-/*
+/* Get Duplicated counts of projects for total project numbers */
 
-
-%File_info( data=Project_assisted_units, printobs=0, freqvars=ProgCat Ward2022 Geo2020 )
-
-%let rpt_suffix = %sysfunc( putn( %sysfunc( today() ), yymmddn8. ) );
-
-options orientation=landscape;
-
-options missing='0';
-options nodate nonumber;
-
-%fdate()
-
-ods rtf file="&_dcdata_default_path\PresCat\Prog\Project_assisted_units_&rpt_suffix..rtf" style=Styles.Rtf_arial_9pt;
-
-title2 " ";
-title3 "Project and assisted unit counts by subsidy portfolio (nonunique counts)";
-
-proc tabulate data=PresCat.Subsidy format=comma10. noseps missing;
-  where Subsidy_Active and put( nlihc_id, $nlihcid2cat. ) in ( '1', '2', '3', '4', '5' );
-  class Portfolio;
-  var units_assist;
-  table 
-    /** Rows **/
-    Portfolio=' ',
-    /** Columns **/
-    ( n='Projects' sum='Assisted\~Units' ) * units_assist=' '
-  ;
-  footnote1 height=9pt "Source: DC Preservation Catalog";
-  footnote2 height=9pt "Prepared by Urban-Greater DC (greaterdc.urban.org), &fdate..";
-  footnote3 height=9pt j=r '{Page}\~{\field{\*\fldinst{\pard\b\i0\chcbpat8\qc\f1\fs19\cf1{PAGE }\cf0\chcbpat0}}}';
+** pivot the subsidy types from long to wide format, 
+for one observation per project and multiple variables for Subsidy Types **;
+proc transpose data = Subsidy_unique out= subsidy_wide prefix= subtype_;
+	by NLIHC_ID;
+	id Portfolio;
+	var Units_Assist;
 run;
 
+*merge subsidies with project data;
 
-title3 "Project and assisted unit unique counts";
+data Project_subsidy_wide;
 
-proc tabulate data=Project_assisted_units format=comma10. noseps missing;
-  where ProgCat ~= .;
-  class ProgCat / preloadfmt order=data;
-  class ward2022;
-  var mid_asst_units err_asst_units;
-  table 
-    /** Rows **/
-    all='\b Total' ProgCat=' ',
-    /** Columns **/
-    n='Projects'
-    sum='Assisted Units' * ( mid_asst_units='Est.' err_asst_units='+/-' )
-    ;
-  format ProgCat ProgCat.;
+  merge
+    Prescat.Project_category_view
+      (in=inProject)
+    Subsidy_wide
+      (in=inSubsidy);
+  by NLIHC_ID;
+  
+  if inProject and inSubsidy;
+  
 run;
 
-
-title3 "Project and assisted unit unique counts by ward";
-
-proc tabulate data=Project_assisted_units format=comma10. noseps missing;
-  where ProgCat ~= . and not( missing( ward2022 ) );
-  class ProgCat / preloadfmt order=data;
-  class ward2022;
-  var mid_asst_units err_asst_units;
-  table 
-    /** Rows **/
-    ( all='DC Total' ward2022=' ' )
-    ,
-    /** Columns **/
-    n='Projects' * ( all='\b Total' ProgCat=' ' ) * mid_asst_units=' '
-    ;
-  table 
-    /** Rows **/
-    ( all='DC Total' ward2022=' ' )
-    ,
-    /** Columns **/
-    sum='Assisted Units' * ( all='\b Total' ProgCat=' ' ) * mid_asst_units=' '
-    ;
-  format ProgCat ProgCat.;
+*export to .csv to put in R;
+proc export data=Project_subsidy_wide
+	outfile='\\sas1\dcdata\Libraries\Requests\Prog\2026\RFK\Data\assisted_living_wide.xlsx'
+	dbms=xlsx
+	replace;
 run;
-
-
-ods rtf close;
-
-title2;
-footnote1;
-
-run;
-
