@@ -11,6 +11,7 @@
  Description:  https://github.com/NeighborhoodInfoDC/Requests/issues/109
  
  Data for Housing& Faith Housing presentation.
+ Renter and owner cost burdens for DC, MD, and VA jurisdictions.
 
  Modifications:
 **************************************************************************/
