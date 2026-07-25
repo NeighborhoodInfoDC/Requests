@@ -45,7 +45,7 @@ set sales;
 run;
 
 
-/*
+
 * Read in RFK tracts;
 proc import 
 	out = rfk_tracts 
@@ -70,7 +70,7 @@ quit;
 proc sql; create table sumstats_subgroup as select
 	rfk_sub_group2, sale_year, ui_proptype,
 	count(ssl) as sales,
-	/* median sales price 
+	/* median sales price */
 	median(saleprice_2025) as med_price
 	from sales_rfk
 	group by rfk_sub_group2, sale_year, ui_proptype;
@@ -82,9 +82,9 @@ run;
 * stats by RFK full group;
 proc sql; create table sumstats_rfk as select
 	rfk_group, sale_year, ui_proptype,
-	/* number of sales 
+	/* number of sales */
 	count(ssl) as sales,
-	/* median sales price
+	/* median sales price*/
 	median(saleprice_2025) as med_price
 	from sales_rfk
 	group by rfk_group, sale_year, ui_proptype;
@@ -96,9 +96,9 @@ run;
 * stats by ward;
 proc sql; create table sumstats_ward as select
 	ward2022, sale_year, ui_proptype,
-	/* number of sales 
+	/* number of sales */
 	count(ssl) as sales,
-	/* median sales price 
+	/* median sales price */
 	median(saleprice_2025) as med_price
 	from sales_rfk
 	group by ward2022, sale_year, ui_proptype;
@@ -110,9 +110,9 @@ run;
 * stats in all of DC;
 proc sql; create table sumstats_dc as select
 	sale_year, ui_proptype,
-	/* number of sales 
+	/* number of sales */
 	count(ssl) as sales,
-	/* median sales price
+	/* median sales price*/
 	median(saleprice_2025) as med_price
 	from sales_rfk
 	group by sale_year, ui_proptype;

@@ -149,16 +149,6 @@ data tracts3;
 	else ward7 = 0;
 run;
 
-/*** Find households under 80% AMI 
-87,896 from https://www.census.gov/quickfacts/fact/table/DC/INC110224 
-*/
-	sum(incmbyownercst_lt10k_2020_24) as ownerinc_lt10k, 
-	sum(incmbyownercst_10_19k_2020_24) as ownerinc_10_19k,
-	sum(incmbyownercst_20_34k_2020_24) as ownerinc_20_34k,
-	sum(incmbyownercst_35_49k_2020_24) as ownerinc_35_49k,
-	sum(incmbyownercst_50_74k_2020_24) as ownerinc_50_74k,
-
-
 *create Summary Statistics, census tracts in RFK sub groups (East & West of Anacostia);
 proc sql; create table sub_summary_stats as select
 /* census tract */
