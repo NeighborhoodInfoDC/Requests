@@ -1,0 +1,483 @@
+---
+title: "Subsidized Housing step 2"
+author: "Katie Visalli"
+date: "2026-06-25"
+output: html_document
+---
+Read in the subsidized housing data from SAS and process
+
+```{r set up}
+library(tidyverse)
+library(tidylog)
+library(readxl)
+library(sf)
+library(ggplot2)
+library(urbnthemes)
+library(urbnmapr)
+set_urbn_defaults(style = "map")
+library(openxlsx)
+
+#colorschemes
+blues <- c("#CFE8F3","#A2D4EC","#73BFE2","#46ABDB","#1696D2","#12719E","#0A4C6A","#062635") 
+greys <- c("#f5f5f5", "#D2D2D2","#9D9D9D","#696969","#353535", "#000000")
+yellows <- c("#FFF2CF","#FCE39E","#FDD870","#FCCB41","#FDBF11","#E88E2D","#CA5800","#843215") 
+pinks <- c("#F5CBDF","#EB99C2","#E46AA7","#E54096","#EC008B","#AF1F6B","#761548","#351123") 
+greens <- c("#DCEDD9","#BCDEB4","#98CF90","#78C26D","#55B748","#408941","#2C5C2D","#1A2E19") 
+reds <- c("#F8D5D4","#F1AAA9","#E9807D","#E25552","#DB2B27","#A4201D","#6E1614","#370B0A")
+```
+
+```{r load data}
+#Read in the subsidized housing data from SAS and process
+subsidized_housing_data <- read_xlsx("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/assisted_living_units.xlsx")
+
+#version of subsidized data with duplicated units allowed - prioritizing looking at all subsidy types
+subsidized_housing_wide <- read_xlsx("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/assisted_living_wide.xlsx")
+
+#RFK areas
+rfk_tracts <- read.csv("//Sas1/dcdata/Libraries/Requests/Prog/2026/RFK/result/rfk_tracts.csv")
+
+```
+
+```{r load shapefiles}
+tract_shape <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Census_Tracts_in_2020/Census_Tracts_in_2020.shp")
+
+ward_shape <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Ward_-_2022/Ward_-_2022.shp")
+
+#re-attach geometry to RFK tracts
+rfk_shape <- tract_shape %>%
+  mutate(GEOID=as.numeric(GEOID)) %>%
+  select(GEOID) %>%
+  left_join(rfk_tracts, by = "GEOID")
+
+#shape file with only RFK area
+rfk_only_shape <- rfk_shape %>%
+  filter(rfk_group == 1)
+
+#confirm CRS of census tract date
+st_crs(ward_shape)$epsg
+
+#convert XY coordinates for subsidized units to geometry
+subsidized_housing_sf <- subsidized_housing_data %>%
+  filter(!is.na(Proj_x) & !is.na(Proj_y)) %>%
+  st_as_sf(coords = c("Proj_lon", "Proj_lat"), crs = "EPSG:4326")
+
+#same with wide data
+subsidized_housing_wide_sf <- subsidized_housing_wide %>%
+  filter(!is.na(Proj_x) & !is.na(Proj_y)) %>%
+  st_as_sf(coords = c("Proj_lon", "Proj_lat"), crs = "EPSG:4326")
+
+st_crs(subsidized_housing_sf)$epsg
+
+#transform crs to match 
+subsidized_housing_sf <- st_transform(subsidized_housing_sf, crs = st_crs(ward_shape)) %>%
+  #label categorical combined subsidy type variable (from SAS format)
+  mutate(ProgCatName = case_when(ProgCat == 1 ~ 'Public housing',
+                                 ProgCat == 2 ~ 'Section 8 only',
+                                 ProgCat == 9 ~ 'Section 8 and other subsidies',
+                                 ProgCat == 8 ~ 'LIHTC w/tax exempt bonds',
+                                 ProgCat == 3 ~ 'LIHTC w/o tax exempt bonds',
+                                 #ProgCat == 7 ~ 'HUD-insured mortgage only',
+                                 ProgCat %in% c(4,5) ~ 'HOME/CDBG only',
+                                 ProgCat == 6 ~ 'DC HPTF only',
+                                 ProgCat == 10 ~ 'Section 202/811 only',
+                                 ProgCat %in% c(7, 20, 30) ~ 'Other subsidies/combinations'))
+#align wide data's crs
+subsidized_housing_wide_sf <- st_transform(subsidized_housing_wide_sf, crs = st_crs(ward_shape))
+
+#Use geometry to match subsidized housing points to census tracts
+subsidized_rfk_shape <- st_join(subsidized_housing_sf, rfk_shape, .predicate = st_within) %>%
+  mutate(ward7 = if_else(Ward2022 == "7", 1, 0))
+
+
+#Use geometry to match subsidized housing points to census tracts
+subsidized_wide_rfk_shape <- st_join(subsidized_housing_wide_sf, rfk_shape, .predicate = st_within) %>%
+  mutate(ward7 = if_else(Ward2022 == "7", 1, 0))
+```
+
+```{r map test}
+#test geographies by plotting subsidized housing X Y coords and census tracts
+test_map <- ggplot() +
+  #RFK tracts
+  geom_sf(data = rfk_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = "black") +
+  #subsidized units
+  geom_sf(data = subsidized_housing_sf, aes(geometry = geometry), colour = "red")
+test_map
+
+```
+```{r tables - Unduplicated}
+
+
+wb <- createWorkbook()
+
+#Number and type of Units by area
+#RFK groups
+tab_units_rfk <- subsidized_rfk_shape %>%
+  group_by(ProgCatName) %>%
+  summarise(DC = sum(mid_asst_units, na.rm = T),
+            Ward7 = sum(ward7 * mid_asst_units, na.rm = T),
+            RFK = sum(rfk_group * mid_asst_units, na.rm = T),
+            East = sum(east_of_anacostia * mid_asst_units, na.rm = T),
+            West = sum(west_of_anacostia * mid_asst_units, na.rm = T)) %>%
+  st_drop_geometry()
+
+addWorksheet(wb, "units_rfk")
+writeData(wb, "units_rfk", tab_units_rfk)
+
+
+tab_units_rfk_error <- subsidized_rfk_shape %>%
+  group_by(ProgCatName) %>%
+  summarise(DC_error = sum(err_asst_units, na.rm = T),
+            Ward7_error = sum(ward7 * err_asst_units, na.rm = T),
+            RFK_error = sum(rfk_group * err_asst_units, na.rm = T),
+            East_error = sum(east_of_anacostia * err_asst_units, na.rm = T),
+            West_error = sum(west_of_anacostia * err_asst_units, na.rm = T)) %>%
+  st_drop_geometry()
+
+
+writeData(wb, "units_rfk", tab_units_rfk_error, startRow = nrow(tab_units_rfk) + 3)
+
+#Number and type of Buildings by area
+tab_buildings_rfk <- subsidized_rfk_shape %>%
+  group_by(ProgCatName) %>%
+  summarise(DC = sum(Bldg_count, na.rm = T),
+            Ward7 = sum(ward7 * Bldg_count, na.rm = T),
+            RFK = sum(rfk_group * Bldg_count, na.rm = T),
+            East = sum(east_of_anacostia * Bldg_count, na.rm = T),
+            West = sum(west_of_anacostia * Bldg_count, na.rm = T)) %>%
+  st_drop_geometry()
+
+addWorksheet(wb, "buildings_rfk")
+writeData(wb, "buildings_rfk", tab_buildings_rfk)
+
+#Number and type of Projects by area
+tab_projects_rfk <- subsidized_rfk_shape %>%
+  group_by(ProgCatName) %>%
+  summarise(DC = n(),
+            Ward7 = sum(ward7, na.rm = T),
+            RFK = sum(rfk_group, na.rm = T),
+            East = sum(east_of_anacostia, na.rm = T),
+            West = sum(west_of_anacostia, na.rm = T)) %>%
+  st_drop_geometry()
+
+addWorksheet(wb, "projects_rfk")
+writeData(wb, "projects_rfk", tab_projects_rfk)
+
+
+```
+```{r tables - All subsidy types}
+#tables for all subsidy types - by geography, them combine geographies into table
+allsub_dc <- subsidized_wide_rfk_shape %>%
+  mutate(place = "DC") %>%
+  group_by(place) %>%
+  summarise(across(starts_with("subtype_"), ~ sum(.x, na.rm = T)))
+
+allsub_rfk <- subsidized_wide_rfk_shape %>%
+  filter(rfk_group == 1) %>%
+  mutate(place = "RFK") %>%
+  group_by(place) %>%
+  summarise(across(starts_with("subtype_"), ~ sum(.x, na.rm = T)))
+
+allsub_subg <- subsidized_wide_rfk_shape %>%
+  filter(!is.na(rfk_sub_group)) %>%
+  mutate(place = rfk_sub_group) %>%
+  group_by(place) %>%
+  summarise(across(starts_with("subtype_"), ~ sum(.x, na.rm = T)))
+
+allsub_w7 <- subsidized_wide_rfk_shape %>%
+  filter(ward7 == 1) %>%
+  mutate(place = "Ward 7") %>%
+  group_by(place) %>%
+  summarise(across(starts_with("subtype_"), ~ sum(.x, na.rm = T)))
+
+all_subsidy_types <- rbind(allsub_dc, allsub_rfk, allsub_subg, allsub_w7) %>%
+  st_drop_geometry()
+
+addWorksheet(wb, "all_subsidy_types")
+writeData(wb, "all_subsidy_types", all_subsidy_types)
+```
+
+```{r export tables}
+saveWorkbook(wb, "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/subsidized results v2.xlsx", overwrite = T)
+```
+
+```{r coords of zoomed in area}
+
+# Filter to Ward 7
+ward7 <- ward_shape %>%
+  filter(WARD_ID == "7")
+
+ward6 <- ward_shape %>%
+  filter(WARD_ID == "6")
+
+#Find ward 7 coordinates, for zooming in on area
+ward7coords = as.data.frame(unique(st_coordinates(ward7)))
+
+
+#find x where y is max in ward 6 for x minnimum
+ward6coords = as.data.frame(unique(st_coordinates(ward6))) %>%
+  filter(Y == max(Y))
+
+
+#minimmum of Y
+ymin = min(ward7coords$Y)
+ymax = max(ward7coords$Y)
+xmin = ward6coords$X
+xmax = max(ward7coords$X)
+
+
+```
+
+
+```{r maps - Unduplicated}
+#show subsidized units
+proj_type_map <- ggplot() +
+  #RFK tracts
+  geom_sf(data = rfk_only_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = "black") +
+#ward outline
+  geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
+  #subsidized units
+  geom_sf(data = subsidized_housing_sf, aes(geometry = geometry, size = Proj_Units_Tot, color = ProgCatName), alpha = 0.5) + 
+  scale_color_manual(values = c(blues[5], reds[5], pinks[2], pinks[2], greys[6], yellows[5], yellows[8], greens[5], greens[5]), name = "Subsidy Type") +
+  scale_fill_manual(values = c(greys[2], greys[3]), name = "RFK Adjacent Area") +
+  scale_size(name = "Number of Subsidized Units")
+proj_type_map
+
+ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/proj_type_map.png",
+       plot = proj_type_map,
+       device = "png",
+       width = 6.5,
+       dpi = 1000)
+
+#show subsidized units ZOOMED IN
+proj_type_map_zoom <- ggplot() +
+  #RFK tracts
+  geom_sf(data = rfk_only_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = "black") +
+#ward outline
+  geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
+  #subsidized units
+  geom_sf(data = subsidized_housing_sf %>% filter(ProgCatName != "Section 202/811 only"), aes(geometry = geometry, size = Proj_Units_Tot, color = ProgCatName), alpha = 0.5) + 
+  scale_color_manual(values = c(blues[5], reds[5], pinks[2], pinks[2], greys[6], yellows[5], greens[5], greens[5]), name = "Subsidy Type") +
+  scale_fill_manual(values = c(greys[2], greys[3]), name = "RFK Adjacent Area") +
+  scale_size(name = "Number of Subsidized Units") +
+  #Zoom in
+  coord_sf(
+    xlim = c(xmin, xmax), 
+    ylim = c(ymin, ymax),
+    expand = FALSE) 
+proj_type_map_zoom
+
+ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/proj_type_map_zoom.png",
+       plot = proj_type_map_zoom,
+       device = "png",
+       width = 6.5,
+       dpi = 1000)
+
+#simplified version
+proj_type_map2 <- ggplot() +
+  #RFK tracts
+  geom_sf(data = rfk_only_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = "black") +
+#ward outline
+  geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
+  #subsidized units
+  geom_sf(data = subsidized_housing_sf, aes(geometry = geometry, color = ProgCatName)) + 
+  scale_color_manual(values = c(blues[5], reds[5], pinks[2], pinks[2], greys[6], yellows[5], yellows[8], greens[5], greens[5]), name = "Subsidy Type") +
+  scale_fill_manual(values = c(greys[2], greys[3]), name = "RFK Adjacent Area") 
+proj_type_map2
+
+ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/proj_type_map2.png",
+       plot = proj_type_map2,
+       device = "png",
+       width = 6.5,
+       dpi = 1000)
+
+#Simplified version - ZOOMED IN
+proj_type_map2_zoom <- ggplot() +
+  #RFK tracts
+  geom_sf(data = rfk_only_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = "black") +
+#ward outline
+  geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
+  #subsidized units
+  geom_sf(data = subsidized_housing_sf %>% filter(ProgCatName != "Section 202/811 only"), aes(geometry = geometry, color = ProgCatName)) + 
+  scale_color_manual(values = c(blues[5], reds[5], pinks[2], pinks[2], greys[6], yellows[5], greens[5], greens[5]), name = "Subsidy Type") +
+  scale_fill_manual(values = c(greys[2], greys[3]), name = "RFK Adjacent Area")  +
+  #Zoom in
+  coord_sf(
+    xlim = c(xmin, xmax), 
+    ylim = c(ymin, ymax),
+    expand = FALSE)
+proj_type_map2_zoom
+
+ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/proj_type_map2_zoom.png",
+       plot = proj_type_map2_zoom,
+       device = "png",
+       width = 6.5,
+       dpi = 1000)
+```
+
+```{r maps - Duplicated}
+#LIHTC Map
+LIHTC_DC <- ggplot() +
+  #RFK tracts
+  geom_sf(data = rfk_only_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = "black") +
+#ward outline
+  geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
+  #subsidized units
+  geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_LIHTC)), aes(geometry = geometry), color = pinks[5]) + 
+  scale_fill_manual(values = c(pinks[1], yellows[1]), name = "RFK Adjacent Area") +
+  ggtitle("Subsidized Projects with LIHTC")
+LIHTC_DC
+
+ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/subsidy maps/LIHTC_DC.png",
+       plot = LIHTC_DC,
+       device = "png",
+       width = 6.5,
+       dpi = 1000)
+
+#LIHTC Map, zoomed in
+LIHTC_rfk <- ggplot() +
+  #RFK tracts
+  geom_sf(data = rfk_only_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = "black") +
+#ward outline
+  geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
+  #subsidized units
+  geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_LIHTC)), aes(geometry = geometry), color = pinks[5]) + 
+  scale_fill_manual(values = c(pinks[1], yellows[1]), name = "RFK Adjacent Area") +
+  ggtitle("Subsidized Projects with LIHTC") +
+  #Zoom in
+  coord_sf(
+    xlim = c(xmin, xmax), 
+    ylim = c(ymin, ymax),
+    expand = FALSE)
+LIHTC_rfk
+
+ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/subsidy maps/LIHTC_rfk.png",
+       plot = LIHTC_rfk,
+       device = "png",
+       width = 6.5,
+       dpi = 1000)
+
+#HPTF Map
+HPTF_DC <- ggplot() +
+  #RFK tracts
+  geom_sf(data = rfk_only_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = "black") +
+#ward outline
+  geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
+  #subsidized units
+  geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_DC_housing_production_tr)), aes(geometry = geometry), color = blues[5]) + 
+  scale_fill_manual(values = c(pinks[1], yellows[1]), name = "RFK Adjacent Area") +
+  ggtitle("Subsidized Projects with DC HPTF")
+HPTF_DC
+
+ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/subsidy maps/HPTF_DC.png",
+       plot = HPTF_DC,
+       device = "png",
+       width = 6.5,
+       dpi = 1000)
+
+#HPTF Map, zoomed in
+HPTF_rfk <- ggplot() +
+  #RFK tracts
+  geom_sf(data = rfk_only_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = "black") +
+#ward outline
+  geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
+  #subsidized units
+  geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_DC_housing_production_tr)), aes(geometry = geometry), color = blues[5]) + 
+  scale_fill_manual(values = c(pinks[1], yellows[1]), name = "RFK Adjacent Area") +
+  ggtitle("Subsidized Projects with DC HPTF") +
+  #Zoom in
+  coord_sf(
+    xlim = c(xmin, xmax), 
+    ylim = c(ymin, ymax),
+    expand = FALSE)
+HPTF_rfk
+
+ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/subsidy maps/HPTF_rfk.png",
+       plot = HPTF_rfk,
+       device = "png",
+       width = 6.5,
+       dpi = 1000)
+
+#sec8 Map
+sec8_DC <- ggplot() +
+  #RFK tracts
+  geom_sf(data = rfk_only_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = "black") +
+#ward outline
+  geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
+  #subsidized units
+  geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_Project_based_section_8)), aes(geometry = geometry), color = greens[5]) + 
+  scale_fill_manual(values = c(pinks[1], yellows[1]), name = "RFK Adjacent Area") +
+  ggtitle("Subsidized Projects with DC sec8")
+sec8_DC
+
+ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/subsidy maps/sec8_DC.png",
+       plot = sec8_DC,
+       device = "png",
+       width = 6.5,
+       dpi = 1000)
+
+#sec8 Map, zoomed in
+sec8_rfk <- ggplot() +
+  #RFK tracts
+  geom_sf(data = rfk_only_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = "black") +
+#ward outline
+  geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
+  #subsidized units
+  geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_Project_based_section_8)), aes(geometry = geometry), color = greens[5]) + 
+  scale_fill_manual(values = c(pinks[1], yellows[1]), name = "RFK Adjacent Area") +
+  ggtitle("Subsidized Projects with DC sec8") +
+  #Zoom in
+  coord_sf(
+    xlim = c(xmin, xmax), 
+    ylim = c(ymin, ymax),
+    expand = FALSE)
+sec8_rfk
+
+ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/subsidy maps/sec8_rfk.png",
+       plot = sec8_rfk,
+       device = "png",
+       width = 6.5,
+       dpi = 1000)
+
+
+#Public Housing Map
+pubH_DC <- ggplot() +
+  #RFK tracts
+  geom_sf(data = rfk_only_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = "black") +
+#ward outline
+  geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
+  #subsidized units
+  geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_Public_housing)), aes(geometry = geometry), color = yellows[8]) + 
+  scale_fill_manual(values = c(pinks[1], yellows[1]), name = "RFK Adjacent Area") +
+  ggtitle("Public Housing Projects")
+pubH_DC
+
+ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/subsidy maps/pubH_DC.png",
+       plot = pubH_DC,
+       device = "png",
+       width = 6.5,
+       dpi = 1000)
+
+#Public Housing Map, zoomed in
+pubH_rfk <- ggplot() +
+  #RFK tracts
+  geom_sf(data = rfk_only_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = "black") +
+#ward outline
+  geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
+  #subsidized units
+  geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_Public_housing)), aes(geometry = geometry), color = yellows[8]) + 
+  scale_fill_manual(values = c(pinks[1], yellows[1]), name = "RFK Adjacent Area") +
+  ggtitle("Public Housing Projects") +
+  #Zoom in
+  coord_sf(
+    xlim = c(xmin, xmax), 
+    ylim = c(ymin, ymax),
+    expand = FALSE)
+pubH_rfk
+
+ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/subsidy maps/pubH_rfk.png",
+       plot = pubH_rfk,
+       device = "png",
+       width = 6.5,
+       dpi = 1000)
+```
+

@@ -141,6 +141,14 @@ left join rfk_tracts as b
 on a.tract2 = b.tract2;
 quit;
 
+*dummy variables for each area;
+data tracts3;
+	set tracts2;
+	dc = 1;
+	if ward2022 = 7 then ward7 = 1;
+	else ward7 = 0;
+run;
+
 *create Summary Statistics, census tracts in RFK sub groups (East & West of Anacostia);
 proc sql; create table sub_summary_stats as select
 /* census tract */
