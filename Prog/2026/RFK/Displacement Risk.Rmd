@@ -1,0 +1,184 @@
+---
+title: "displacement risk"
+author: "Katie Visalli"
+date: "2026-06-29"
+output: html_document
+---
+
+```{r set up}
+library(tidyverse)
+library(tidylog)
+library(openxlsx)
+library(ggplot2)
+library(sf)
+library(urbnthemes)
+library(urbnmapr)
+set_urbn_defaults(style = "map")
+```
+
+```{r load data}
+rfk_tracts <- read.csv("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/rfk_tracts.csv")
+
+cat_order <- c("Highest", "Higher", "Intermediate", "Lower", "Lowest")
+
+displacement_risk <- read.xlsx("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Displacement Risk and Neighborhood Change.xlsx") %>%
+  mutate(across(c(population_vulnerability_cat, housing_condition_cat, market_pressure_cat, displacement_cat), ~ordered(.x, levels = cat_order)))
+
+tracts <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Census_Tracts_in_2020/Census_Tracts_in_2020.shp") %>%
+  select(GEOID, geometry) %>%
+  mutate(GEOID = as.numeric(GEOID))
+
+rfk_tracts_shape <- rfk_tracts %>%
+  left_join(tracts, by = "GEOID")
+
+displacement_risk_shape <- displacement_risk %>%
+  left_join(tracts, by = "GEOID")
+
+displacement_risk_rfk <- displacement_risk %>%
+  left_join(rfk_tracts, by = "GEOID") %>%
+  mutate(ward7 = if_else(Ward == "Ward 7", 1, 0))
+```
+
+```{r map prep}
+#for outlines of the RFK areas
+west_outline <- rfk_tracts_shape %>%
+  filter(west_of_anacostia == 1)
+
+east_outline <- rfk_tracts_shape %>%
+  filter(east_of_anacostia == 1)
+
+outlines <- ggplot()+
+  geom_sf(data = west_outline, aes(geometry = geometry, color = rfk_sub_group), fill = NA) +
+  geom_sf(data = east_outline, aes(geometry = geometry, color = rfk_sub_group), fill = NA) +
+  scale_color_manual(values = c("#ec008b", "#fdbf11"), name = "RFK Area Sub-Group")
+outlines
+```
+
+```{r}
+population_vulnerability <- ggplot() +
+  geom_sf(data = displacement_risk_shape, aes(geometry = geometry, fill = factor(population_vulnerability_cat, levels = cat_order)), color = NA) +
+  scale_fill_manual(name = "Population Vulnerability", values = c("#062635","#12719E","#1696D2","#73BFE2","#CFE8F3")) +
+  geom_sf(data = west_outline, aes(geometry = geometry, color = rfk_sub_group), fill = NA) +
+  geom_sf(data = east_outline, aes(geometry = geometry, color = rfk_sub_group), fill = NA) +
+  scale_color_manual(values = c("#ec008b", "#fdbf11"), name = "RFK Area Sub-Group")
+population_vulnerability
+
+ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/displacement vulnerability/map population_vulnerability.png",
+       plot = population_vulnerability,
+       device = "png",
+       width = 6.5,
+       dpi = 1000)
+
+housing_condition <- ggplot() +
+  geom_sf(data = displacement_risk_shape, aes(geometry = geometry, fill = factor(housing_condition_cat, levels = cat_order)), color = NA) +
+  scale_fill_manual(name = "Housing Condition", values = c("#062635","#12719E","#1696D2","#73BFE2","#CFE8F3")) +
+  geom_sf(data = west_outline, aes(geometry = geometry, color = rfk_sub_group), fill = NA) +
+  geom_sf(data = east_outline, aes(geometry = geometry, color = rfk_sub_group), fill = NA) +
+  scale_color_manual(values = c("#ec008b", "#fdbf11"), name = "RFK Area Sub-Group")
+housing_condition
+
+ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/displacement vulnerability/map housing_condition.png",
+       plot = housing_condition,
+       device = "png",
+       width = 6.5,
+       dpi = 1000)
+
+market_pressure <- ggplot() +
+  geom_sf(data = displacement_risk_shape, aes(geometry = geometry, fill = factor(market_pressure_cat, levels = cat_order)), color = NA) +
+  scale_fill_manual(name = "Market Pressure", values = c("#062635","#12719E","#1696D2","#73BFE2","#CFE8F3")) +
+  geom_sf(data = west_outline, aes(geometry = geometry, color = rfk_sub_group), fill = NA) +
+  geom_sf(data = east_outline, aes(geometry = geometry, color = rfk_sub_group), fill = NA) +
+  scale_color_manual(values = c("#ec008b", "#fdbf11"), name = "RFK Area Sub-Group")
+market_pressure
+
+ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/displacement vulnerability/map market_pressure.png",
+       plot = market_pressure,
+       device = "png",
+       width = 6.5,
+       dpi = 1000)
+
+displacement <- ggplot() +
+  geom_sf(data = displacement_risk_shape, aes(geometry = geometry, fill = factor(displacement_cat, levels = cat_order)), color = NA) +
+  scale_fill_manual(name = "Displacement", values = c("#062635","#12719E","#1696D2","#73BFE2","#CFE8F3")) +
+  geom_sf(data = west_outline, aes(geometry = geometry, color = rfk_sub_group), fill = NA) +
+  geom_sf(data = east_outline, aes(geometry = geometry, color = rfk_sub_group), fill = NA) +
+  scale_color_manual(values = c("#ec008b", "#fdbf11"), name = "RFK Area Sub-Group")
+displacement
+
+ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/displacement vulnerability/map displacement.png",
+       plot = displacement,
+       device = "png",
+       width = 6.5,
+       dpi = 1000)
+
+neighborhood_type <- ggplot() +
+  geom_sf(data = displacement_risk_shape, aes(geometry = geometry, fill = neighborhoodtype), color = NA) +
+  scale_fill_manual(name = "Neighborhood Type", values = c("#1696D2","#A2D4EC", "#000000", "#9D9D9D")) +
+  geom_sf(data = west_outline, aes(geometry = geometry, color = rfk_sub_group), fill = NA) +
+  geom_sf(data = east_outline, aes(geometry = geometry, color = rfk_sub_group), fill = NA) +
+  scale_color_manual(values = c("#ec008b", "#fdbf11"), name = "RFK Area Sub-Group")
+neighborhood_type
+
+ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/displacement vulnerability/map neighborhood_type.png",
+       plot = neighborhood_type,
+       device = "png",
+       width = 6.5,
+       dpi = 1000)
+
+```
+
+```{r tables}
+wb <- createWorkbook()
+
+tab_population_vulnerability <- displacement_risk_rfk %>%
+  group_by(population_vulnerability_cat) %>%
+  summarise(DC = n(),
+            ward7 = sum(ward7), 
+            RFK = sum(rfk_group), 
+            east_of_anacostia = sum(east_of_anacostia), 
+            west_of_anacostia = sum(west_of_anacostia))
+addWorksheet(wb, "population_vulnerability")
+writeData(wb, "population_vulnerability", tab_population_vulnerability)
+
+tab_housing_condition <- displacement_risk_rfk %>%
+  group_by(housing_condition_cat) %>%
+  summarise(DC = n(),
+            ward7 = sum(ward7), 
+            RFK = sum(rfk_group), 
+            east_of_anacostia = sum(east_of_anacostia), 
+            west_of_anacostia = sum(west_of_anacostia))
+addWorksheet(wb, "housing_condition")
+writeData(wb, "housing_condition", tab_housing_condition)
+
+tab_market_pressure <- displacement_risk_rfk %>%
+  group_by(market_pressure_cat) %>%
+  summarise(DC = n(),
+            ward7 = sum(ward7), 
+            RFK = sum(rfk_group), 
+            east_of_anacostia = sum(east_of_anacostia), 
+            west_of_anacostia = sum(west_of_anacostia))
+addWorksheet(wb, "market_pressure")
+writeData(wb, "market_pressure", tab_market_pressure)
+
+tab_displacement <- displacement_risk_rfk %>%
+  group_by(displacement_cat) %>%
+  summarise(DC = n(),
+            ward7 = sum(ward7), 
+            RFK = sum(rfk_group), 
+            east_of_anacostia = sum(east_of_anacostia), 
+            west_of_anacostia = sum(west_of_anacostia))
+addWorksheet(wb, "displacement")
+writeData(wb, "displacement", tab_displacement)
+
+tab_neighborhood_type <- displacement_risk_rfk %>%
+  group_by(neighborhoodtype) %>%
+  summarise(DC = n(),
+            ward7 = sum(ward7), 
+            RFK = sum(rfk_group), 
+            east_of_anacostia = sum(east_of_anacostia), 
+            west_of_anacostia = sum(west_of_anacostia))
+addWorksheet(wb, "neighborhood_type")
+writeData(wb, "neighborhood_type", tab_neighborhood_type)
+
+saveWorkbook(wb, "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/displacement vulnerability/tables.xlsx")
+```
