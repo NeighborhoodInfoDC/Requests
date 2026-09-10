@@ -142,15 +142,34 @@ set acs.acs_2020_24_dc_sum_tr_wd22;
 run;
 
 * Merge RFK identified census tracts with ACS data;
-proc import 
-	out = rfk_tracts 
-	datafile = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/rfk_distance_tracts.csv"
-	DBMS = csv;
-run;
+
+ data WORK.RFK_TRACTS    ;
+
+infile '//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/rfk_distance_tracts.csv' delimiter = ',' MISSOVER DSD lrecl=32767 firstobs=2 ;
+ informat VAR1 $4. ;
+informat TRACT $8. ;
+ informat Geo2020 $13. ;
+informat rfk_group best32. ;
+informat rfk_sub_group $25. ;
+format VAR1 $4. ;
+format TRACT $8. ;
+format Geo2020 $13. ;
+format rfk_group best12. ;
+format rfk_sub_group $25. ;
+ input
+ VAR1 $
+TRACT $
+Geo2020 $
+rfk_group
+rfk_sub_group $
+ ;
+   if _ERROR_ then call symputx('_EFIERR_',1);  /* set ERROR detection macro variable */
+ run;
+
 
 data rfk_tracts2;
 set rfk_tracts;
-tract2 = GEOID * 1;
+tract2 = Geo2020 * 1;
 run;
 
 proc sql; create table tracts2 as select
