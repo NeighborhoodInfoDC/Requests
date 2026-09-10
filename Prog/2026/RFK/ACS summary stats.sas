@@ -2,7 +2,7 @@
 Katie Visalli
 5/27/26
 
-Change Log:
+Change Log:	9/10/2026 LH Swap out Income by Tenure to include all households and add cost burden denominators, update employment and race vars
 
 Purpose:
 
@@ -12,14 +12,15 @@ construct the following indicators for the designated geographies.
 
 Demographics
 	Total population				totpop_2020_24
-	Population under 18 years		totalcivhhpop_2020_24 (16+)
+	Population under 18 years		PopUnder18Years_2020_24 
+	Population 16 and over 			Pop16andOverYears_2020_24
 	Population 65 years and older	pop65andoveryears_2020_24
-	Population by race/ethnicity	
-		White 						popalonew_2020_24
-		Another, multiple, AIAN		popaloneiom_2020_24
-		latino						popaloneh_2020_24
-		Black 						popaloneb_2020_24
-		AANHPI						popalonea_2020_24
+	Population by race/ethnicity	PopWithRace_2020_24
+		White 						PopWhiteNonHispBridge_2020_24
+		Another, multiple, AIAN		PopOtherRaceNonHispBridg_2020_24
+		latino						PopHisp_2020_24
+		Black 						PopBlackNonHispBridge_2020_24
+		AANHPI						 PopAsianPINonHispBridge_2020_24
 	Total households				
 	Households by size				
 	Households by family type		
@@ -77,33 +78,51 @@ Housing
 	Renter-occupied housing units by housing cost burden
 		renters with 30% burden			numrentercostburden_2020_24
 		renters with 50% cost burden	numrentseverecostburden_2020_24
+										RentCostBurdenDenom_2020_24
+										OwnerCostBurdenDenom_2020_24
+										NumOwnerCostBurden_2020_24
+										NumOwnSevereCostBurden_2020_24
 
 Economics
 	Persons living in families below the federal poverty level		poppoorpersons_2020_24
 	Households by income ranges
-		incmbyownercst_100_149_2020_24	N	Values	Owner-occupied housing units with household income $100,000 to $149,999, excluding units where owner cost burden is not computed, 2020-24
-		incmbyownercst_10_19k_2020_24	N	Values	Owner-occupied housing units with household income less than $10,000, excluding units where owner cost burden is not computed, 2020-24
-		incmbyownercst_20_34k_2020_24	N	Values	Owner-occupied housing units with household income $20,000 to $34,999, excluding units where owner cost burden is not computed, 2020-24
-		incmbyownercst_35_49k_2020_24	N	Values	Owner-occupied housing units with household income $35,000 to $49,999, excluding units where owner cost burden is not computed, 2020-24
-		incmbyownercst_50_74k_2020_24	N	Values	Owner-occupied housing units with household income $50,000 to $74,999, excluding units where owner cost burden is not computed, 2020-24
-		incmbyownercst_75_99k_2020_24	N	Values	Owner-occupied housing units with household income $75,000 to $99,999, excluding units where owner cost burden is not computed, 2020-24
-		incmbyownercst_gt150k_2020_24	N	Values	Owner-occupied housing units with household income $150,000 or more, excluding units where owner cost burden is not computed, 2020-24
-		incmbyownercst_lt10k_2020_24	N	Values	Owner-occupied housing units with household income less than $10,000, excluding units where owner cost burden is not computed, 2020-24
-		incmbyrentercst_10_19k_2020_24	N	Values	Renter-occupied housing units with household income less than $10,000, excluding units where renter cost burden is not computed, 2020-24
-		incmbyrentercst_20_34k_2020_24	N	Values	Renter-occupied housing units with household income $20,000 to $34,999, excluding units where renter cost burden is not computed, 2020-24
-		incmbyrentercst_35_49k_2020_24	N	Values	Renter-occupied housing units with household income $35,000 to $49,999, excluding units where renter cost burden is not computed, 2020-24
-		incmbyrentercst_50_74k_2020_24	N	Values	Renter-occupied housing units with household income $50,000 to $74,999, excluding units where renter cost burden is not computed, 2020-24
-		incmbyrentercst_75_99k_2020_24	N	Values	Renter-occupied housing units with household income $75,000 to $99,999, excluding units where renter cost burden is not computed, 2020-24
-		incmbyrentercst_gt100k_2020_24	N	Values	Renter-occupied housing units with household income $100,000 or more, excluding units where renter cost burden is not computed, 2020-24
-		incmbyrentercst_lt10k_2020_24	N	Values	Renter-occupied housing units with household income less than $10,000, excluding units where renter cost burden is not computed, 2020-24
-	Persons in labor force		
-	Persons who are employed	popemployedworkers_2020_24
-	Persons who are unemployed	popunemployed_2020_24
+
+	RentOccHHIncL5K_2020_24 = "Household income less than 5K and renter-occ, 2020-24"
+  RentOccHHInc5999K_2020_24 = "Household income between 5K and 9.99K and renter-occ, 2020-24"
+  RentOccHHInc101499K_2020_24 = "Household income between 10K and 14.99K and renter-occ, 2020-24"
+  RentOccHHInc151999K_2020_24 = "Household income between 15K and 19.99K and renter-occ, 2020-24"
+  RentOccHHInc202499K_2020_24 = "Household income between 20K and 24.99K and renter-occ, 2020-24"
+  RentOccHHInc253499K_2020_24 = "Household income between 25K and 34.99K and renter-occ, 2020-24"
+  RentOccHHInc354999K_2020_24 = "Household income between 35K and 49.99K and renter-occ, 2020-24"
+  RentOccHHInc507499K_2020_24 = "Household income between 50K and 74.99K and renter-occ, 2020-24"
+  RentOccHHInc759999K_2020_24 = "Household income between 75K and 99.99K and renter-occ, 2020-24"
+  RentOccHHInc10014999K_2020_24 = "Household income between 100K and 149.99K and renter-occ, 2020-24"
+  RentOccHHInc150M_2020_24 = "Household income 150K and higher and renter-occ, 2020-24"
+
+
+  OwnOccHHIncL5K_2020_24 = "Household income less than 5K and owner-occ, 2020-24"
+  OwnOccHHInc5999K_2020_24 = "Household income between 5K and 9.99K and owner-occ, 2020-24"
+  OwnOccHHInc101499K_2020_24 = "Household income between 10K and 14.99K and owner-occ, 2020-24"
+  OwnOccHHInc151999K_2020_24 = "Household income between 15K and 19.99K and owner-occ, 2020-24"
+  OwnOccHHInc202499K_2020_24 = "Household income between 20K and 24.99K and owner-occ, 2020-24"
+  OwnOccHHInc253499K_2020_24 = "Household income between 25K and 34.99K and owner-occ, 2020-24"
+  OwnOccHHInc354999K_2020_24 = "Household income between 35K and 49.99K and owner-occ, 2020-24"
+  OwnOccHHInc507499K_2020_24 = "Household income between 50K and 74.99K and owner-occ, 2020-24"
+  OwnOccHHInc759999K_2020_24 = "Household income between 75K and 99.99K and owner-occ, 2020-24"
+  OwnOccHHInc10014999K_2020_24 = "Household income between 100K and 149.99K and owner-occ, 2020-24"
+  OwnOccHHInc150M_2020_24 = "Household income 150K and higher and owner-occ, 2020-24"
+
+
+	Persons in labor force		PopInCivLaborForce_2020_24
+	Persons who are employed	Pop16andOverEmploy_2020_24
+	Persons who are unemployed	PopUnemployed_2020_24
 	Census Tract					geo2020
 */
 
 * Set Up;
-%include "F:\DCDATA\SAS\Inc\StdRemote.sas";
+*%include "F:\DCDATA\SAS\Inc\StdRemote.sas";
+%include "\\sas1\DCdata\SAS\Inc\StdLocal.sas";
+
 
 * Data Libraries ;
 %DCData_lib( ACS )
@@ -129,7 +148,7 @@ proc import
 	DBMS = csv;
 run;
 
-data rfk_tracts;
+data rfk_tracts2;
 set rfk_tracts;
 tract2 = GEOID * 1;
 run;
@@ -137,7 +156,7 @@ run;
 proc sql; create table tracts2 as select
 a.*, b.*
 from tracts as a
-left join rfk_tracts as b
+left join rfk_tracts2 as b
 on a.tract2 = b.tract2;
 quit;
 
@@ -152,14 +171,15 @@ run;
 *create Summary Statistics, census tracts in RFK sub groups (East & West of Anacostia);
 proc sql; create table sub_summary_stats as select
 /* census tract */
-	rfk_sub_group, count(tract) as tracts,
+	rfk_sub_group, count(tract2) as tracts,
 /*population, age*/
-	sum(totpop_2020_24) as total_population, sum(totalcivhhpop_2020_24) as population_16over, sum(pop65andoveryears_2020_24) as population_65over,
+	sum(totpop_2020_24) as total_population, sum(PopUnder18Years_2020_24) as population_under18, sum(Pop16andOverYears_2020_24) as population_16over, sum(pop65andoveryears_2020_24) as population_65over,
 /* work Force */
-	sum(popemployedworkers_2020_24) as employed, 
+	sum(Pop16andOverEmploy_2020_24) as employed, 
 	sum(popunemployed_2020_24) as unemployed,
+	sum(PopInCivLaborForce_2020_24) as laborforce,
 /*Race & Ethnicity*/
-	sum(popalonew_2020_24) as white, sum(popaloneiom_2020_24) as another_race, sum(popaloneh_2020_24) as latino, sum(popaloneb_2020_24) as black, sum(popalonea_2020_24) as AANHPI,
+	sum(PopWithRace_2020_24) as poprace, sum(PopWhiteNonHispBridge_2020_24) as white, sum(PopOtherRaceNonHispBridg_2020_24) as another_race, sum(PopHisp_2020_24) as latino, sum(PopBlackNonHispBridge_2020_24) as black, sum(PopAsianPINonHispBridge_2020_24) as AANHPI,
 /* Households by size and family type */
 	sum(nonfamilyhh1person_2020_24) as nonfam1,
 	sum(nonfamilyhh2person_2020_24) as nonfam2,
@@ -202,24 +222,32 @@ proc sql; create table sub_summary_stats as select
 	sum(grossrent3000_3499_2020_24) as grossrent3000_3499_2020_24,
 	sum(grossrentgt3500_2020_24) as grossrentgt3500_2020_24,
 /* Cost Burdens */
-	sum(numrentercostburden_2020_24) as renters_costburden_30, sum(numrentseverecostburden_2020_24) as renters_cost_burden_50,
-	sum(numownercostburden_2020_24) as owners_costburden_30, sum(numownseverecostburden_2020_24) as owners_cost_burden_50,
+	sum(numrentercostburden_2020_24) as renters_costburden_30, sum(numrentseverecostburden_2020_24) as renters_cost_burden_50, sum(RentCostBurdenDenom_2020_24) as rentCBdenom,
+	sum(numownercostburden_2020_24) as owners_costburden_30, sum(numownseverecostburden_2020_24) as owners_cost_burden_50, sum(OwnerCostBurdenDenom_2020_24) as ownCBdenom, 
 /* Incomes by Tenure */
-	sum(incmbyownercst_lt10k_2020_24) as ownerinc_lt10k, 
-	sum(incmbyownercst_10_19k_2020_24) as ownerinc_10_19k,
-	sum(incmbyownercst_20_34k_2020_24) as ownerinc_20_34k,
-	sum(incmbyownercst_35_49k_2020_24) as ownerinc_35_49k,
-	sum(incmbyownercst_50_74k_2020_24) as ownerinc_50_74k,
-	sum(incmbyownercst_75_99k_2020_24) as ownerinc_75_99k,
-	sum(incmbyownercst_100_149_2020_24) as ownerinc_100_149k,
-	sum(incmbyownercst_gt150k_2020_24) as ownerinc_gt150k, 
-	sum(incmbyrentercst_lt10k_2020_24) as renterinc_lt10k, 
-	sum(incmbyrentercst_10_19k_2020_24) as renterinc_10_19k,
-	sum(incmbyrentercst_20_34k_2020_24) as renterinc_20_34k,
-	sum(incmbyrentercst_35_49k_2020_24) as renterinc_35_49k,
-	sum(incmbyrentercst_50_74k_2020_24) as renterinc_50_74k,
-	sum(incmbyrentercst_75_99k_2020_24) as renterinc_75_99k,
-	sum(incmbyrentercst_gt100k_2020_24) as renterinc_gt100k
+	sum(OwnOccHHIncL5K_2020_24) as ownerinc_lt5k, 
+	sum(OwnOccHHInc5999K_2020_24 ) as ownerinc_5_9k,
+	sum(OwnOccHHInc101499K_2020_24) as ownerinc_10_14k,
+	sum(OwnOccHHInc151999K_2020_24 ) as ownerinc_15_19k,
+	sum(OwnOccHHInc202499K_2020_24 ) as ownerinc_20_24k,
+	sum(OwnOccHHInc253499K_2020_24 ) as ownerinc_25_34k,
+	sum(OwnOccHHInc354999K_2020_24 ) as ownerinc_35_49k,
+	sum(OwnOccHHInc507499K_2020_24 ) as ownerinc_50_74k,
+	sum(OwnOccHHInc759999K_2020_24 ) as ownerinc_75_99k,
+	sum(OwnOccHHInc10014999K_2020_24) as ownerinc_100_149k,
+	sum(OwnOccHHInc150M_2020_24) as ownerinc_150kplus,
+	sum(RentOccHHIncL5K_2020_24) as renterinc_lt5k, 
+	sum(RentOccHHInc5999K_2020_24 ) as renterinc_5_9k,
+	sum(RentOccHHInc101499K_2020_24) as renterinc_10_14k,
+	sum(RentOccHHInc151999K_2020_24 ) as renterinc_15_19k,
+	sum(RentOccHHInc202499K_2020_24 ) as renterinc_20_24k,
+	sum(RentOccHHInc253499K_2020_24 ) as renterinc_25_34k,
+	sum(RentOccHHInc354999K_2020_24 ) as renterinc_35_49k,
+	sum(RentOccHHInc507499K_2020_24 ) as renterinc_50_74k,
+	sum(RentOccHHInc759999K_2020_24 ) as renterinc_75_99k,
+	sum(RentOccHHInc10014999K_2020_24) as renterinc_100_149k,
+	sum(RentOccHHInc150M_2020_24) as renterinc_150kplus
+
 from tracts2
 group by rfk_sub_group;
 quit;
@@ -230,14 +258,15 @@ run;
 *create Summary Statistics, census tracts in and out of the RFK area;
 proc sql; create table summary_stats as select
 /* census tract */
-	rfk_group, count(tract) as tracts,
+	rfk_group, count(tract2) as tracts,
 /*population, age*/
-	sum(totpop_2020_24) as total_population, sum(totalcivhhpop_2020_24) as population_16over, sum(pop65andoveryears_2020_24) as population_65over,
+	sum(totpop_2020_24) as total_population, sum(PopUnder18Years_2020_24) as population_under18, sum(Pop16andOverYears_2020_24) as population_16over, sum(pop65andoveryears_2020_24) as population_65over,
 /* work Force */
-	sum(popemployedworkers_2020_24) as employed, 
+	sum(Pop16andOverEmploy_2020_24) as employed, 
 	sum(popunemployed_2020_24) as unemployed,
+	sum(PopInCivLaborForce_2020_24) as laborforce,
 /*Race & Ethnicity*/
-	sum(popalonew_2020_24) as white, sum(popaloneiom_2020_24) as another_race, sum(popaloneh_2020_24) as latino, sum(popaloneb_2020_24) as black, sum(popalonea_2020_24) as AANHPI,
+	sum(PopWithRace_2020_24) as poprace, sum(PopWhiteNonHispBridge_2020_24) as white, sum(PopOtherRaceNonHispBridg_2020_24) as another_race, sum(PopHisp_2020_24) as latino, sum(PopBlackNonHispBridge_2020_24) as black, sum(PopAsianPINonHispBridge_2020_24) as AANHPI,
 /* Households by size and family type */
 	sum(nonfamilyhh1person_2020_24) as nonfam1,
 	sum(nonfamilyhh2person_2020_24) as nonfam2,
@@ -280,24 +309,32 @@ proc sql; create table summary_stats as select
 	sum(grossrent3000_3499_2020_24) as grossrent3000_3499_2020_24,
 	sum(grossrentgt3500_2020_24) as grossrentgt3500_2020_24,
 /* Cost Burdens */
-	sum(numrentercostburden_2020_24) as renters_costburden_30, sum(numrentseverecostburden_2020_24) as renters_cost_burden_50,
-	sum(numownercostburden_2020_24) as owners_costburden_30, sum(numownseverecostburden_2020_24) as owners_cost_burden_50,
+	sum(numrentercostburden_2020_24) as renters_costburden_30, sum(numrentseverecostburden_2020_24) as renters_cost_burden_50, sum(RentCostBurdenDenom_2020_24) as rentCBdenom,
+	sum(numownercostburden_2020_24) as owners_costburden_30, sum(numownseverecostburden_2020_24) as owners_cost_burden_50, sum(OwnerCostBurdenDenom_2020_24) as ownCBdenom, 
 /* Incomes by Tenure */
-	sum(incmbyownercst_lt10k_2020_24) as ownerinc_lt10k, 
-	sum(incmbyownercst_10_19k_2020_24) as ownerinc_10_19k,
-	sum(incmbyownercst_20_34k_2020_24) as ownerinc_20_34k,
-	sum(incmbyownercst_35_49k_2020_24) as ownerinc_35_49k,
-	sum(incmbyownercst_50_74k_2020_24) as ownerinc_50_74k,
-	sum(incmbyownercst_75_99k_2020_24) as ownerinc_75_99k,
-	sum(incmbyownercst_100_149_2020_24) as ownerinc_100_149k,
-	sum(incmbyownercst_gt150k_2020_24) as ownerinc_gt150k, 
-	sum(incmbyrentercst_lt10k_2020_24) as renterinc_lt10k, 
-	sum(incmbyrentercst_10_19k_2020_24) as renterinc_10_19k,
-	sum(incmbyrentercst_20_34k_2020_24) as renterinc_20_34k,
-	sum(incmbyrentercst_35_49k_2020_24) as renterinc_35_49k,
-	sum(incmbyrentercst_50_74k_2020_24) as renterinc_50_74k,
-	sum(incmbyrentercst_75_99k_2020_24) as renterinc_75_99k,
-	sum(incmbyrentercst_gt100k_2020_24) as renterinc_gt100k
+	sum(OwnOccHHIncL5K_2020_24) as ownerinc_lt5k, 
+	sum(OwnOccHHInc5999K_2020_24 ) as ownerinc_5_9k,
+	sum(OwnOccHHInc101499K_2020_24) as ownerinc_10_14k,
+	sum(OwnOccHHInc151999K_2020_24 ) as ownerinc_15_19k,
+	sum(OwnOccHHInc202499K_2020_24 ) as ownerinc_20_24k,
+	sum(OwnOccHHInc253499K_2020_24 ) as ownerinc_25_34k,
+	sum(OwnOccHHInc354999K_2020_24 ) as ownerinc_35_49k,
+	sum(OwnOccHHInc507499K_2020_24 ) as ownerinc_50_74k,
+	sum(OwnOccHHInc759999K_2020_24 ) as ownerinc_75_99k,
+	sum(OwnOccHHInc10014999K_2020_24) as ownerinc_100_149k,
+	sum(OwnOccHHInc150M_2020_24) as ownerinc_150kplus,
+	sum(RentOccHHIncL5K_2020_24) as renterinc_lt5k, 
+	sum(RentOccHHInc5999K_2020_24 ) as renterinc_5_9k,
+	sum(RentOccHHInc101499K_2020_24) as renterinc_10_14k,
+	sum(RentOccHHInc151999K_2020_24 ) as renterinc_15_19k,
+	sum(RentOccHHInc202499K_2020_24 ) as renterinc_20_24k,
+	sum(RentOccHHInc253499K_2020_24 ) as renterinc_25_34k,
+	sum(RentOccHHInc354999K_2020_24 ) as renterinc_35_49k,
+	sum(RentOccHHInc507499K_2020_24 ) as renterinc_50_74k,
+	sum(RentOccHHInc759999K_2020_24 ) as renterinc_75_99k,
+	sum(RentOccHHInc10014999K_2020_24) as renterinc_100_149k,
+	sum(RentOccHHInc150M_2020_24) as renterinc_150kplus
+
 from tracts2
 group by rfk_group;
 quit;
@@ -310,12 +347,13 @@ proc sql; create table summary_stats_ward as select
 /* census tract */
 	ward2022,
 /*population, age*/
-	sum(totpop_2020_24) as total_population, sum(totalcivhhpop_2020_24) as population_16over, sum(pop65andoveryears_2020_24) as population_65over,
+	sum(totpop_2020_24) as total_population, sum(PopUnder18Years_2020_24) as population_under18, sum(Pop16andOverYears_2020_24) as population_16over, sum(pop65andoveryears_2020_24) as population_65over,
 /* work Force */
-	sum(popemployedworkers_2020_24) as employed, 
+	sum(Pop16andOverEmploy_2020_24) as employed, 
 	sum(popunemployed_2020_24) as unemployed,
+	sum(PopInCivLaborForce_2020_24) as laborforce,
 /*Race & Ethnicity*/
-	sum(popalonew_2020_24) as white, sum(popaloneiom_2020_24) as another_race, sum(popaloneh_2020_24) as latino, sum(popaloneb_2020_24) as black, sum(popalonea_2020_24) as AANHPI,
+	sum(PopWithRace_2020_24) as poprace, sum(PopWhiteNonHispBridge_2020_24) as white, sum(PopOtherRaceNonHispBridg_2020_24) as another_race, sum(PopHisp_2020_24) as latino, sum(PopBlackNonHispBridge_2020_24) as black, sum(PopAsianPINonHispBridge_2020_24) as AANHPI,
 /* Households by size and family type */
 	sum(nonfamilyhh1person_2020_24) as nonfam1,
 	sum(nonfamilyhh2person_2020_24) as nonfam2,
@@ -358,24 +396,32 @@ proc sql; create table summary_stats_ward as select
 	sum(grossrent3000_3499_2020_24) as grossrent3000_3499_2020_24,
 	sum(grossrentgt3500_2020_24) as grossrentgt3500_2020_24,
 /* Cost Burdens */
-	sum(numrentercostburden_2020_24) as renters_costburden_30, sum(numrentseverecostburden_2020_24) as renters_cost_burden_50,
-	sum(numownercostburden_2020_24) as owners_costburden_30, sum(numownseverecostburden_2020_24) as owners_cost_burden_50,
+	sum(numrentercostburden_2020_24) as renters_costburden_30, sum(numrentseverecostburden_2020_24) as renters_cost_burden_50, sum(RentCostBurdenDenom_2020_24) as rentCBdenom,
+	sum(numownercostburden_2020_24) as owners_costburden_30, sum(numownseverecostburden_2020_24) as owners_cost_burden_50, sum(OwnerCostBurdenDenom_2020_24) as ownCBdenom, 
 /* Incomes by Tenure */
-	sum(incmbyownercst_lt10k_2020_24) as ownerinc_lt10k, 
-	sum(incmbyownercst_10_19k_2020_24) as ownerinc_10_19k,
-	sum(incmbyownercst_20_34k_2020_24) as ownerinc_20_34k,
-	sum(incmbyownercst_35_49k_2020_24) as ownerinc_35_49k,
-	sum(incmbyownercst_50_74k_2020_24) as ownerinc_50_74k,
-	sum(incmbyownercst_75_99k_2020_24) as ownerinc_75_99k,
-	sum(incmbyownercst_100_149_2020_24) as ownerinc_100_149k,
-	sum(incmbyownercst_gt150k_2020_24) as ownerinc_gt150k, 
-	sum(incmbyrentercst_lt10k_2020_24) as renterinc_lt10k, 
-	sum(incmbyrentercst_10_19k_2020_24) as renterinc_10_19k,
-	sum(incmbyrentercst_20_34k_2020_24) as renterinc_20_34k,
-	sum(incmbyrentercst_35_49k_2020_24) as renterinc_35_49k,
-	sum(incmbyrentercst_50_74k_2020_24) as renterinc_50_74k,
-	sum(incmbyrentercst_75_99k_2020_24) as renterinc_75_99k,
-	sum(incmbyrentercst_gt100k_2020_24) as renterinc_gt100k
+	sum(OwnOccHHIncL5K_2020_24) as ownerinc_lt5k, 
+	sum(OwnOccHHInc5999K_2020_24 ) as ownerinc_5_9k,
+	sum(OwnOccHHInc101499K_2020_24) as ownerinc_10_14k,
+	sum(OwnOccHHInc151999K_2020_24 ) as ownerinc_15_19k,
+	sum(OwnOccHHInc202499K_2020_24 ) as ownerinc_20_24k,
+	sum(OwnOccHHInc253499K_2020_24 ) as ownerinc_25_34k,
+	sum(OwnOccHHInc354999K_2020_24 ) as ownerinc_35_49k,
+	sum(OwnOccHHInc507499K_2020_24 ) as ownerinc_50_74k,
+	sum(OwnOccHHInc759999K_2020_24 ) as ownerinc_75_99k,
+	sum(OwnOccHHInc10014999K_2020_24) as ownerinc_100_149k,
+	sum(OwnOccHHInc150M_2020_24) as ownerinc_150kplus,
+	sum(RentOccHHIncL5K_2020_24) as renterinc_lt5k, 
+	sum(RentOccHHInc5999K_2020_24 ) as renterinc_5_9k,
+	sum(RentOccHHInc101499K_2020_24) as renterinc_10_14k,
+	sum(RentOccHHInc151999K_2020_24 ) as renterinc_15_19k,
+	sum(RentOccHHInc202499K_2020_24 ) as renterinc_20_24k,
+	sum(RentOccHHInc253499K_2020_24 ) as renterinc_25_34k,
+	sum(RentOccHHInc354999K_2020_24 ) as renterinc_35_49k,
+	sum(RentOccHHInc507499K_2020_24 ) as renterinc_50_74k,
+	sum(RentOccHHInc759999K_2020_24 ) as renterinc_75_99k,
+	sum(RentOccHHInc10014999K_2020_24) as renterinc_100_149k,
+	sum(RentOccHHInc150M_2020_24) as renterinc_150kplus
+
 from wards
 group by ward2022 ;
 quit;
@@ -383,6 +429,3 @@ quit;
 proc print data = summary_stats_ward;
 run;
 
-*test in and out of RFK crosswalk;
-proc sql; create table 
-	rfk_test as select rfk_group, in_a_mile, 
