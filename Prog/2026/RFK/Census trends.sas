@@ -16,7 +16,6 @@
 %include "\\sas1\DCdata\SAS\Inc\StdLocal.sas";
 
 ** Define libraries **;
-%DCData_lib( Census )
 %DCData_lib( NCDB )
 %DCData_lib( Requests )
 
@@ -243,10 +242,13 @@ run;
 data all_ncdb;
 
 set rfk_censustrend_city rfk_censustrend_wd22 rfk_censustrend_area1 rfk_censustrend_subarea1 rfk_censustrend;
+
+geo2020label=geo2020;
+format geo2020 $geo20v. geo2020label $GEO20A20.;
 run;
 
 proc export data=all_ncdb
-	outfile="&_dcdata_default_path.\Requests\Prog\2026\RFK\census_trends_2000_2020..csv"
+	outfile="&_dcdata_default_path.\Requests\Prog\2026\RFK\census_trends_2000_2020.csv"
 	dbms=csv replace;
 	run;
 
