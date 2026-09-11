@@ -1,0 +1,210 @@
+---
+title: "Additional Maps"
+author: "Leah Hendey"
+date: "2026-09-11"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(tidylog)
+library(openxlsx)
+library(ggplot2)
+library(sf)
+library(urbnthemes)
+library(urbnmapr)
+set_urbn_defaults(style = "map")
+```
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r load data}
+rfk_tracts <- read.csv("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/rfk_tracts.csv")
+
+censustrend <- read.csv("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/census_trends_2000_2020.csv") 
+  names(censustrend)[names(censustrend) == "Geo2020"] <- "GEOID"
+  censustrend$GEOID <- as.numeric(censustrend$GEOID)
+
+
+tracts <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Census_Tracts_in_2020/Census_Tracts_in_2020.shp") %>%
+  select(GEOID, geometry) %>%
+  mutate(GEOID = as.numeric(GEOID))
+
+rfk_tracts_shape <- rfk_tracts %>%
+  left_join(tracts, by = "GEOID")
+
+censustrend_shape <- tracts %>%
+  left_join(censustrend, by = "GEOID")
+
+censustrend_rfk <- rfk_tracts %>%
+  left_join( censustrend, by = "GEOID") 
+ 
+```
+```{r map prep}
+#for outlines of the RFK areas
+west_outline <- rfk_tracts_shape %>%
+  filter(west_of_anacostia == 1)
+
+east_outline <- rfk_tracts_shape %>%
+  filter(east_of_anacostia == 1)
+
+outlines <- ggplot()+
+  geom_sf(data = west_outline, aes(geometry = geometry, color = rfk_sub_group), fill = NA) +
+  geom_sf(data = east_outline, aes(geometry = geometry, color = rfk_sub_group), fill = NA) +
+  scale_color_manual(values = c("#ec008b", "#fdbf11"), name = "RFK Area")
+outlines
+```
+```{new maps}
+
+format_interval <- function(interval_text) {
+
+  text <- interval_text %>%
+    str_remove_all("\\(") %>%
+    str_remove_all("\\)") %>%
+    str_remove_all("\\[") %>%
+    str_remove_all("\\]") %>%
+    str_replace_all(",", " — ")
+
+  text <- text %>%
+    str_split(" — ") %>%
+    map(~ as.numeric(.x) %>%
+          scales::comma() %>%
+          paste0(collapse = " — ")) %>%
+    unlist() %>%
+    fct_rev()
+
+  return(text)
+}
+
+format_interval <- function(interval_factor) {
+
+  levs <- levels(interval_factor)
+
+  new_levs <- levs %>%
+    str_remove_all("\\(|\\)|\\[|\\]") %>%
+    str_split(",") %>%
+    map_chr(~ paste(scales::comma(as.numeric(.x)), collapse = " — "))
+
+  levels(interval_factor) <- new_levs
+
+  interval_factor
+}
+
+censustrend_shape2 <- censustrend_shape %>%
+  mutate(chgpop_interval = cut(
+    ChgTotPop_2000_2020, 
+    breaks=c(-1800,-200, 200, 700, 1300, 3352), 
+    labels = c(
+        "-1,800 – -200",
+        "-200 – 200",
+        "200 – 700",
+        "700 – 1,300",
+        "1,300 – 3,351"
+      ),
+      include.lowest = TRUE,
+      ordered_result = TRUE
+    )
+    )%>%
+  mutate(chgBLKpop_interval = cut(
+    ChgBlackNHBridge_2000_2020,
+    breaks=c(-1900,-500, 0, 500, 1000, 1652),
+    labels = c(
+        "-1,900 – -500",
+        "-500 – 0",
+        "0 – 500",
+        "500 – 1,000",
+        "1,000 – 1,651"
+      ),
+      include.lowest = TRUE,
+      ordered_result = TRUE
+    )
+  )
+  
+
+  pop_change <- ggplot() +
+  geom_sf(
+    data = censustrend_shape2,
+    aes(geometry = geometry,
+    # Color in tracts by the change in pop 2000-2020
+    fill = chgpop_interval
+  )) +
+  # Default is to use main urban palette, which assumes unrelated groups. We
+  # adjust colors manually to be on Urban diverging palate
+  # run view_palette() to see the colors
+  scale_fill_manual(
+    values = palette_urbn_diverging[c(2, 4, 5, 7, 8)],
+    name = "Change in Population 2000-2020"
+  )+
+  geom_sf(
+    data = west_outline,
+    aes(geometry = geometry, color = rfk_sub_group),
+    fill = NA
+  ) +
+  geom_sf(
+    data = east_outline,
+    aes(geometry = geometry, color = rfk_sub_group),
+    fill = NA
+  ) +
+  scale_color_manual(
+    values = c("#ec008b", "#fdbf11"),
+    name = "RFK Area"
+  )+
+  theme(
+    legend.position = "right",
+    legend.box = "vertical"
+  )
+pop_change
+
+ggsave(filename = "C:/Users/lhendey/Box/Greater DC/Projects/RFK Stadium Analysis/Results/CensusTrends/population change.png",
+       plot = pop_change,
+       device = "png",
+       width = 6.5,
+       dpi = 1000)
+
+ blk_change <- ggplot() +
+  geom_sf(
+    data = censustrend_shape2,
+    aes(geometry = geometry,
+    # Color in tracts by the change in pop 2000-2020
+    fill = chgBLKpop_interval
+  )) +
+  # Default is to use main urban palette, which assumes unrelated groups. We
+  # adjust colors manually to be on Urban diverging palette
+  scale_fill_manual(
+    values = palette_urbn_diverging[c(2, 4, 5, 7, 8)],
+    name = "Change in Black Population 2000-2020"
+  )+
+  geom_sf(
+    data = west_outline,
+    aes(geometry = geometry, color = rfk_sub_group),
+    fill = NA
+  ) +
+  geom_sf(
+    data = east_outline,
+    aes(geometry = geometry, color = rfk_sub_group),
+    fill = NA
+  ) +
+  scale_color_manual(
+    values = c("#ec008b", "#fdbf11"),
+    name = "RFK Area"
+  )+
+  theme(
+    legend.position = "right",
+    legend.box = "vertical"
+  )
+blk_change
+
+ggsave(filename = "C:/Users/lhendey/Box/Greater DC/Projects/RFK Stadium Analysis/Results/CensusTrends/blk population change.png",
+       plot = blk_change,
+       device = "png",
+       width = 6.5,
+       dpi = 1000)
+
+
