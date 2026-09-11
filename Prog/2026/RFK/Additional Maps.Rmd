@@ -60,6 +60,22 @@ outlines <- ggplot()+
   geom_sf(data = east_outline, aes(geometry = geometry, color = rfk_sub_group), fill = NA) +
   scale_color_manual(values = c("#ec008b", "#fdbf11"), name = "RFK Area")
 outlines
+
+metro <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Metro_Stations_Regional/Metro_Stations_Regional.shp") %>%
+  mutate(line1 = case_when(LINE == "blue, yellow"~ "yellow",
+                           LINE == "blue, orange, silver"~ "blue",
+                           LINE == "blue, silver"~ "blue",
+                           LINE == "green, yellow, orange, blue, silver"~ "green",
+                           LINE == "green, yellow"~ "green",
+                           LINE == "red, green, yellow" ~ "green",
+                           LINE == "red, blue, orange, silver"~ "red", 
+                           LINE == "red, green" ~ "green", 
+                           LINE == "orange, silver" ~ "orange"
+                           ),
+         line_name = if_else(is.na(line1), LINE, line1), 
+         line_color = if_else(line_name == "silver", "grey", line_name))
+dc_metro <- metro %>%
+  st_filter(., dc, .predicate = st_intersects)
 ```
 ```{new maps}
 
