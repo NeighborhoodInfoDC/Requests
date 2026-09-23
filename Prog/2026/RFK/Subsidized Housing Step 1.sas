@@ -51,7 +51,7 @@ Since the file also has the latitude/longitude and x/y coordinates, we can also 
  Modifications:
 **************************************************************************/
 
-%include "\\sas1\DCdata\SAS\Inc\StdRemote.sas";
+%include "F:\DCData\SAS\Inc\StdRemote.sas";
 
 ** Define libraries **;
 %DCData_lib( PresCat )
@@ -274,7 +274,7 @@ run;
 
 *export to .csv to put in R;
 proc export data=Project_subsidy_wide
-	outfile='\\sas1\dcdata\Libraries\Requests\Prog\2026\RFK\Data\assisted_living_wide.xlsx'
+	outfile="&_dcdata_default_path\Requests\Prog\2026\RFK\Data\assisted_living_wide.xlsx"
 	dbms=xlsx
 	replace;
 run;
