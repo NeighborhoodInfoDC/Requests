@@ -197,6 +197,38 @@ addWorksheet(wb, "all_subsidy_types")
 writeData(wb, "all_subsidy_types", all_subsidy_types)
 ```
 
+```{r tables - All subsidy types--projects}
+#tables for all subsidy types - by geography, them combine geographies into table
+allsub_p_dc <- subsidized_wide_rfk_shape %>%
+  mutate(place = "DC") %>%
+  group_by(place) %>%
+  summarise(across(starts_with("subtype_"), ~ sum(!is.na(.x))))
+
+allsub_p_rfk <- subsidized_wide_rfk_shape %>%
+  filter(rfk_group == 1) %>%
+  mutate(place = "RFK") %>%
+  group_by(place) %>%
+  summarise(across(starts_with("subtype_"), ~ sum(!is.na(.x))))
+
+allsub_p_subg <- subsidized_wide_rfk_shape %>%
+  filter(!is.na(rfk_sub_group)) %>%
+  mutate(place = rfk_sub_group) %>%
+  group_by(place) %>%
+  summarise(across(starts_with("subtype_"), ~ sum(!is.na(.x))))
+
+allsub_p_w7 <- subsidized_wide_rfk_shape %>%
+  filter(ward7 == 1) %>%
+  mutate(place = "Ward 7") %>%
+  group_by(place) %>%
+  summarise(across(starts_with("subtype_"), ~ sum(!is.na(.x))))
+
+all_subsidy_types_projects <- rbind(allsub_p_dc, allsub_p_rfk, allsub_p_subg, allsub_p_w7) %>%
+  st_drop_geometry()
+
+addWorksheet(wb, "all_subsidy_types_projects")
+writeData(wb, "all_subsidy_types_projects", all_subsidy_types_projects)
+```
+
 ```{r export tables}
 saveWorkbook(wb, "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/subsidized results v2.xlsx", overwrite = T)
 ```
