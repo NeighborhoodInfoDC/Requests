@@ -376,7 +376,13 @@ LIHTC_rfk <- ggplot() +
   #subsidized units
   geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_LIHTC)) %>% st_filter(rfk_only_shape, .predicate = st_intersects), size=2, aes(geometry = geometry), color = pinks[5]) + 
   scale_fill_manual(values = c(pinks[1], yellows[1]), name = "" ) +
-  theme( legend.text = element_text( size = 14 ) ) +
+  theme( 
+    legend.text = element_text( size = 14 ),
+    legend.position = "inside",
+    legend.position.inside = c(1.10, 0.05), # 2. Increase the X coordinate past 1.0 (e.g., 1.10)
+    legend.justification = c(1, 0),
+    plot.margin = margin(r = 50)            # 3. Add right margin space so the legend has room to sit
+  ) +
   #ggtitle("Subsidized Projects with LIHTC") +
   #Zoom in
   coord_sf(
@@ -419,7 +425,13 @@ HPTF_rfk <- ggplot() +
   #projects
   geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_DC_housing_production_tr)) %>% st_filter(rfk_only_shape, .predicate = st_intersects), size=2, aes(geometry = geometry), color = blues[5]) + 
   scale_fill_manual(values = c(pinks[1], yellows[1]), name = "" ) +
-  theme( legend.text = element_text( size = 14 ) ) +
+  theme( 
+    legend.text = element_text( size = 14 ),
+    legend.position = "inside",
+    legend.position.inside = c(1.10, 0.05), # 2. Increase the X coordinate past 1.0 (e.g., 1.10)
+    legend.justification = c(1, 0),
+    plot.margin = margin(r = 50)            # 3. Add right margin space so the legend has room to sit
+  ) +
   #ggtitle("Subsidized Projects with DC HPTF") +
   #Zoom in
   coord_sf(
@@ -462,7 +474,13 @@ sec8_rfk <- ggplot() +
   #projects
   geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_Project_based_section_8)) %>% st_filter(rfk_only_shape, .predicate = st_intersects), size=2, aes(geometry = geometry), color = greens[5]) + 
   scale_fill_manual(values = c(pinks[1], yellows[1]), name = "" ) +
-  theme( legend.text = element_text( size = 14 ) ) +
+  theme( 
+    legend.text = element_text( size = 14 ),
+    legend.position = "inside",
+    legend.position.inside = c(1.10, 0.05), # 2. Increase the X coordinate past 1.0 (e.g., 1.10)
+    legend.justification = c(1, 0),
+    plot.margin = margin(r = 50)            # 3. Add right margin space so the legend has room to sit
+  ) +
   #ggtitle("Subsidized Projects with DC sec8") +
   #Zoom in
   coord_sf(
@@ -506,7 +524,13 @@ pubH_rfk <- ggplot() +
   #projects
   geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_Public_housing)) %>% st_filter(rfk_only_shape, .predicate = st_intersects), size=2, aes(geometry = geometry), color = yellows[8]) + 
   scale_fill_manual(values = c(pinks[1], yellows[1]), name = "" ) +
-  theme( legend.text = element_text( size = 14 ) ) +
+  theme( 
+    legend.text = element_text( size = 14 ),
+    legend.position = "inside",
+    legend.position.inside = c(1.10, 0.05), # 2. Increase the X coordinate past 1.0 (e.g., 1.10)
+    legend.justification = c(1, 0),
+    plot.margin = margin(r = 50)            # 3. Add right margin space so the legend has room to sit
+  ) +
   #ggtitle("Public Housing Projects") +
   #Zoom in
   coord_sf(
@@ -549,7 +573,13 @@ LECoop_rfk <- ggplot() +
   #projects
   geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_Limited_equity_cooperati)) %>% st_filter(rfk_only_shape, .predicate = st_intersects), size=2, aes(geometry = geometry), color = greys[4]) + 
   scale_fill_manual(values = c(pinks[1], yellows[1]), name = "" ) +
-  theme( legend.text = element_text( size = 14 ) ) +
+  theme( 
+    legend.text = element_text( size = 14 ),
+    legend.position = "inside",
+    legend.position.inside = c(1.10, 0.05), # 2. Increase the X coordinate past 1.0 (e.g., 1.10)
+    legend.justification = c(1, 0),
+    plot.margin = margin(r = 50)            # 3. Add right margin space so the legend has room to sit
+  ) +
   #ggtitle("Limited Equity Cooperatives") +
   #Zoom in
   coord_sf(
