@@ -228,6 +228,45 @@ all_subsidy_types_projects <- rbind(allsub_p_dc, allsub_p_rfk, allsub_p_subg, al
 addWorksheet(wb, "all_subsidy_types_projects")
 writeData(wb, "all_subsidy_types_projects", all_subsidy_types_projects)
 ```
+```{r subsidy by expiration}
+
+poa_end_LIHTC <- subsidized_wide_rfk_shape %>%
+  filter(!is.na(rfk_sub_group)) %>%
+  filter(!is.na(Poa_end_LIHTC)) %>%
+  mutate(place = rfk_sub_group) %>%
+  select(place, Proj_Name, Poa_end_LIHTC, subtype_LIHTC) %>%
+  arrange(place, Poa_end_LIHTC, Proj_Name)
+
+poa_end_LIHTC$geometry <- as.character(poa_end_LIHTC$geometry)
+
+addWorksheet(wb, "poa_end_LIHTC")
+writeData(wb, "poa_end_LIHTC", poa_end_LIHTC)
+
+poa_end_Sec8 <- subsidized_wide_rfk_shape %>%
+  filter(!is.na(rfk_sub_group)) %>%
+  filter(!is.na(Poa_end_Project_based_section_8)) %>%
+  mutate(place = rfk_sub_group) %>%
+  select(place, Proj_Name, Poa_end_Project_based_section_8, subtype_Project_based_section_8) %>%
+  arrange(place, Poa_end_Project_based_section_8, Proj_Name)
+
+poa_end_Sec8$geometry <- as.character(poa_end_Sec8$geometry)
+
+addWorksheet(wb, "poa_end_Sec8")
+writeData(wb, "poa_end_Sec8", poa_end_Sec8)
+
+poa_end_Sec202811 <- subsidized_wide_rfk_shape %>%
+  filter(!is.na(rfk_sub_group)) %>%
+  filter(!is.na(Poa_end_Section_202_811)) %>%
+  mutate(place = rfk_sub_group) %>%
+  select(place, Proj_Name, Poa_end_Section_202_811, subtype_Section_202_811) %>%
+  arrange(place, Poa_end_Section_202_811, Proj_Name)
+
+poa_end_Sec202811$geometry <- as.character(poa_end_Sec202811$geometry)
+
+addWorksheet(wb, "poa_end_Sec202811")
+writeData(wb, "poa_end_Sec202811", poa_end_Sec202811)
+```
+
 
 ```{r export tables}
 saveWorkbook(wb, "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/subsidized results v2.xlsx", overwrite = T)
@@ -594,5 +633,56 @@ ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/subsidy
        height = 5,
        width = 8.5,
        dpi = 1000)
+
+#Section 202/811 Map
+Sec202811_DC <- ggplot() +
+  #RFK tracts
+  geom_sf(data = rfk_only_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = "black") +
+#ward outline
+  geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
+  #projects
+  geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_Section_202_811)), aes(geometry = geometry), color = reds[6]) + 
+  scale_fill_manual(values = c(pinks[1], yellows[1]), name = "RFK Adjacent Area") +
+  ggtitle("Section 202/811")
+Sec202811_DC
+
+ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/subsidy maps/Sec202811_DC.png",
+       plot = Sec202811_DC,
+       device = "png",
+       width = 6.5,
+       dpi = 1000)
+
+#Section 202/811 Map, zoomed in
+Sec202811_rfk <- ggplot() +
+  #RFK tracts
+  geom_sf(data = rfk_only_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = "black") +
+#ward outline
+  geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
+  #projects
+  geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_Section_202_811)) %>% st_filter(rfk_only_shape, .predicate = st_intersects), size=2, aes(geometry = geometry), color = reds[6]) + 
+  scale_fill_manual(values = c(pinks[1], yellows[1]), name = "" ) +
+  theme( 
+    legend.text = element_text( size = 14 ),
+    legend.position = "inside",
+    legend.position.inside = c(1.10, 0.05), # 2. Increase the X coordinate past 1.0 (e.g., 1.10)
+    legend.justification = c(1, 0),
+    plot.margin = margin(r = 50)            # 3. Add right margin space so the legend has room to sit
+  ) +
+  #ggtitle("Section 202/811") +
+  #Zoom in
+  coord_sf(
+    xlim = c(xmin, xmax), 
+    ylim = c(ymin, ymax),
+    expand = FALSE)
+Sec202811_rfk
+
+ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/subsidy maps/Sec202811_rfk.png",
+       plot = Sec202811_rfk,
+       device = "png",
+       height = 5,
+       width = 8.5,
+       dpi = 1000)
 ```
+
+
 
