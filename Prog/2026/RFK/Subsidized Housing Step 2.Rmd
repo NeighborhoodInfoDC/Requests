@@ -481,5 +481,46 @@ ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/subsidy
        device = "png",
        width = 6.5,
        dpi = 1000)
+
+#Limited Equity Coop Map
+pubH_DC <- ggplot() +
+  #RFK tracts
+  geom_sf(data = rfk_only_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = "black") +
+#ward outline
+  geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
+  #subsidized units
+  geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_Limited_equity_cooperati)), aes(geometry = geometry), color = yellows[8]) + 
+  scale_fill_manual(values = c(pinks[1], yellows[1]), name = "RFK Adjacent Area") +
+  ggtitle("Limited Equity Cooperatives")
+pubH_DC
+
+ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/subsidy maps/LECoop_DC.png",
+       plot = pubH_DC,
+       device = "png",
+       width = 6.5,
+       dpi = 1000)
+
+#Public Housing Map, zoomed in
+pubH_rfk <- ggplot() +
+  #RFK tracts
+  geom_sf(data = rfk_only_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = "black") +
+#ward outline
+  geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
+  #subsidized units
+  geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_Limited_equity_cooperati)) %>% st_filter(rfk_only_shape, .predicate = st_intersects), aes(geometry = geometry), color = yellows[8]) + 
+  scale_fill_manual(values = c(pinks[1], yellows[1]), name = "RFK Adjacent Area") +
+  ggtitle("Limited Equity Cooperatives") +
+  #Zoom in
+  coord_sf(
+    xlim = c(xmin, xmax), 
+    ylim = c(ymin, ymax),
+    expand = FALSE)
+pubH_rfk
+
+ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/subsidy maps/LECoop_rfk.png",
+       plot = pubH_rfk,
+       device = "png",
+       width = 6.5,
+       dpi = 1000)
 ```
 
