@@ -343,7 +343,8 @@ LIHTC_rfk <- ggplot() +
   geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
   #subsidized units
   geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_LIHTC)) %>% st_filter(rfk_only_shape, .predicate = st_intersects), size=2, aes(geometry = geometry), color = pinks[5]) + 
-  scale_fill_manual(values = c(pinks[1], yellows[1]), name = "RFK Adjacent Area") +
+  scale_fill_manual(values = c(pinks[1], yellows[1]), name = "" ) +
+  theme( legend.text = element_text( size = 14 ) ) +
   #ggtitle("Subsidized Projects with LIHTC") +
   #Zoom in
   coord_sf(
@@ -355,7 +356,8 @@ LIHTC_rfk
 ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/subsidy maps/LIHTC_rfk.png",
        plot = LIHTC_rfk,
        device = "png",
-       width = 6.5,
+       height = 5,
+       width = 8.5,
        dpi = 1000)
 
 #HPTF Map
@@ -384,7 +386,8 @@ HPTF_rfk <- ggplot() +
   geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
   #projects
   geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_DC_housing_production_tr)) %>% st_filter(rfk_only_shape, .predicate = st_intersects), size=2, aes(geometry = geometry), color = blues[5]) + 
-  scale_fill_manual(values = c(pinks[1], yellows[1]), name = "RFK Adjacent Area") +
+  scale_fill_manual(values = c(pinks[1], yellows[1]), name = "" ) +
+  theme( legend.text = element_text( size = 14 ) ) +
   #ggtitle("Subsidized Projects with DC HPTF") +
   #Zoom in
   coord_sf(
@@ -396,7 +399,8 @@ HPTF_rfk
 ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/subsidy maps/HPTF_rfk.png",
        plot = HPTF_rfk,
        device = "png",
-       width = 6.5,
+       height = 5,
+       width = 8.5,
        dpi = 1000)
 
 #Project-based Sec8 Map
@@ -425,7 +429,8 @@ sec8_rfk <- ggplot() +
   geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
   #projects
   geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_Project_based_section_8)) %>% st_filter(rfk_only_shape, .predicate = st_intersects), size=2, aes(geometry = geometry), color = greens[5]) + 
-  scale_fill_manual(values = c(pinks[1], yellows[1]), name = "RFK Adjacent Area") +
+  scale_fill_manual(values = c(pinks[1], yellows[1]), name = "" ) +
+  theme( legend.text = element_text( size = 14 ) ) +
   #ggtitle("Subsidized Projects with DC sec8") +
   #Zoom in
   coord_sf(
@@ -437,7 +442,8 @@ sec8_rfk
 ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/subsidy maps/sec8_rfk.png",
        plot = sec8_rfk,
        device = "png",
-       width = 6.5,
+       height = 5,
+       width = 8.5,
        dpi = 1000)
 
 
@@ -467,7 +473,8 @@ pubH_rfk <- ggplot() +
   geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
   #projects
   geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_Public_housing)) %>% st_filter(rfk_only_shape, .predicate = st_intersects), size=2, aes(geometry = geometry), color = yellows[8]) + 
-  scale_fill_manual(values = c(pinks[1], yellows[1]), name = "RFK Adjacent Area") +
+  scale_fill_manual(values = c(pinks[1], yellows[1]), name = "" ) +
+  theme( legend.text = element_text( size = 14 ) ) +
   #ggtitle("Public Housing Projects") +
   #Zoom in
   coord_sf(
@@ -479,7 +486,8 @@ pubH_rfk
 ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/subsidy maps/pubH_rfk.png",
        plot = pubH_rfk,
        device = "png",
-       width = 6.5,
+       height = 5,
+       width = 8.5,
        dpi = 1000)
 
 #Limited Equity Coop Map
@@ -508,7 +516,8 @@ LECoop_rfk <- ggplot() +
   geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
   #projects
   geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_Limited_equity_cooperati)) %>% st_filter(rfk_only_shape, .predicate = st_intersects), size=2, aes(geometry = geometry), color = greys[4]) + 
-  scale_fill_manual(values = c(pinks[1], yellows[1]), name = "RFK Adjacent Area") +
+  scale_fill_manual(values = c(pinks[1], yellows[1]), name = "" ) +
+  theme( legend.text = element_text( size = 14 ) ) +
   #ggtitle("Limited Equity Cooperatives") +
   #Zoom in
   coord_sf(
@@ -520,7 +529,8 @@ LECoop_rfk
 ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/subsidy maps/LECoop_rfk.png",
        plot = LECoop_rfk,
        device = "png",
-       width = 6.5,
+       height = 5,
+       width = 8.5,
        dpi = 1000)
 ```
 
