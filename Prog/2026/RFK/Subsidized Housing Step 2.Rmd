@@ -13,6 +13,7 @@ library(readxl)
 library(sf)
 library(ggplot2)
 library(urbnthemes)
+#devtools::install_github("UrbanInstitute/urbnmapr")
 library(urbnmapr)
 set_urbn_defaults(style = "map")
 library(openxlsx)
@@ -315,6 +316,7 @@ ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/proj_ty
 ```
 
 ```{r maps - Duplicated}
+#SEPARATE MAPS BY SUBSIDY TYPES
 #LIHTC Map
 LIHTC_DC <- ggplot() +
   #RFK tracts
@@ -340,7 +342,7 @@ LIHTC_rfk <- ggplot() +
 #ward outline
   geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
   #subsidized units
-  geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_LIHTC)), aes(geometry = geometry), color = pinks[5]) + 
+  geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_LIHTC)) %>% st_filter(rfk_only_shape, .predicate = st_intersects), aes(geometry = geometry), color = pinks[5]) + 
   scale_fill_manual(values = c(pinks[1], yellows[1]), name = "RFK Adjacent Area") +
   ggtitle("Subsidized Projects with LIHTC") +
   #Zoom in
@@ -381,7 +383,7 @@ HPTF_rfk <- ggplot() +
 #ward outline
   geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
   #subsidized units
-  geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_DC_housing_production_tr)), aes(geometry = geometry), color = blues[5]) + 
+  geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_DC_housing_production_tr)) %>% st_filter(rfk_only_shape, .predicate = st_intersects), aes(geometry = geometry), color = blues[5]) + 
   scale_fill_manual(values = c(pinks[1], yellows[1]), name = "RFK Adjacent Area") +
   ggtitle("Subsidized Projects with DC HPTF") +
   #Zoom in
@@ -397,7 +399,7 @@ ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/subsidy
        width = 6.5,
        dpi = 1000)
 
-#sec8 Map
+#Project-based Sec8 Map
 sec8_DC <- ggplot() +
   #RFK tracts
   geom_sf(data = rfk_only_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = "black") +
@@ -422,7 +424,7 @@ sec8_rfk <- ggplot() +
 #ward outline
   geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
   #subsidized units
-  geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_Project_based_section_8)), aes(geometry = geometry), color = greens[5]) + 
+  geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_Project_based_section_8)) %>% st_filter(rfk_only_shape, .predicate = st_intersects), aes(geometry = geometry), color = greens[5]) + 
   scale_fill_manual(values = c(pinks[1], yellows[1]), name = "RFK Adjacent Area") +
   ggtitle("Subsidized Projects with DC sec8") +
   #Zoom in
@@ -464,7 +466,7 @@ pubH_rfk <- ggplot() +
 #ward outline
   geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
   #subsidized units
-  geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_Public_housing)), aes(geometry = geometry), color = yellows[8]) + 
+  geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_Public_housing)) %>% st_filter(rfk_only_shape, .predicate = st_intersects), aes(geometry = geometry), color = yellows[8]) + 
   scale_fill_manual(values = c(pinks[1], yellows[1]), name = "RFK Adjacent Area") +
   ggtitle("Public Housing Projects") +
   #Zoom in
