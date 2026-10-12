@@ -32,16 +32,13 @@
 
 * load Data and filter to saledate from 2000-2025;
 data sales;
-set REALPROP.sales_res_clean;
+set REALPROP.sales_res_clean (keep=ssl saledate saleprice geo2020 Ward2022 ui_proptype);
 *esale_date = input(SALEDATE, ddmmyy10.);
 sale_year = year(SALEDATE);
 if sale_year <= 2025 AND sale_year >= 2000; 
 censustract = input(geo2020, 10.);
-run;
 
 *Convert dollar values to 2025 for sales price;
-data sales2;
-set sales;
 	%dollar_convert(SALEPRICE, SALEPRICE_2025, 
 					sale_year, 2025, 
 					series = CUUR0000SA0L2, 
@@ -53,7 +50,7 @@ run;
 * Read in RFK tracts;
 proc import 
 	out = rfk_tracts 
-	datafile = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/rfk_tracts.csv"
+	datafile = "&_dcdata_r_path/Requests/Prog/2026/RFK/Result/rfk_tracts.csv"
 	DBMS = csv REPLACE;
 run;
 
@@ -65,9 +62,11 @@ run;
 *merge RFK tracts with property data;
 proc sql; create table sales_rfk as select
 	*
-	from rfk_tracts as a left join sales2 as b
+	from rfk_tracts as a left join sales as b
 	on a.censustract = b.censustract;
 quit;
+
+%File_info( data=sales_rfk, freqvars=rfk_sub_group2 rfk_group )
 
 
 * stats by RFK sub group;
