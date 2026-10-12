@@ -228,11 +228,11 @@ all_subsidy_types_projects <- rbind(allsub_p_dc, allsub_p_rfk, allsub_p_subg, al
 addWorksheet(wb, "all_subsidy_types_projects")
 writeData(wb, "all_subsidy_types_projects", all_subsidy_types_projects)
 ```
-```{r subsidy by expiration}
+```{r project lists by subsidy and by expiration (if applicable)}
 
 poa_end_LIHTC <- subsidized_wide_rfk_shape %>%
   filter(!is.na(rfk_sub_group)) %>%
-  filter(!is.na(Poa_end_LIHTC)) %>%
+  filter(!is.na(subtype_LIHTC)) %>%
   mutate(place = rfk_sub_group) %>%
   select(place, Proj_Name, Poa_end_LIHTC, subtype_LIHTC) %>%
   arrange(place, Poa_end_LIHTC, Proj_Name)
@@ -242,9 +242,21 @@ poa_end_LIHTC$geometry <- as.character(poa_end_LIHTC$geometry)
 addWorksheet(wb, "poa_end_LIHTC")
 writeData(wb, "poa_end_LIHTC", poa_end_LIHTC)
 
+poa_end_HPTF <- subsidized_wide_rfk_shape %>%
+  filter(!is.na(rfk_sub_group)) %>%
+  filter(!is.na(subtype_DC_housing_production_tr)) %>%
+  mutate(place = rfk_sub_group) %>%
+  select(place, Proj_Name, subtype_DC_housing_production_tr) %>%
+  arrange(place, Proj_Name)
+
+poa_end_HPTF$geometry <- as.character(poa_end_HPTF$geometry)
+
+addWorksheet(wb, "poa_end_HPTF")
+writeData(wb, "poa_end_HPTF", poa_end_HPTF)
+
 poa_end_Sec8 <- subsidized_wide_rfk_shape %>%
   filter(!is.na(rfk_sub_group)) %>%
-  filter(!is.na(Poa_end_Project_based_section_8)) %>%
+  filter(!is.na(subtype_Project_based_section_8)) %>%
   mutate(place = rfk_sub_group) %>%
   select(place, Proj_Name, Poa_end_Project_based_section_8, subtype_Project_based_section_8) %>%
   arrange(place, Poa_end_Project_based_section_8, Proj_Name)
@@ -254,9 +266,33 @@ poa_end_Sec8$geometry <- as.character(poa_end_Sec8$geometry)
 addWorksheet(wb, "poa_end_Sec8")
 writeData(wb, "poa_end_Sec8", poa_end_Sec8)
 
+poa_end_PH <- subsidized_wide_rfk_shape %>%
+  filter(!is.na(rfk_sub_group)) %>%
+  filter(!is.na(subtype_Public_housing)) %>%
+  mutate(place = rfk_sub_group) %>%
+  select(place, Proj_Name, subtype_Public_housing) %>%
+  arrange(place, Proj_Name)
+
+poa_end_PH$geometry <- as.character(poa_end_PH$geometry)
+
+addWorksheet(wb, "poa_end_PH")
+writeData(wb, "poa_end_PH", poa_end_PH)
+
+poa_end_LECoop <- subsidized_wide_rfk_shape %>%
+  filter(!is.na(rfk_sub_group)) %>%
+  filter(!is.na(subtype_Limited_equity_cooperati)) %>%
+  mutate(place = rfk_sub_group) %>%
+  select(place, Proj_Name, subtype_Limited_equity_cooperati) %>%
+  arrange(place, Proj_Name)
+
+poa_end_LECoop$geometry <- as.character(poa_end_LECoop$geometry)
+
+addWorksheet(wb, "poa_end_LECoop")
+writeData(wb, "poa_end_LECoop", poa_end_LECoop)
+
 poa_end_Sec202811 <- subsidized_wide_rfk_shape %>%
   filter(!is.na(rfk_sub_group)) %>%
-  filter(!is.na(Poa_end_Section_202_811)) %>%
+  filter(!is.na(subtype_Section_202_811)) %>%
   mutate(place = rfk_sub_group) %>%
   select(place, Proj_Name, Poa_end_Section_202_811, subtype_Section_202_811) %>%
   arrange(place, Poa_end_Section_202_811, Proj_Name)
