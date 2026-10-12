@@ -54,6 +54,8 @@ proc import
 	DBMS = csv REPLACE;
 run;
 
+%File_info( data=rfk_tracts )
+
 data rfk_tracts;
 set rfk_tracts;
 censustract = input(geoid, 10.);
@@ -63,7 +65,8 @@ run;
 proc sql; create table sales_rfk as select
 	*
 	from rfk_tracts as a left join sales as b
-	on a.censustract = b.censustract;
+	on a.censustract = b.censustract
+  where not( missing( saleprice_2025 ) or missing( sale_year ) );
 quit;
 
 %File_info( data=sales_rfk, freqvars=rfk_sub_group2 rfk_group )
@@ -123,3 +126,44 @@ quit;
 
 proc print data=sumstats_dc;
 run;
+
+
+** Create tract-level data for mapping **;
+
+data sales_rfk_map;
+
+  set sales_rfk;
+  
+  if 2023 <= sale_year <= 2025 then do;
+    sales_2023_2025 = 1;
+    saleprice_2023_2025 = saleprice_2025;
+  end;
+  else if 2013 <= sale_year <= 2015 then do;
+    sales_2013_2015 = 1;
+    saleprice_2013_2015 = saleprice_2025;
+  end;
+  else if 2003 <= sale_year <= 2005 then do;
+    sales_2003_2005 = 1;
+    saleprice_2003_2005 = saleprice_2025;
+  end;
+  
+run;
+
+%File_info( data=sales_rfk_map )
+
+proc sql; create table sumstats_tract as select
+  censustract, ui_proptype, 
+  /* number of sales */
+  sum( sales_2023_2025 ) as sales_2023_2025,
+  sum( sales_2013_2015 ) as sales_2013_2015,
+  sum( sales_2003_2005 ) as sales_2003_2005,
+  /* median sales price */
+  median( saleprice_2023_2025 ) as saleprice_2023_2025,
+  median( saleprice_2013_2015 ) as saleprice_2013_2015,
+  median( saleprice_2003_2005 ) as saleprice_2003_2005
+  from sales_rfk_map
+  /*where not( missing( sale_year ) )*/
+  group by ui_proptype, censustract;
+quit;
+
+%File_info( data=sumstats_tract, freqvars=ui_proptype sales_2003_2005 sales_2013_2015 sales_2023_2025 )
