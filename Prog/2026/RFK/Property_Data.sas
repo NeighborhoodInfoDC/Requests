@@ -1,26 +1,30 @@
-/*
-Project: RFK Stadium DCData
-Author: Katie Visalli
-Date: 6/12/26
+/**************************************************************************
+ Program:  Property_Data.sas
+ Library:  Requests
+ Project:  Urban-Greater DC
+ Author:   K. Visalli
+ Created:  6/12/26
+ Version:  SAS 9.4
+ Environment:  Remote session (SAS1)
+ 
+ Description: Property data to compile for RFK stadium analysis.
 
-Property data to compile for RFK stadium analysis.
+  Property sales
+  Source: Realprop.Sales_res_clean
+  Universe: Residential property sales, 2000 - 2025 [saledate]
 
-Property sales
-Source: Realprop.Sales_res_clean
-Universe: Residential property sales, 2000 - 2025 [saledate]
+  Single family houses [ui_proptype=10]
+  Number of sales by year
+  Median sales price (2025 $) by year
+  Condominiums [ui_proptype=11]
+  Number of sales by year
+  Median sales price (2025 $) by year
 
-Single family houses [ui_proptype=10]
-Number of sales by year
-Median sales price (2025 $) by year
-Condominiums [ui_proptype=11]
-Number of sales by year
-Median sales price (2025 $) by year
+  on RFK areas and Ward2022
 
-on RFK areas and Ward2022
-*/
+ Modifications:
+**************************************************************************/
 
-
-* Set Up;
 %include "F:\DCDATA\SAS\Inc\StdRemote.sas";
 
 * Data Libraries ;
