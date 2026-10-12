@@ -13,6 +13,7 @@ library(readxl)
 library(sf)
 library(ggplot2)
 library(urbnthemes)
+#devtools::install_github("UrbanInstitute/urbnmapr")
 library(urbnmapr)
 set_urbn_defaults(style = "map")
 library(openxlsx)
@@ -196,6 +197,113 @@ addWorksheet(wb, "all_subsidy_types")
 writeData(wb, "all_subsidy_types", all_subsidy_types)
 ```
 
+```{r tables - All subsidy types--projects}
+#tables for all subsidy types - by geography, them combine geographies into table
+allsub_p_dc <- subsidized_wide_rfk_shape %>%
+  mutate(place = "DC") %>%
+  group_by(place) %>%
+  summarise(across(starts_with("subtype_"), ~ sum(!is.na(.x))))
+
+allsub_p_rfk <- subsidized_wide_rfk_shape %>%
+  filter(rfk_group == 1) %>%
+  mutate(place = "RFK") %>%
+  group_by(place) %>%
+  summarise(across(starts_with("subtype_"), ~ sum(!is.na(.x))))
+
+allsub_p_subg <- subsidized_wide_rfk_shape %>%
+  filter(!is.na(rfk_sub_group)) %>%
+  mutate(place = rfk_sub_group) %>%
+  group_by(place) %>%
+  summarise(across(starts_with("subtype_"), ~ sum(!is.na(.x))))
+
+allsub_p_w7 <- subsidized_wide_rfk_shape %>%
+  filter(ward7 == 1) %>%
+  mutate(place = "Ward 7") %>%
+  group_by(place) %>%
+  summarise(across(starts_with("subtype_"), ~ sum(!is.na(.x))))
+
+all_subsidy_types_projects <- rbind(allsub_p_dc, allsub_p_rfk, allsub_p_subg, allsub_p_w7) %>%
+  st_drop_geometry()
+
+addWorksheet(wb, "all_subsidy_types_projects")
+writeData(wb, "all_subsidy_types_projects", all_subsidy_types_projects)
+```
+```{r project lists by subsidy and by expiration (if applicable)}
+
+poa_end_LIHTC <- subsidized_wide_rfk_shape %>%
+  filter(!is.na(rfk_sub_group)) %>%
+  filter(!is.na(subtype_LIHTC)) %>%
+  mutate(place = rfk_sub_group) %>%
+  select(place, Proj_Name, Poa_end_LIHTC, subtype_LIHTC) %>%
+  arrange(place, Poa_end_LIHTC, Proj_Name)
+
+poa_end_LIHTC$geometry <- as.character(poa_end_LIHTC$geometry)
+
+addWorksheet(wb, "poa_end_LIHTC")
+writeData(wb, "poa_end_LIHTC", poa_end_LIHTC)
+
+poa_end_HPTF <- subsidized_wide_rfk_shape %>%
+  filter(!is.na(rfk_sub_group)) %>%
+  filter(!is.na(subtype_DC_housing_production_tr)) %>%
+  mutate(place = rfk_sub_group) %>%
+  select(place, Proj_Name, subtype_DC_housing_production_tr) %>%
+  arrange(place, Proj_Name)
+
+poa_end_HPTF$geometry <- as.character(poa_end_HPTF$geometry)
+
+addWorksheet(wb, "poa_end_HPTF")
+writeData(wb, "poa_end_HPTF", poa_end_HPTF)
+
+poa_end_Sec8 <- subsidized_wide_rfk_shape %>%
+  filter(!is.na(rfk_sub_group)) %>%
+  filter(!is.na(subtype_Project_based_section_8)) %>%
+  mutate(place = rfk_sub_group) %>%
+  select(place, Proj_Name, Poa_end_Project_based_section_8, subtype_Project_based_section_8) %>%
+  arrange(place, Poa_end_Project_based_section_8, Proj_Name)
+
+poa_end_Sec8$geometry <- as.character(poa_end_Sec8$geometry)
+
+addWorksheet(wb, "poa_end_Sec8")
+writeData(wb, "poa_end_Sec8", poa_end_Sec8)
+
+poa_end_PH <- subsidized_wide_rfk_shape %>%
+  filter(!is.na(rfk_sub_group)) %>%
+  filter(!is.na(subtype_Public_housing)) %>%
+  mutate(place = rfk_sub_group) %>%
+  select(place, Proj_Name, subtype_Public_housing) %>%
+  arrange(place, Proj_Name)
+
+poa_end_PH$geometry <- as.character(poa_end_PH$geometry)
+
+addWorksheet(wb, "poa_end_PH")
+writeData(wb, "poa_end_PH", poa_end_PH)
+
+poa_end_LECoop <- subsidized_wide_rfk_shape %>%
+  filter(!is.na(rfk_sub_group)) %>%
+  filter(!is.na(subtype_Limited_equity_cooperati)) %>%
+  mutate(place = rfk_sub_group) %>%
+  select(place, Proj_Name, subtype_Limited_equity_cooperati) %>%
+  arrange(place, Proj_Name)
+
+poa_end_LECoop$geometry <- as.character(poa_end_LECoop$geometry)
+
+addWorksheet(wb, "poa_end_LECoop")
+writeData(wb, "poa_end_LECoop", poa_end_LECoop)
+
+poa_end_Sec202811 <- subsidized_wide_rfk_shape %>%
+  filter(!is.na(rfk_sub_group)) %>%
+  filter(!is.na(subtype_Section_202_811)) %>%
+  mutate(place = rfk_sub_group) %>%
+  select(place, Proj_Name, Poa_end_Section_202_811, subtype_Section_202_811) %>%
+  arrange(place, Poa_end_Section_202_811, Proj_Name)
+
+poa_end_Sec202811$geometry <- as.character(poa_end_Sec202811$geometry)
+
+addWorksheet(wb, "poa_end_Sec202811")
+writeData(wb, "poa_end_Sec202811", poa_end_Sec202811)
+```
+
+
 ```{r export tables}
 saveWorkbook(wb, "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/subsidized results v2.xlsx", overwrite = T)
 ```
@@ -315,13 +423,14 @@ ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/proj_ty
 ```
 
 ```{r maps - Duplicated}
+#SEPARATE MAPS BY SUBSIDY TYPES
 #LIHTC Map
 LIHTC_DC <- ggplot() +
   #RFK tracts
   geom_sf(data = rfk_only_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = "black") +
 #ward outline
   geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
-  #subsidized units
+  #projects
   geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_LIHTC)), aes(geometry = geometry), color = pinks[5]) + 
   scale_fill_manual(values = c(pinks[1], yellows[1]), name = "RFK Adjacent Area") +
   ggtitle("Subsidized Projects with LIHTC")
@@ -340,9 +449,16 @@ LIHTC_rfk <- ggplot() +
 #ward outline
   geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
   #subsidized units
-  geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_LIHTC)), aes(geometry = geometry), color = pinks[5]) + 
-  scale_fill_manual(values = c(pinks[1], yellows[1]), name = "RFK Adjacent Area") +
-  ggtitle("Subsidized Projects with LIHTC") +
+  geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_LIHTC)) %>% st_filter(rfk_only_shape, .predicate = st_intersects), size=2, aes(geometry = geometry), color = pinks[5]) + 
+  scale_fill_manual(values = c(pinks[1], yellows[1]), name = "" ) +
+  theme( 
+    legend.text = element_text( size = 14 ),
+    legend.position = "inside",
+    legend.position.inside = c(1.10, 0.05), # 2. Increase the X coordinate past 1.0 (e.g., 1.10)
+    legend.justification = c(1, 0),
+    plot.margin = margin(r = 50)            # 3. Add right margin space so the legend has room to sit
+  ) +
+  #ggtitle("Subsidized Projects with LIHTC") +
   #Zoom in
   coord_sf(
     xlim = c(xmin, xmax), 
@@ -353,7 +469,8 @@ LIHTC_rfk
 ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/subsidy maps/LIHTC_rfk.png",
        plot = LIHTC_rfk,
        device = "png",
-       width = 6.5,
+       height = 5,
+       width = 8.5,
        dpi = 1000)
 
 #HPTF Map
@@ -362,7 +479,7 @@ HPTF_DC <- ggplot() +
   geom_sf(data = rfk_only_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = "black") +
 #ward outline
   geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
-  #subsidized units
+  #projects
   geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_DC_housing_production_tr)), aes(geometry = geometry), color = blues[5]) + 
   scale_fill_manual(values = c(pinks[1], yellows[1]), name = "RFK Adjacent Area") +
   ggtitle("Subsidized Projects with DC HPTF")
@@ -380,10 +497,17 @@ HPTF_rfk <- ggplot() +
   geom_sf(data = rfk_only_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = "black") +
 #ward outline
   geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
-  #subsidized units
-  geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_DC_housing_production_tr)), aes(geometry = geometry), color = blues[5]) + 
-  scale_fill_manual(values = c(pinks[1], yellows[1]), name = "RFK Adjacent Area") +
-  ggtitle("Subsidized Projects with DC HPTF") +
+  #projects
+  geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_DC_housing_production_tr)) %>% st_filter(rfk_only_shape, .predicate = st_intersects), size=2, aes(geometry = geometry), color = blues[5]) + 
+  scale_fill_manual(values = c(pinks[1], yellows[1]), name = "" ) +
+  theme( 
+    legend.text = element_text( size = 14 ),
+    legend.position = "inside",
+    legend.position.inside = c(1.10, 0.05), # 2. Increase the X coordinate past 1.0 (e.g., 1.10)
+    legend.justification = c(1, 0),
+    plot.margin = margin(r = 50)            # 3. Add right margin space so the legend has room to sit
+  ) +
+  #ggtitle("Subsidized Projects with DC HPTF") +
   #Zoom in
   coord_sf(
     xlim = c(xmin, xmax), 
@@ -394,16 +518,17 @@ HPTF_rfk
 ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/subsidy maps/HPTF_rfk.png",
        plot = HPTF_rfk,
        device = "png",
-       width = 6.5,
+       height = 5,
+       width = 8.5,
        dpi = 1000)
 
-#sec8 Map
+#Project-based Sec8 Map
 sec8_DC <- ggplot() +
   #RFK tracts
   geom_sf(data = rfk_only_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = "black") +
 #ward outline
   geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
-  #subsidized units
+  #projects
   geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_Project_based_section_8)), aes(geometry = geometry), color = greens[5]) + 
   scale_fill_manual(values = c(pinks[1], yellows[1]), name = "RFK Adjacent Area") +
   ggtitle("Subsidized Projects with DC sec8")
@@ -421,10 +546,17 @@ sec8_rfk <- ggplot() +
   geom_sf(data = rfk_only_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = "black") +
 #ward outline
   geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
-  #subsidized units
-  geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_Project_based_section_8)), aes(geometry = geometry), color = greens[5]) + 
-  scale_fill_manual(values = c(pinks[1], yellows[1]), name = "RFK Adjacent Area") +
-  ggtitle("Subsidized Projects with DC sec8") +
+  #projects
+  geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_Project_based_section_8)) %>% st_filter(rfk_only_shape, .predicate = st_intersects), size=2, aes(geometry = geometry), color = greens[5]) + 
+  scale_fill_manual(values = c(pinks[1], yellows[1]), name = "" ) +
+  theme( 
+    legend.text = element_text( size = 14 ),
+    legend.position = "inside",
+    legend.position.inside = c(1.10, 0.05), # 2. Increase the X coordinate past 1.0 (e.g., 1.10)
+    legend.justification = c(1, 0),
+    plot.margin = margin(r = 50)            # 3. Add right margin space so the legend has room to sit
+  ) +
+  #ggtitle("Subsidized Projects with DC sec8") +
   #Zoom in
   coord_sf(
     xlim = c(xmin, xmax), 
@@ -435,7 +567,8 @@ sec8_rfk
 ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/subsidy maps/sec8_rfk.png",
        plot = sec8_rfk,
        device = "png",
-       width = 6.5,
+       height = 5,
+       width = 8.5,
        dpi = 1000)
 
 
@@ -445,7 +578,7 @@ pubH_DC <- ggplot() +
   geom_sf(data = rfk_only_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = "black") +
 #ward outline
   geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
-  #subsidized units
+  #projects
   geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_Public_housing)), aes(geometry = geometry), color = yellows[8]) + 
   scale_fill_manual(values = c(pinks[1], yellows[1]), name = "RFK Adjacent Area") +
   ggtitle("Public Housing Projects")
@@ -463,10 +596,17 @@ pubH_rfk <- ggplot() +
   geom_sf(data = rfk_only_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = "black") +
 #ward outline
   geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
-  #subsidized units
-  geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_Public_housing)), aes(geometry = geometry), color = yellows[8]) + 
-  scale_fill_manual(values = c(pinks[1], yellows[1]), name = "RFK Adjacent Area") +
-  ggtitle("Public Housing Projects") +
+  #projects
+  geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_Public_housing)) %>% st_filter(rfk_only_shape, .predicate = st_intersects), size=2, aes(geometry = geometry), color = yellows[8]) + 
+  scale_fill_manual(values = c(pinks[1], yellows[1]), name = "" ) +
+  theme( 
+    legend.text = element_text( size = 14 ),
+    legend.position = "inside",
+    legend.position.inside = c(1.10, 0.05), # 2. Increase the X coordinate past 1.0 (e.g., 1.10)
+    legend.justification = c(1, 0),
+    plot.margin = margin(r = 50)            # 3. Add right margin space so the legend has room to sit
+  ) +
+  #ggtitle("Public Housing Projects") +
   #Zoom in
   coord_sf(
     xlim = c(xmin, xmax), 
@@ -477,7 +617,108 @@ pubH_rfk
 ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/subsidy maps/pubH_rfk.png",
        plot = pubH_rfk,
        device = "png",
+       height = 5,
+       width = 8.5,
+       dpi = 1000)
+
+#Limited Equity Coop Map
+LECoop_DC <- ggplot() +
+  #RFK tracts
+  geom_sf(data = rfk_only_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = "black") +
+#ward outline
+  geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
+  #projects
+  geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_Limited_equity_cooperati)), aes(geometry = geometry), color = greys[4]) + 
+  scale_fill_manual(values = c(pinks[1], yellows[1]), name = "RFK Adjacent Area") +
+  ggtitle("Limited Equity Cooperatives")
+LECoop_DC
+
+ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/subsidy maps/LECoop_DC.png",
+       plot = LECoop_DC,
+       device = "png",
        width = 6.5,
        dpi = 1000)
+
+#Limited Equity Coop Map, zoomed in
+LECoop_rfk <- ggplot() +
+  #RFK tracts
+  geom_sf(data = rfk_only_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = "black") +
+#ward outline
+  geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
+  #projects
+  geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_Limited_equity_cooperati)) %>% st_filter(rfk_only_shape, .predicate = st_intersects), size=2, aes(geometry = geometry), color = greys[4]) + 
+  scale_fill_manual(values = c(pinks[1], yellows[1]), name = "" ) +
+  theme( 
+    legend.text = element_text( size = 14 ),
+    legend.position = "inside",
+    legend.position.inside = c(1.10, 0.05), # 2. Increase the X coordinate past 1.0 (e.g., 1.10)
+    legend.justification = c(1, 0),
+    plot.margin = margin(r = 50)            # 3. Add right margin space so the legend has room to sit
+  ) +
+  #ggtitle("Limited Equity Cooperatives") +
+  #Zoom in
+  coord_sf(
+    xlim = c(xmin, xmax), 
+    ylim = c(ymin, ymax),
+    expand = FALSE)
+LECoop_rfk
+
+ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/subsidy maps/LECoop_rfk.png",
+       plot = LECoop_rfk,
+       device = "png",
+       height = 5,
+       width = 8.5,
+       dpi = 1000)
+
+#Section 202/811 Map
+Sec202811_DC <- ggplot() +
+  #RFK tracts
+  geom_sf(data = rfk_only_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = "black") +
+#ward outline
+  geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
+  #projects
+  geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_Section_202_811)), aes(geometry = geometry), color = reds[6]) + 
+  scale_fill_manual(values = c(pinks[1], yellows[1]), name = "RFK Adjacent Area") +
+  ggtitle("Section 202/811")
+Sec202811_DC
+
+ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/subsidy maps/Sec202811_DC.png",
+       plot = Sec202811_DC,
+       device = "png",
+       width = 6.5,
+       dpi = 1000)
+
+#Section 202/811 Map, zoomed in
+Sec202811_rfk <- ggplot() +
+  #RFK tracts
+  geom_sf(data = rfk_only_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = "black") +
+#ward outline
+  geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
+  #projects
+  geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_Section_202_811)) %>% st_filter(rfk_only_shape, .predicate = st_intersects), size=2, aes(geometry = geometry), color = reds[6]) + 
+  scale_fill_manual(values = c(pinks[1], yellows[1]), name = "" ) +
+  theme( 
+    legend.text = element_text( size = 14 ),
+    legend.position = "inside",
+    legend.position.inside = c(1.10, 0.05), # 2. Increase the X coordinate past 1.0 (e.g., 1.10)
+    legend.justification = c(1, 0),
+    plot.margin = margin(r = 50)            # 3. Add right margin space so the legend has room to sit
+  ) +
+  #ggtitle("Section 202/811") +
+  #Zoom in
+  coord_sf(
+    xlim = c(xmin, xmax), 
+    ylim = c(ymin, ymax),
+    expand = FALSE)
+Sec202811_rfk
+
+ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/subsidy maps/Sec202811_rfk.png",
+       plot = Sec202811_rfk,
+       device = "png",
+       height = 5,
+       width = 8.5,
+       dpi = 1000)
 ```
+
+
 
