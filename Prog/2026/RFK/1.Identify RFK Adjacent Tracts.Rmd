@@ -24,6 +24,7 @@ library(urbnthemes)
 library(urbnmapr)
 set_urbn_defaults(style = "map")
 library(ggspatial)
+library(ggstar)
 
 ```
 
@@ -69,7 +70,7 @@ build_permits <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Bu
 rfk_permit <- build_permits %>%
   filter(OBJECTID == 1097829048) %>%
   #filter(FULL_ADDRE == "2400 EAST CAPITOL ST SE, WASHINGTON, DC 20003") %>%
-  mutate(label = "RFK Stadium Development")
+  mutate(label = "RFK Stadium")
 
 ```
 
@@ -106,6 +107,11 @@ map_wards <- ggplot() +
   geom_sf(data = wards, aes(geometry = geometry), colour = "black", fill = NA)
 map_wards
 
+map_stadium <- ggplot() +
+  geom_sf(data = rfk_permit, aes(geometry = geometry), colour = "red", fill = "red", shape = 18, size = 7)
+map_stadium
+
+
 ```
 Find Lot 805 in Square 1128 in DC Parcel Data
 
@@ -121,7 +127,7 @@ map_squares
 
 rfk <- squares2 %>%
   filter(rfk == 1) %>%
-  mutate(label = "RFK Stadium & Campus")
+  mutate(label = "RFK Campus")
 ```
 
 Find shortest distance from each census tract to the RFK square
@@ -138,8 +144,8 @@ tract2 <- tracts %>%
          west_of_anacostia = if_else(rfk_group == 1 & east_of_anacostia == 0, 1, 0), 
          rfk_sub_group = case_when(east_of_anacostia == 1 ~ "RFK-East of Anacostia", 
                                    west_of_anacostia == 1 ~ "RFK-West of Anacostia"), 
-         rfk_sub_group2 = case_when(east_of_anacostia == 1 ~ "East of Anacostia", 
-                                   west_of_anacostia == 1 ~ "West of Anacostia"))
+         rfk_sub_group2 = case_when(east_of_anacostia == 1 ~ "RFK East", 
+                                   west_of_anacostia == 1 ~ "RFK West"))
 
 rfk_tracts <- tract2 %>%
   filter(rfk_group == 1)
@@ -157,8 +163,24 @@ write.csv(rfk_save, "//Sas1/dcdata/Libraries/Requests/Prog/2026/RFK/result/rfk_t
 map result
 ```{r}
 map_result <- ggplot() + 
-  geom_sf(data = rfk_tracts, aes(geometry = geometry, fill = rfk_sub_group), colour = "white") + 
-  geom_sf(data = rfk, aes(geometry = geometry), colour = "red", fill = "red")
+  geom_sf(
+    data = rfk_tracts,
+    aes(fill = rfk_sub_group2),
+    colour = "white"
+  ) + 
+  geom_sf(
+    data = rfk_permit,
+    aes(color = "RFK Stadium"),
+    shape = 18,
+    size = 7
+  ) +
+  scale_color_manual(
+    values = c("RFK Stadium" = "red"),
+    name = NULL
+  ) +
+  labs(fill = NULL) +
+  coord_sf()
+
 map_result
 
 # ggsave(filename = "//Sas1/dcdata/Libraries/RFK/Requests/Prog/2026/RFK/result/rfk_tract_map.png",
@@ -209,13 +231,15 @@ dcxmax = max(dccoords$X)
 
 
 ```{r export map}
-full_map <- ggplot() + 
+2full_map <- ggplot() + 
   #RFK focus area
-  geom_sf(data = rfk_tracts, aes(geometry = geometry, fill = rfk_sub_group), colour = NA) + 
+  geom_sf(data = rfk_tracts, aes(geometry = geometry, fill = rfk_sub_group2), colour = NA) + 
   #National Parks
   geom_sf(data = national_parks, aes(geometry = geometry, fill = parks), colour = NA, alpha = 0.5) +
   #Water
   geom_sf(data = water, aes(geometry = geometry, fill = water), colour = NA, alpha = 0.5) +
+  #RFK Stadium
+  geom_sf(data=rfk_permit, aes(geometry = geometry, fill = label), color = NA, size= 7, shape = 18) +
   #RFK Development
   geom_sf(data = rfk, aes(geometry = geometry, fill = label), colour = NA)  +
   #Wards
@@ -224,7 +248,7 @@ full_map <- ggplot() +
   geom_sf(data = dc_metro, aes(geometry = geometry, colour = line_color), fill = NA, size = 2) +
   scale_color_identity(guide = "legend", name = "Metro Stops")+ 
   #Area legend
-  scale_fill_manual(breaks = c("RFK Stadium & Campus", "RFK-West of Anacostia", "RFK-East of Anacostia", "National Parks", "Waterways"), values = c("#000000", "#fdbf11", "#ec008b", "#98cf90", "#73BFE2"), name = "Legend") +
+  scale_fill_manual(breaks = c("RFK Stadium", "RFK Campus", "RFK West", "RFK East", "Parks", "Waterways"), values = c("red", "#000000", "#fdbf11", "#ec008b", "#98cf90", "#73BFE2"), name = "Legend") +
   #Ward names
   geom_sf_text(data = wards, aes(geometry = geometry, label = paste0("Ward ", WARD_ID)), colour = "#5c5859", size = 3) + 
   #RFK area outline
