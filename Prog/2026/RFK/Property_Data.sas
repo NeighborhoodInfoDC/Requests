@@ -30,13 +30,14 @@
 * Data Libraries ;
 %DCData_lib(REALPROP)
 
+%let MIN_SALES = 10;
+
 * load Data and filter to saledate from 2000-2025;
 data sales;
 set REALPROP.sales_res_clean (keep=ssl saledate saleprice geo2020 Ward2022 ui_proptype);
 *esale_date = input(SALEDATE, ddmmyy10.);
 sale_year = year(SALEDATE);
 if sale_year <= 2025 AND sale_year >= 2000; 
-censustract = input(geo2020, 10.);
 
 *Convert dollar values to 2025 for sales price;
 	%dollar_convert(SALEPRICE, SALEPRICE_2025, 
@@ -68,59 +69,115 @@ quit;
 
 
 * stats by RFK sub group;
-proc sql; create table sumstats_subgroup as select
-	rfk_sub_group2, sale_year, ui_proptype,
-	count(ssl) as sales,
+* East of Anacostia;
+proc sql; create table sumstats_east as select
+	sale_year, ui_proptype,
+	count(ssl) as sales_east,
 	/* median sales price */
-	median(saleprice_2025) as med_price
+	median(saleprice_2025) as med_price_east
 	from sales_rfk
-	group by rfk_sub_group2, sale_year, ui_proptype;
+  where east_of_anacostia = 1
+	group by ui_proptype, sale_year;
 quit;
 
-proc print data=sumstats_subgroup;
-run;
+* West of Anacostia;
+proc sql; create table sumstats_west as select
+	sale_year, ui_proptype,
+	count(ssl) as sales_west,
+	/* median sales price */
+	median(saleprice_2025) as med_price_west
+	from sales_rfk
+  where west_of_anacostia = 1
+	group by ui_proptype, sale_year;
+quit;
 
-* stats by RFK full group;
+* RFK Area;
 proc sql; create table sumstats_rfk as select
-	rfk_group, sale_year, ui_proptype,
-	/* number of sales */
-	count(ssl) as sales,
-	/* median sales price*/
-	median(saleprice_2025) as med_price
-	from sales_rfk
-	group by rfk_group, sale_year, ui_proptype;
-quit;
-
-proc print data=sumstats_rfk;
-run;
-
-* stats by ward;
-proc sql; create table sumstats_ward as select
-	ward2022, sale_year, ui_proptype,
-	/* number of sales */
-	count(ssl) as sales,
+	sale_year, ui_proptype,
+	count(ssl) as sales_rfk,
 	/* median sales price */
-	median(saleprice_2025) as med_price
+	median(saleprice_2025) as med_price_rfk
 	from sales_rfk
-	group by ward2022, sale_year, ui_proptype;
+  where rfk_sub_group2 = 'RF'
+	group by ui_proptype, sale_year;
 quit;
 
-proc print data=sumstats_ward;
-run;
+* Ward 7;
+proc sql; create table sumstats_w7 as select
+	sale_year, ui_proptype,
+	count(ssl) as sales_w7,
+	/* median sales price */
+	median(saleprice_2025) as med_price_w7
+	from sales_rfk
+  where ward2022 = '7'
+	group by ui_proptype, sale_year;
+quit;
 
-* stats in all of DC;
+* DC;
 proc sql; create table sumstats_dc as select
 	sale_year, ui_proptype,
-	/* number of sales */
-	count(ssl) as sales,
-	/* median sales price*/
-	median(saleprice_2025) as med_price
+	count(ssl) as sales_dc,
+	/* median sales price */
+	median(saleprice_2025) as med_price_dc
 	from sales_rfk
-	group by sale_year, ui_proptype;
+	group by ui_proptype, sale_year;
 quit;
 
-proc print data=sumstats_dc;
+* Combine data sets;
+
+data sumstats_all;
+
+  merge 
+    sumstats_east
+    sumstats_west
+    sumstats_rfk
+    sumstats_w7
+    sumstats_dc;
+  by ui_proptype sale_year;
+  
+  ** Suppress price if below sales threshold **;
+  
+  array asales{*} sales_east sales_west sales_rfk sales_w7 sales_dc;
+  array aprice{*} med_price_east med_price_west med_price_rfk med_price_w7 med_price_dc;
+  
+  do i = 1 to dim( asales );
+    if missing( asales{i} ) then asales{i} = 0;
+    if asales{i} < &MIN_SALES then aprice{i} = .;
+  end;
+  
+  drop i;
+  
 run;
+
+options missing=' ';
+
+ods csvall body="&_dcdata_default_path\Requests\Prog\2026\RFK\Property_Data_Sales.csv";
+
+proc print data=sumstats_all noobs label;
+  var sale_year ui_proptype sales_: ;
+  label
+    sales_east = "East of Anacostia"
+    sales_west = "West of Anacostia"
+    sales_rfk = "RFK"
+    sales_w7 = "Ward 7"
+    sales_dc = "DC";
+run;
+
+ods csvall close;
+
+ods csvall body="&_dcdata_default_path\Requests\Prog\2026\RFK\Property_Data_Med_price.csv";
+
+proc print data=sumstats_all noobs label;
+  var sale_year ui_proptype med_price_: ;
+  label
+    med_price_east = "East of Anacostia"
+    med_price_west = "West of Anacostia"
+    med_price_rfk = "RFK"
+    med_price_w7 = "Ward 7"
+    med_price_dc = "DC";
+run;
+
+ods csvall close;
 
 
 ** Create tract-level data for mapping **;
@@ -147,7 +204,7 @@ run;
 %File_info( data=sales_rfk_map )
 
 proc sql; create table sumstats_tract as select
-  censustract, ui_proptype, 
+  geo2020, ui_proptype, 
   /* number of sales */
   sum( sales_2023_2025 ) as sales_2023_2025,
   sum( sales_2013_2015 ) as sales_2013_2015,
@@ -158,7 +215,7 @@ proc sql; create table sumstats_tract as select
   median( saleprice_2003_2005 ) as saleprice_2003_2005
   from sales_rfk_map
   /*where not( missing( sale_year ) )*/
-  group by ui_proptype, censustract;
+  group by ui_proptype, geo2020;
 quit;
 
 %File_info( data=sumstats_tract, freqvars=ui_proptype sales_2003_2005 sales_2013_2015 sales_2023_2025 )
