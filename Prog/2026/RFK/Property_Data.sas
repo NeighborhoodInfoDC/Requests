@@ -54,22 +54,17 @@ proc import
 	DBMS = csv REPLACE;
 run;
 
-%File_info( data=rfk_tracts )
-
-data rfk_tracts;
-set rfk_tracts;
-censustract = input(geoid, 10.);
-run;
+%File_info( data=rfk_tracts, freqvars=rfk_sub_group2 rfk_group )
 
 *merge RFK tracts with property data;
 proc sql; create table sales_rfk as select
 	*
 	from rfk_tracts as a left join sales as b
-	on a.censustract = b.censustract
+  on a.geoid = b.geo2020
   where not( missing( saleprice_2025 ) or missing( sale_year ) );
 quit;
 
-%File_info( data=sales_rfk, freqvars=rfk_sub_group2 rfk_group )
+%File_info( data=sales_rfk, freqvars=rfk_sub_group2 rfk_group, printobs=0 )
 
 
 * stats by RFK sub group;
