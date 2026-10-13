@@ -1,23 +1,29 @@
+/**************************************************************************
+ Program:  Property_Data.sas
+ Library:  Requests
+ Project:  Urban-Greater DC
+ Author:   K. Visalli
+ Created:  6/24/26
+ Version:  SAS 9.4
+ Environment:  Remote session (SAS1)
+ 
+ Description: Property data to compile for RFK stadium analysis.
 
-/*
-Project: RFK Stadium DCData
-Author: Katie Visalli
-Date: 6/24/26
+  Property ownership
+  Source: Realprop.Parcel_base_who_owns
+  Universe: All active [in_last_ownerpt=1] residential [ui_proptype=10,11,12,13,19] property parcels
 
-Property ownership
-Source: Realprop.Parcel_base_who_owns
-Universe: All active [in_last_ownerpt=1] residential [ui_proptype=10,11,12,13,19] property parcels
+  Parcels by property type [ui_proptype] and owner type [ownercat]
+  Single family houses [ui_proptype=10] by owner-occupancy [owner_occ_sale]
+  Single family houses [ui_proptype=10] with senior homestead exemption [hstd_code=5]
+  Condominium units [ui_proptype=11] by owner-occupancy [owner_occ_sale]
+  Condominium units [ui_proptype=11] with senior homestead exemption [hstd_code=5]
 
-Parcels by property type [ui_proptype] and owner type [ownercat]
-Single family houses [ui_proptype=10] by owner-occupancy [owner_occ_sale]
-Single family houses [ui_proptype=10] with senior homestead exemption [hstd_code=5]
-Condominium units [ui_proptype=11] by owner-occupancy [owner_occ_sale]
-Condominium units [ui_proptype=11] with senior homestead exemption [hstd_code=5]
+  on RFK areas and Ward2022
 
-on RFK areas and Ward2022
-*/
+ Modifications:
+**************************************************************************/
 
-* Set Up;
 %include "F:\DCDATA\SAS\Inc\StdRemote.sas";
 
 * Data Libraries ;
