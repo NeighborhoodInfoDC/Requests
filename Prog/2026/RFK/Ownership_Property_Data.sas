@@ -33,22 +33,19 @@
 *Load data
 Universe: All active [in_last_ownerpt=1] residential [ui_proptype=10,11,12,13,19] property parcels;
 data ownership;
-	set REALPROP.Parcel_base_who_owns;
+	set REALPROP.Parcel_base_who_owns (keep=ssl in_last_ownerpt ui_proptype hstd_code ownercat owner_occ_sale no_units usecode premiseadd);
 	where in_last_ownerpt=1 AND ui_proptype IN ("10","11","12","13","19") AND hstd_code ~= "3";
-run;
-
-* Load Geo data;
-data parcel_geo;
-	set REALPROP.parcel_geo;
-	census_tract = input(geo2020, 10.);
 run;
 
 * merge geo to ownership data;
 proc sql; create table ownership_geo as select
 	*
-	from Ownership as a left join parcel_geo as b
+	from Ownership as a left join REALPROP.parcel_geo as b
 	on a.ssl = b.ssl;
 quit;
+
+%File_info( data=ownership_geo, printobs=0, freqvars=hstd_code )
+
 
 * Read in RFK tracts;
 proc import 
@@ -57,22 +54,11 @@ proc import
 	DBMS = csv REPLACE;
 run;
 
-data rfk_tracts;
-set rfk_tracts;
-censustract = input(geoid, 10.);
-run;
-
-* Load rent control data;
-data rent_control;
-set dhcd.parcels_rent_control;
-run;
-
-
 *merge RFK and Ownership Data;
 proc sql; create table rfk_ownership as select
 	*
 	from Ownership_geo as a left join rfk_tracts as b
-	on a.census_tract = b.censustract;
+	on a.Geo2020 = b.geoid;
 quit;
 
 *dummy variables for each area;
@@ -85,47 +71,120 @@ data rfk_ownership2;
 	else owner_occupied = 0;
 run;
 
+%File_info( data=rfk_ownership2, printobs=0, freqvars=ui_proptype hstd_code )
+
+%Dup_check(
+  data=rfk_ownership2,
+  by=ssl,
+  id=geo2020,
+  listdups=Y
+)
+
+
+* Load rent control data;
+data rent_control;
+set dhcd.parcels_rent_control (keep=ssl units_mar units_full Rent_controlled);
+run;
+
 
 *merge multifamily properties to rent conrol data (Residential-multifamily, ;
 proc sql; create table rfk_rent_control as select
 	* 
-	from rfk_ownership2(where = (ui_proptype IN ("11", "13", "19", "12"))) as a left join rent_control as b
+	from rfk_ownership2 as a left join rent_control as b
 	on a.ssl = b.ssl;
 quit;
 
-*re-combine the ownership-property data that was and wan't merged to rent control data;
-proc append base=rfk_rent_control data=rfk_ownership2(where = (ui_proptype IN ("10")));
-run;
+%File_info( data=rfk_rent_control, printobs=0, freqvars=ui_proptype )
 
-*remove duplicates on ssl  177626 observations;
-proc sort data = rfk_rent_control out = rfk_rent_control_nodup nodupkey;
-	by ssl;
-run;
+
 
 *assign number of units as 1 when singlefamily or condo;
-data rfk_rent_control_nodup2;
-	set rfk_rent_control_nodup;
-	if ui_proptype IN ("10", "11") then unit_count = 1;
-	else if units_mar ~=. then unit_count = units_mar;
-	else unit_count = 1;
+data rfk_full;
+	set rfk_rent_control;
+  
+  * Recode ui_proptype=19;
+  length ui_proptype_recode $ 2;
+  if ui_proptype = '19' then do;
+    if usecode in ( '015', '029' ) then do;
+      if units_full = 1 then ui_proptype_recode = '10';
+      else ui_proptype_recode = '13';
+    end;
+  end;
+  else do;
+    ui_proptype_recode = ui_proptype;
+  end;
+  
+	if ui_proptype_recode IN ("10", "11") then unit_count = 1;
+  else if ui_proptype_recode = "12" and no_units > 0 then unit_count = no_units;
+    
+	if missing( unit_count ) then unit_count = units_full;
+  
+  label 
+    unit_count = "Number of residential units"
+    ui_proptype_recode = "UI property type code (recode)";
+  
+  format ui_proptype_recode $UIPRTYP.;
+	
 run;
 
-/* Cooperative buildings do not merge to rent control data, so we do not know how many units they have from MAR file;
-data coop_check;
-set rfk_rent_control_nodup2(where = (ui_proptype = "12"));
+%File_info( data=rfk_full, printobs=0 )
+
+proc format;
+  value rfk_group (notsorted)
+    1 = 'RFK Area'
+    other = 'Outside RFK Area';
 run;
-*/
+
+proc tabulate data=rfk_full format=comma12.0 noseps missing order=data;
+  class ui_proptype / preloadfmt;
+  class rfk_group / preloadfmt;
+  var unit_count;
+  table 
+    /** Pages **/
+    all='DC' rfk_group=' ',
+    /** Rows **/
+    all='Total' ui_proptype=' ',
+    /** Columns **/
+    unit_count * ( n nmiss sum mean min max )
+  / rts=40 condense
+  ;
+  format rfk_group rfk_group.;
+run;
+
+proc print data=rfk_full;
+  where ui_proptype = '19' and rfk_group = 1;
+  id ssl;
+  var premiseadd usecode no_units units_mar units_full;
+run;
+
+proc tabulate data=rfk_full format=comma12.0 noseps missing order=data;
+  class ui_proptype_recode / preloadfmt;
+  class rfk_group / preloadfmt;
+  var unit_count;
+  table 
+    /** Pages **/
+    all='DC' rfk_group=' ',
+    /** Rows **/
+    all='Total' ui_proptype_recode=' ',
+    /** Columns **/
+    unit_count * ( n nmiss sum mean min max )
+  / rts=40 condense
+  ;
+  format rfk_group rfk_group.;
+run;
 
 
 *check owner occupancy vars;
 proc sql; create table ownerocc_check as select
 	owner_occ_sale, owner_occupied, sum(rfk_group) as rfk
-from rfk_rent_control_nodup2
+from rfk_full
 group by owner_occ_sale, owner_occupied;
 quit;
 
 proc print data = ownerocc_check;
 run;
+
+ENDSAS;
 
 /************************************************************** Property Type & Ownership Tables **************************************************************/
 
