@@ -53,7 +53,7 @@ quit;
 * Read in RFK tracts;
 proc import 
 	out = rfk_tracts 
-	datafile = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/rfk_tracts.csv"
+	datafile = "&_dcdata_r_path/Requests/Prog/2026/RFK/Result/rfk_tracts.csv"
 	DBMS = csv REPLACE;
 run;
 
@@ -194,7 +194,7 @@ proc print data = sf_ownership;
 run;
 
 proc export data=sf_ownership
-	outfile="\\sas1\dcdata\Libraries\Requests\Prog\2026\RFK\Result\property_ownership_result.xlsx"
+	outfile="&_dcdata_default_path\Requests\Prog\2026\RFK\Result\property_ownership_result.xlsx"
 	dbms=xlsx
 	replace;
 	sheet="sf_ownership";
@@ -216,7 +216,7 @@ proc print data = sf_homestead;
 run;
 
 proc export data=sf_homestead
-	outfile="\\sas1\dcdata\Libraries\Requests\Prog\2026\RFK\Result\property_ownership_result.xlsx"
+	outfile="&_dcdata_default_path\Requests\Prog\2026\RFK\Result\property_ownership_result.xlsx"
 	dbms=xlsx
 	replace;
 	sheet="sf_homestead";
@@ -239,7 +239,7 @@ proc print data = co_ownership;
 run;
 
 proc export data=co_ownership
-	outfile="\\sas1\dcdata\Libraries\Requests\Prog\2026\RFK\Result\property_ownership_result.xlsx"
+	outfile="&_dcdata_default_path\Requests\Prog\2026\RFK\Result\property_ownership_result.xlsx"
 	dbms=xlsx
 	replace;
 	sheet="co_ownership";
@@ -261,7 +261,7 @@ proc print data = co_homestead;
 run;
 
 proc export data=co_homestead
-	outfile="\\sas1\dcdata\Libraries\Requests\Prog\2026\RFK\Result\property_ownership_result.xlsx"
+	outfile="&_dcdata_default_path\Requests\Prog\2026\RFK\Result\property_ownership_result.xlsx"
 	dbms=xlsx
 	replace;
 	sheet="co_homestead";
@@ -282,7 +282,7 @@ group by Rent_controlled;
 quit;
 
 proc export data=rent_control
-	outfile="\\sas1\dcdata\Libraries\Requests\Prog\2026\RFK\Result\property_ownership_result.xlsx"
+	outfile="&_dcdata_default_path\Requests\Prog\2026\RFK\Result\property_ownership_result.xlsx"
 	dbms=xlsx
 	replace;
 	sheet="rent_control";
@@ -335,7 +335,7 @@ group by owner_occ, own_length_cat;
 quit;
 
 proc export data=length_of_ownership
-	outfile="\\sas1\dcdata\Libraries\Requests\Prog\2026\RFK\Result\property_ownership_result.xlsx"
+	outfile="&_dcdata_default_path\Requests\Prog\2026\RFK\Result\property_ownership_result.xlsx"
 	dbms=xlsx
 	replace;
 	sheet="length_of_ownership";
@@ -354,7 +354,7 @@ group by owner_occ;
 quit;
 
 proc export data=median_length_of_ownership
-	outfile="\\sas1\dcdata\Libraries\Requests\Prog\2026\RFK\Result\property_ownership_result.xlsx"
+	outfile="&_dcdata_default_path\Requests\Prog\2026\RFK\Result\property_ownership_result.xlsx"
 	dbms=xlsx
 	replace;
 	sheet="med_length_of_ownership";
