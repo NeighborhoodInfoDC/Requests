@@ -22,6 +22,8 @@
   on RFK areas and Ward2022
 
  Modifications:
+  10/14/2026 PAT Code has been update to add numbers of housing units in
+                 cooperative buildings. 
 **************************************************************************/
 
 %include "F:\DCDATA\SAS\Inc\StdRemote.sas";
@@ -33,7 +35,8 @@
 *Load data
 Universe: All active [in_last_ownerpt=1] residential [ui_proptype=10,11,12,13,19] property parcels;
 data ownership;
-	set REALPROP.Parcel_base_who_owns (keep=ssl in_last_ownerpt ui_proptype hstd_code ownercat owner_occ_sale no_units usecode premiseadd);
+	set REALPROP.Parcel_base_who_owns 
+        (keep=ssl in_last_ownerpt ui_proptype hstd_code ownercat owner_occ_sale no_units usecode premiseadd saledate);
 	where in_last_ownerpt=1 AND ui_proptype IN ("10","11","12","13","19") AND hstd_code ~= "3";
 run;
 
@@ -186,7 +189,7 @@ run;
 
 title2 "Number of Units by property Type and area";
 proc sql; create table proptype_units as select
-	ui_proptype_recode, 
+	ui_proptype_recode, put( ui_proptype_recode, $UIPRTYP. ) as ui_proptype_label,
 		sum(dc * unit_count) as DC,
 		sum(ward7 * unit_count) as Ward7,
 		sum(rfk_group * unit_count) as RFK,
@@ -199,19 +202,34 @@ quit;
 proc print data = proptype_units noobs;
 run;
 
+proc export data=proptype_units
+	outfile="&_dcdata_default_path\Requests\Prog\2026\RFK\Result\property_ownership_result.xlsx"
+	dbms=xlsx
+	replace;
+	sheet="proptype_units";
+run;
+
+
 title2 "Number of Units by owner type and area";
 proc sql; create table owner_units as select
-	ownercat, 
+	ownercat, put( ownercat, $owncat. ) as ownercat_label,
 		sum(dc * unit_count) as DC,
 		sum(ward7 * unit_count) as Ward7,
 		sum(rfk_group * unit_count) as RFK,
 		sum(east_of_anacostia * unit_count) as East_RFK,
 		sum(west_of_anacostia * unit_count) as West_RFK
-	from rfk_full(where = (ui_proptype_recode ~= "12"))
+	from rfk_full
 	group by ownercat;
 quit;
 
 proc report data = owner_units;
+run;
+
+proc export data=owner_units
+	outfile="&_dcdata_default_path\Requests\Prog\2026\RFK\Result\property_ownership_result.xlsx"
+	dbms=xlsx
+	replace;
+	sheet="owner_units";
 run;
 
 
@@ -257,6 +275,7 @@ run;
 title2 "Single family houses [ui_proptype_recode=10] with senior homestead exemption [hstd_code=5]";
 proc sql; create table sf_homestead as select
 		owner_occ_sale, hstd_code,
+		put( owner_occ_sale, yesno.) as owner_occ_sale_label, put( hstd_code, $HOMESTD. ) as hstd_code_label,
 		sum(dc) as DC,
 		sum(ward7) as Ward7,
 		sum(rfk_group) as RFK,
@@ -285,7 +304,7 @@ proc sql; create table co_ownership as select
 		sum(rfk_group) as RFK,
 		sum(east_of_anacostia) as East_RFK,
 		sum(west_of_anacostia) as West_RFK
-	from rfk_full(where =((input(ui_proptype_recode, 10.)=11))) /*AND (input(hstd_code, 10.)=5));*/
+	from rfk_full (where=(ui_proptype_recode="11"))
 	group by owner_occ_sale;
 quit;
 
@@ -302,12 +321,13 @@ run;
 title2 "Condominium units [ui_proptype_recode=11] with senior homestead exemption [hstd_code=5]";
 proc sql; create table co_homestead as select
 		owner_occ_sale, hstd_code,
+		put( owner_occ_sale, yesno.) as owner_occ_sale_label, put( hstd_code, $HOMESTD. ) as hstd_code_label,
 		sum(dc) as DC,
 		sum(ward7) as Ward7,
 		sum(rfk_group) as RFK,
 		sum(east_of_anacostia) as East_RFK,
 		sum(west_of_anacostia) as West_RFK
-	from rfk_full(where =((input(ui_proptype_recode, 10.)=11))) /*AND (input(hstd_code, 10.)=5));*/
+	from rfk_full (where=(ui_proptype_recode="11"))
 	group by owner_occ_sale, hstd_code;
 quit;
 
@@ -348,7 +368,7 @@ title2;
 /************************************************************** Length of Ownership **************************************************************/
 *Year breakdown of last saledate;
 *get year;
-data ownerhip_length_data;
+data ownership_length_data;
 set rfk_full;
 sale_year = year(SALEDATE);
 if DC =0 then DC = .;
@@ -359,14 +379,14 @@ if west_of_anacostia =0 then west_of_anacostia = .;
 run;
 
 *find quantiles of last sale year;
-proc univariate data=ownerhip_length_data;
+proc univariate data=ownership_length_data;
     var sale_year;
     output out=stats pctlpts=10 25 50 75 90 pctlpre=p;
 run;
 
 *define categorical variable;
-data ownerhip_length_data2;
-set ownerhip_length_data;
+data ownership_length_data2;
+set ownership_length_data;
 length own_length_cat $ 20 ;
 if sale_year <2000 then own_length_cat = "a.1999 and earlier";
 	else if sale_year >= 2000 & sale_year <2010 then own_length_cat = "b.2000-2009";
@@ -386,7 +406,7 @@ proc sql; create table length_of_ownership as select
 		sum(rfk_group) as RFK,
 		sum(east_of_anacostia) as East_RFK,
 		sum(west_of_anacostia) as West_RFK
-	from ownerhip_length_data2 (where = (owner_occ ~=""))
+	from ownership_length_data2 (where = (owner_occ ~=""))
 group by owner_occ, own_length_cat;
 quit;
 
@@ -405,7 +425,7 @@ proc sql; create table median_length_of_ownership as select
 		median(sale_year * rfk_group) as RFK,
 		median(sale_year * east_of_anacostia) as East_RFK,
 		median(sale_year * west_of_anacostia) as West_RFK
-	from ownerhip_length_data2 (where = (owner_occ ~=""))
+	from ownership_length_data2 (where = (owner_occ ~=""))
 group by owner_occ;
 quit;
 
