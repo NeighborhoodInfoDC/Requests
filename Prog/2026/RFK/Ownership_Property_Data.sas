@@ -71,15 +71,6 @@ data rfk_ownership2;
 	else owner_occupied = 0;
 run;
 
-%File_info( data=rfk_ownership2, printobs=0, freqvars=ui_proptype hstd_code )
-
-%Dup_check(
-  data=rfk_ownership2,
-  by=ssl,
-  id=geo2020,
-  listdups=Y
-)
-
 
 * Load rent control data;
 data rent_control;
@@ -94,12 +85,10 @@ proc sql; create table rfk_rent_control as select
 	on a.ssl = b.ssl;
 quit;
 
-%File_info( data=rfk_rent_control, printobs=0, freqvars=ui_proptype )
-
-
 
 *assign number of units as 1 when singlefamily or condo;
-data rfk_full;
+*recode ui_proptype=19 to either SF or multifamily rental;
+data rfk_ui_proptype_recode;
 	set rfk_rent_control;
   
   * Recode ui_proptype=19;
@@ -107,7 +96,9 @@ data rfk_full;
   if ui_proptype = '19' then do;
     if usecode in ( '015', '029' ) then do;
       if units_full = 1 then ui_proptype_recode = '10';
-      else ui_proptype_recode = '13';
+      else if units_full > 1 then ui_proptype_recode = '13';
+      else if usecode = '015' then ui_proptype_recode = '10';
+      else if usecode = '029' then ui_proptype_recode = '13';
     end;
   end;
   else do;
@@ -127,34 +118,40 @@ data rfk_full;
 	
 run;
 
+
+*add mean unit counts by property type to property records;
+proc sql noprint;
+  create table rfk_unit_count_mean as 
+  select *
+  from rfk_ui_proptype_recode as a left join 
+    ( select ui_proptype_recode, mean( unit_count ) as unit_count_mean from rfk_ui_proptype_recode
+      group by ui_proptype_recode
+    ) as b
+  on a.ui_proptype_recode = b.ui_proptype_recode;
+quit;
+
+*use means to fill in missing unit counts;
+data rfk_full;
+
+  set rfk_unit_count_mean;
+  
+  if missing( unit_count ) then unit_count = unit_count_mean;
+  
+run;
+
 %File_info( data=rfk_full, printobs=0 )
+
+%Dup_check(
+  data=rfk_full,
+  by=ssl,
+  id=geo2020,
+  listdups=Y
+)
 
 proc format;
   value rfk_group (notsorted)
     1 = 'RFK Area'
     other = 'Outside RFK Area';
-run;
-
-proc tabulate data=rfk_full format=comma12.0 noseps missing order=data;
-  class ui_proptype / preloadfmt;
-  class rfk_group / preloadfmt;
-  var unit_count;
-  table 
-    /** Pages **/
-    all='DC' rfk_group=' ',
-    /** Rows **/
-    all='Total' ui_proptype=' ',
-    /** Columns **/
-    unit_count * ( n nmiss sum mean min max )
-  / rts=40 condense
-  ;
-  format rfk_group rfk_group.;
-run;
-
-proc print data=rfk_full;
-  where ui_proptype = '19' and rfk_group = 1;
-  id ssl;
-  var premiseadd usecode no_units units_mar units_full;
 run;
 
 proc tabulate data=rfk_full format=comma12.0 noseps missing order=data;
