@@ -181,27 +181,25 @@ quit;
 proc print data = ownerocc_check;
 run;
 
-ENDSAS;
 
 /************************************************************** Property Type & Ownership Tables **************************************************************/
 
-/* Number of Units by property Type and area */
+title2 "Number of Units by property Type and area";
 proc sql; create table proptype_units as select
-	ui_proptype, 
+	ui_proptype_recode, 
 		sum(dc * unit_count) as DC,
 		sum(ward7 * unit_count) as Ward7,
 		sum(rfk_group * unit_count) as RFK,
 		sum(east_of_anacostia * unit_count) as East_RFK,
 		sum(west_of_anacostia * unit_count) as West_RFK
-	from rfk_rent_control_nodup2
-	group by ui_proptype;
+	from rfk_full
+	group by ui_proptype_recode;
 quit;
 
-proc print data = proptype_units;
+proc print data = proptype_units noobs;
 run;
 
-
-/* Number of Units by owner type and area */
+title2 "Number of Units by owner type and area";
 proc sql; create table owner_units as select
 	ownercat, 
 		sum(dc * unit_count) as DC,
@@ -209,7 +207,7 @@ proc sql; create table owner_units as select
 		sum(rfk_group * unit_count) as RFK,
 		sum(east_of_anacostia * unit_count) as East_RFK,
 		sum(west_of_anacostia * unit_count) as West_RFK
-	from rfk_rent_control_nodup2(where = (ui_proptype ~= "12"))
+	from rfk_full(where = (ui_proptype_recode ~= "12"))
 	group by ownercat;
 quit;
 
@@ -217,16 +215,16 @@ proc report data = owner_units;
 run;
 
 
-* Parcels by property type [ui_proptype] and owner type [ownercat] by areas;
+title2 "Parcels by property type [ui_proptype_recode] and owner type [ownercat] by areas";
 proc sql; create table proptype_owner_units as select
-	ui_proptype, ownercat, 
+	ui_proptype_recode, ownercat, 
 		sum(dc * unit_count) as DC,
 		sum(ward7 * unit_count) as Ward7,
 		sum(rfk_group * unit_count) as RFK,
 		sum(east_of_anacostia * unit_count) as East_RFK,
 		sum(west_of_anacostia * unit_count) as West_RFK
-	from rfk_rent_control_nodup2 
-	group by ui_proptype, ownercat;
+	from rfk_full 
+	group by ui_proptype_recode, ownercat;
 quit;
 
 proc print data = proptype_owner_units;
@@ -234,7 +232,7 @@ run;
 
 /************************************************************** Homestead Exemptions **************************************************************/
 
-*Single family houses [ui_proptype=10] by owner-occupancy [owner_occ_sale];
+title2 "Single family houses [ui_proptype_recode=10] by owner-occupancy [owner_occ_sale]";
 proc sql; create table sf_ownership as select
 	owner_occ_sale, 
 		sum(dc) as DC,
@@ -242,7 +240,7 @@ proc sql; create table sf_ownership as select
 		sum(rfk_group) as RFK,
 		sum(east_of_anacostia) as East_RFK,
 		sum(west_of_anacostia) as West_RFK
-	from rfk_rent_control_nodup2(where = (ui_proptype ="10")) 
+	from rfk_full(where = (ui_proptype_recode ="10")) 
 	group by owner_occ_sale;
 quit;
 
@@ -256,7 +254,7 @@ proc export data=sf_ownership
 	sheet="sf_ownership";
 run;
 
-*Single family houses [ui_proptype=10] with senior homestead exemption [hstd_code=5];
+title2 "Single family houses [ui_proptype_recode=10] with senior homestead exemption [hstd_code=5]";
 proc sql; create table sf_homestead as select
 		owner_occ_sale, hstd_code,
 		sum(dc) as DC,
@@ -264,7 +262,7 @@ proc sql; create table sf_homestead as select
 		sum(rfk_group) as RFK,
 		sum(east_of_anacostia) as East_RFK,
 		sum(west_of_anacostia) as West_RFK
-	from rfk_rent_control_nodup2(where = (ui_proptype ="10"))  /*AND (input(hstd_code, 10.)=5));*/
+	from rfk_full(where = (ui_proptype_recode ="10"))  /*AND (input(hstd_code, 10.)=5));*/
 	group by owner_occ_sale, hstd_code;
 quit;
 
@@ -279,7 +277,7 @@ proc export data=sf_homestead
 run;
 
 
-*Condominium units [ui_proptype=11] by owner-occupancy [owner_occ_sale];
+title2 "Condominium units [ui_proptype_recode=11] by owner-occupancy [owner_occ_sale]";
 proc sql; create table co_ownership as select
 		owner_occ_sale,
 		sum(dc) as DC,
@@ -287,7 +285,7 @@ proc sql; create table co_ownership as select
 		sum(rfk_group) as RFK,
 		sum(east_of_anacostia) as East_RFK,
 		sum(west_of_anacostia) as West_RFK
-	from rfk_rent_control_nodup2(where =((input(ui_proptype, 10.)=11))) /*AND (input(hstd_code, 10.)=5));*/
+	from rfk_full(where =((input(ui_proptype_recode, 10.)=11))) /*AND (input(hstd_code, 10.)=5));*/
 	group by owner_occ_sale;
 quit;
 
@@ -301,7 +299,7 @@ proc export data=co_ownership
 	sheet="co_ownership";
 run;
 
-*Condominium units [ui_proptype=11] with senior homestead exemption [hstd_code=5];
+title2 "Condominium units [ui_proptype_recode=11] with senior homestead exemption [hstd_code=5]";
 proc sql; create table co_homestead as select
 		owner_occ_sale, hstd_code,
 		sum(dc) as DC,
@@ -309,7 +307,7 @@ proc sql; create table co_homestead as select
 		sum(rfk_group) as RFK,
 		sum(east_of_anacostia) as East_RFK,
 		sum(west_of_anacostia) as West_RFK
-	from rfk_rent_control_nodup2(where =((input(ui_proptype, 10.)=11))) /*AND (input(hstd_code, 10.)=5));*/
+	from rfk_full(where =((input(ui_proptype_recode, 10.)=11))) /*AND (input(hstd_code, 10.)=5));*/
 	group by owner_occ_sale, hstd_code;
 quit;
 
@@ -325,7 +323,7 @@ run;
 
 
 /************************************************************** Rent Control **************************************************************/
-*shares of rental properties that have rent control by area;
+title2 "shares of rental properties that have rent control by area";
 proc sql; create table rent_control as select
 	Rent_controlled, 
 		sum(dc) as DC,
@@ -333,7 +331,7 @@ proc sql; create table rent_control as select
 		sum(rfk_group) as RFK,
 		sum(east_of_anacostia) as East_RFK,
 		sum(west_of_anacostia) as West_RFK
-from rfk_rent_control_nodup2 (where = (ui_proptype = "13"))
+from rfk_full (where = (ui_proptype_recode = "13"))
 group by Rent_controlled;
 quit;
 
@@ -344,12 +342,14 @@ proc export data=rent_control
 	sheet="rent_control";
 run;
 
+title2;
+
 
 /************************************************************** Length of Ownership **************************************************************/
 *Year breakdown of last saledate;
 *get year;
 data ownerhip_length_data;
-set rfk_rent_control_nodup2;
+set rfk_full;
 sale_year = year(SALEDATE);
 if DC =0 then DC = .;
 if Ward7 =0 then Ward7 = .;
