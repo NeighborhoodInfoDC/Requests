@@ -169,6 +169,22 @@ map_result
 
 ```
 
+```{r alternate map showing star at location of stadium}
+#create dataframe with stadium coordinates
+stadium_coord <- data.frame(lon = -76.9718667, lat = 38.8898532)
+
+#convert to sf object and set coordinate system reference
+stadium_sf <- st_as_sf(stadium_coord, coords = c("lon", "lat"), crs = 4326)
+
+#generate test map
+map_result2 <- ggplot() + 
+  geom_sf(data = rfk_tracts, aes(geometry = geometry, fill = rfk_sub_group), colour = "white") + 
+  geom_sf(data = rfk, aes(geometry = geometry), colour = "white", fill = "white") +
+  #display a star at stadium coordinates
+  geom_sf(data = stadium_sf, shape = "\u2605", size = 10, color = "red", fill = "red")
+map_result2
+```
+
 ```{r zoom-in area}
 
 # Filter to Ward 7
