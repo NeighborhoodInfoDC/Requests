@@ -238,8 +238,7 @@ full_map <- ggplot() +
   annotation_scale()
 full_map
 
-ggsave(#filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Results/Geography & ACS/full_map.png",
-       filename = "C:/Users/kvisalli/Box/Greater DC/Projects/RFK Stadium Analysis/Results/Geography & ACS/full_map.png",
+ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/Geography & ACS/full_map.png",
        plot = full_map,
        device = "png",
        width = 6.5,
@@ -315,8 +314,7 @@ full_map_zoom_tract <- ggplot() +
 full_map_zoom_tract
 
 
-ggsave(#filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Results/Geography & ACS/full_map_zoom_tract.png",
-       filename = "C:/Users/kvisalli/Box/Greater DC/Projects/RFK Stadium Analysis/Results/Geography & ACS/full_map_zoom_tract.png",
+ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/Geography & ACS/full_map_zoom_tract.png",
        plot = full_map_zoom_tract,
        device = "png",
        width = 6.5,
@@ -353,8 +351,7 @@ full_map_zoom_roads <- ggplot() +
 full_map_zoom_roads
 
 
-ggsave(#filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Results/Geography & ACS/full_map_zoom_roads.png",
-       filename = "C:/Users/kvisalli/Box/Greater DC/Projects/RFK Stadium Analysis/Results/Geography & ACS/full_map_zoom_roads.png",
+ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/Geography & ACS/full_map_zoom_roads.png",
        plot = full_map_zoom_roads,
        device = "png",
        width = 6.5,
