@@ -31,6 +31,7 @@
 * Data Libraries ;
 %DCData_lib(REALPROP)
 %DCData_lib(DHCD)
+%DCData_lib(MAR)
 
 *Load data
 Universe: All active [in_last_ownerpt=1] residential [ui_proptype=10,11,12,13,19] property parcels;
@@ -343,7 +344,7 @@ run;
 
 
 /************************************************************** Rent Control **************************************************************/
-title2 "shares of rental properties that have rent control by area";
+title2 "shares of multifamily rental properties that have rent control by area";
 proc sql; create table rent_control as select
 	Rent_controlled, 
 		sum(dc) as DC,
@@ -351,7 +352,7 @@ proc sql; create table rent_control as select
 		sum(rfk_group) as RFK,
 		sum(east_of_anacostia) as East_RFK,
 		sum(west_of_anacostia) as West_RFK
-from rfk_full (where = (ui_proptype_recode = "13"))
+from rfk_full (where = (ui_proptype_recode = "13" and unit_count > 1))
 group by Rent_controlled;
 quit;
 
@@ -363,6 +364,56 @@ proc export data=rent_control
 run;
 
 title2;
+
+*create table with MAR alias names;
+data mar_alias;
+  set MAR.Points_of_interest (keep=address_id place_name);
+  by address_id;
+  if last.address_id;
+  place_name = propcase( place_name );
+run;
+
+data rent_control_mf;
+
+  set rfk_full (keep=ssl Rent_controlled ui_proptype_recode premiseadd unit_count);
+  where Rent_controlled and ui_proptype_recode = '13' and unit_count > 1;
+  
+  ** Create Premiseadd_str by removing "WASHINGTON DC ..." from PREMISEADD **;
+	  
+	length Premiseadd_str $ 80;
+	  
+	Premiseadd_str = prxchange( 's/washington dc.*//i', 1, premiseadd );
+  
+  label Premiseadd_str = "Parcel street address";
+
+run;
+
+%DC_mar_geocode(
+  geo_match=Y,
+  data=rent_control_mf,
+  out=rent_control_mf_geo,
+  staddr=Premiseadd_str,
+  zip=,
+  id=ssl,
+  ds_label=,
+  listunmatched=Y
+)
+
+*output data for mapping multifamily rent controlled properties;
+proc sql;
+  create table rent_control_map as 
+  select * from
+  rent_control_mf_geo left join mar_alias
+  on rent_control_mf_geo.address_id = mar_alias.address_id
+  where _MATCHED_ = "Street";
+quit;
+
+proc export data=rent_control_map
+	outfile="&_dcdata_default_path\Requests\Prog\2026\RFK\Data\rent_control_map.xlsx"
+	dbms=xlsx
+	replace;
+	sheet="rent_control_map";
+run;
 
 
 /************************************************************** Length of Ownership **************************************************************/
