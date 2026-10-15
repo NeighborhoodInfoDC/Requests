@@ -136,10 +136,10 @@ tract2 <- tracts %>%
          rfk_group = if_else(TRACT == "011100", 0, rfk_group), 
          east_of_anacostia = if_else(TRACT %in% c("007709", "007708", "007601", "007604", "009901", "007703", "009604", "009603", "009602", "007803", "009601", "007806", "007809", "009906"), 1, 0), 
          west_of_anacostia = if_else(rfk_group == 1 & east_of_anacostia == 0, 1, 0), 
-         rfk_sub_group = case_when(east_of_anacostia == 1 ~ "RFK-East of Anacostia", 
-                                   west_of_anacostia == 1 ~ "RFK-West of Anacostia"), 
-         rfk_sub_group2 = case_when(east_of_anacostia == 1 ~ "East of Anacostia", 
-                                   west_of_anacostia == 1 ~ "West of Anacostia"))
+         rfk_sub_group = case_when(east_of_anacostia == 1 ~ "RFK East", 
+                                   west_of_anacostia == 1 ~ "RFK West"), 
+         rfk_sub_group2 = case_when(east_of_anacostia == 1 ~ "RFK East", 
+                                   west_of_anacostia == 1 ~ "RFK West"))
 
 rfk_tracts <- tract2 %>%
   filter(rfk_group == 1)
@@ -167,6 +167,22 @@ map_result
 #        width = 6.5,
 #        dpi = 1000)
 
+```
+
+```{r alternate map showing star at location of stadium}
+#create dataframe with stadium coordinates
+stadium_coord <- data.frame(lon = -76.9718667, lat = 38.8898532)
+
+#convert to sf object and set coordinate system reference
+stadium_sf <- st_as_sf(stadium_coord, coords = c("lon", "lat"), crs = 4326)
+
+#generate test map
+map_result2 <- ggplot() + 
+  geom_sf(data = rfk_tracts, aes(geometry = geometry, fill = rfk_sub_group), colour = "white") + 
+  geom_sf(data = rfk, aes(geometry = geometry), colour = "white", fill = "white") +
+  #display a star at stadium coordinates
+  geom_sf(data = stadium_sf, shape = "\u2605", size = 10, color = "red", fill = "red")
+map_result2
 ```
 
 ```{r zoom-in area}
@@ -238,8 +254,7 @@ full_map <- ggplot() +
   annotation_scale()
 full_map
 
-ggsave(#filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Results/Geography & ACS/full_map.png",
-       filename = "C:/Users/kvisalli/Box/Greater DC/Projects/RFK Stadium Analysis/Results/Geography & ACS/full_map.png",
+ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/Geography & ACS/full_map.png",
        plot = full_map,
        device = "png",
        width = 6.5,
@@ -315,8 +330,7 @@ full_map_zoom_tract <- ggplot() +
 full_map_zoom_tract
 
 
-ggsave(#filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Results/Geography & ACS/full_map_zoom_tract.png",
-       filename = "C:/Users/kvisalli/Box/Greater DC/Projects/RFK Stadium Analysis/Results/Geography & ACS/full_map_zoom_tract.png",
+ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/Geography & ACS/full_map_zoom_tract.png",
        plot = full_map_zoom_tract,
        device = "png",
        width = 6.5,
@@ -353,8 +367,7 @@ full_map_zoom_roads <- ggplot() +
 full_map_zoom_roads
 
 
-ggsave(#filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Results/Geography & ACS/full_map_zoom_roads.png",
-       filename = "C:/Users/kvisalli/Box/Greater DC/Projects/RFK Stadium Analysis/Results/Geography & ACS/full_map_zoom_roads.png",
+ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/Geography & ACS/full_map_zoom_roads.png",
        plot = full_map_zoom_roads,
        device = "png",
        width = 6.5,
