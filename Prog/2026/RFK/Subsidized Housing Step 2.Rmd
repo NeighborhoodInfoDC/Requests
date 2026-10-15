@@ -57,6 +57,9 @@ rfk_shape <- tract_shape %>%
 rfk_only_shape <- rfk_shape %>%
   filter(rfk_group == 1)
 
+#shape file with only RFK tract
+rfk_only_tract <- rfk_only_shape %>% filter(GEOID == "11001006804")
+
 #confirm CRS of census tract date
 st_crs(ward_shape)$epsg
 
@@ -111,6 +114,11 @@ rent_control_props_sf <- st_transform(rent_control_props_sf, crs = st_crs(ward_s
 rent_control_props_rfk_shape <- st_join(rent_control_props_sf, rfk_shape, .predicate = st_within) %>%
   mutate(ward7 = if_else(Ward2022 == "7", 1, 0))
 
+#create dataframe with stadium coordinates
+stadium_coord <- data.frame(lon = -76.9718667, lat = 38.8898532)
+
+#convert to sf object and set coordinate system reference
+stadium_sf <- st_as_sf(stadium_coord, coords = c("lon", "lat"), crs = 4326)
 ```
 
 ```{r map test}
@@ -499,6 +507,10 @@ LIHTC_rfk <- ggplot() +
     legend.justification = c(1, 0),
     plot.margin = margin(r = 50)            # 3. Add right margin space so the legend has room to sit
   ) +
+  #blank out RFK stadium tract
+  geom_sf(data = rfk_only_tract, aes(geometry = geometry), colour = "black", fill = "white") +
+  #display a star at stadium coordinates
+  geom_sf(data = stadium_sf, shape = "\u2605", size = 10, color = "red", fill = "red") +
   #ggtitle("Subsidized Projects with LIHTC") +
   #Zoom in
   coord_sf(
