@@ -37,6 +37,9 @@ subsidized_housing_wide <- read_xlsx("//sas1/dcdata/Libraries/Requests/Prog/2026
 #RFK areas
 rfk_tracts <- read.csv("//Sas1/dcdata/Libraries/Requests/Prog/2026/RFK/result/rfk_tracts.csv")
 
+#Rent controlled properties
+rent_control_props <- read_xlsx("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/rent_control_map.xlsx")
+
 ```
 
 ```{r load shapefiles}
@@ -89,10 +92,25 @@ subsidized_housing_wide_sf <- st_transform(subsidized_housing_wide_sf, crs = st_
 subsidized_rfk_shape <- st_join(subsidized_housing_sf, rfk_shape, .predicate = st_within) %>%
   mutate(ward7 = if_else(Ward2022 == "7", 1, 0))
 
-
 #Use geometry to match subsidized housing points to census tracts
 subsidized_wide_rfk_shape <- st_join(subsidized_housing_wide_sf, rfk_shape, .predicate = st_within) %>%
   mutate(ward7 = if_else(Ward2022 == "7", 1, 0))
+
+
+#convert XY coordinates for rent control properties to geometry
+rent_control_props_sf <- rent_control_props %>%
+  filter(!is.na(x) & !is.na(y)) %>%
+  st_as_sf(coords = c("LONGITUDE", "LATITUDE"), crs = "EPSG:4326")
+
+st_crs(rent_control_props_sf)$epsg
+
+#align rent control data's crs
+rent_control_props_sf <- st_transform(rent_control_props_sf, crs = st_crs(ward_shape))
+
+#Use geometry to match rent control points to census tracts
+rent_control_props_rfk_shape <- st_join(rent_control_props_sf, rfk_shape, .predicate = st_within) %>%
+  mutate(ward7 = if_else(Ward2022 == "7", 1, 0))
+
 ```
 
 ```{r map test}
@@ -105,6 +123,17 @@ test_map <- ggplot() +
 test_map
 
 ```
+```{r map test 2}
+#test geographies by plotting rent control X Y coords and census tracts
+test_map2 <- ggplot() +
+  #RFK tracts
+  geom_sf(data = rfk_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = "black") +
+  #subsidized units
+  geom_sf(data = rent_control_props_sf, aes(geometry = geometry), colour = "red")
+test_map2
+
+```
+
 ```{r tables - Unduplicated}
 
 
@@ -301,6 +330,18 @@ poa_end_Sec202811$geometry <- as.character(poa_end_Sec202811$geometry)
 
 addWorksheet(wb, "poa_end_Sec202811")
 writeData(wb, "poa_end_Sec202811", poa_end_Sec202811)
+
+poa_end_rent_control <- rent_control_props_rfk_shape %>%
+  filter(!is.na(rfk_sub_group)) %>%
+  filter(unit_count >= 5) %>%
+  mutate(place = rfk_sub_group) %>%
+  select(place, PLACE_NAME, Premiseadd_str, unit_count) %>%
+  arrange(place, PLACE_NAME)
+
+poa_end_rent_control$geometry <- as.character(poa_end_rent_control$geometry)
+
+addWorksheet(wb, "poa_end_rent_control")
+writeData(wb, "poa_end_rent_control", poa_end_rent_control)
 ```
 
 
@@ -718,6 +759,39 @@ ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/subsidy
        height = 5,
        width = 8.5,
        dpi = 1000)
+
+#rent control map, zoomed in (only), 5+ unit buildings only
+RentControl_rfk <- ggplot() +
+  #RFK tracts
+  geom_sf(data = rfk_only_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = "black") +
+#ward outline
+  geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
+  #projects
+  geom_sf(data = rent_control_props_sf %>% filter(unit_count >= 5) %>% st_filter(rfk_only_shape, .predicate = st_intersects), size=2, aes(geometry = geometry), color = blues[7]) + 
+  scale_fill_manual(values = c(pinks[1], yellows[1]), name = "" ) +
+  theme( 
+    legend.text = element_text( size = 14 ),
+    legend.position = "inside",
+    legend.position.inside = c(1.10, 0.05), # 2. Increase the X coordinate past 1.0 (e.g., 1.10)
+    legend.justification = c(1, 0),
+    plot.margin = margin(r = 50)            # 3. Add right margin space so the legend has room to sit
+  ) +
+  #ggtitle("Section 202/811") +
+  #Zoom in
+  coord_sf(
+    xlim = c(xmin, xmax), 
+    ylim = c(ymin, ymax),
+    expand = FALSE)
+RentControl_rfk
+
+ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/subsidy maps/RentControl_rfk.png",
+       plot = RentControl_rfk,
+       device = "png",
+       height = 5,
+       width = 8.5,
+       dpi = 1000)
+
+
 ```
 
 
