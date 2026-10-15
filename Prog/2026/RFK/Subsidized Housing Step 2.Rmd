@@ -259,89 +259,89 @@ writeData(wb, "all_subsidy_types_projects", all_subsidy_types_projects)
 ```
 ```{r project lists by subsidy and by expiration (if applicable)}
 
-poa_end_LIHTC <- subsidized_wide_rfk_shape %>%
+list_LIHTC <- subsidized_wide_rfk_shape %>%
   filter(!is.na(rfk_sub_group)) %>%
   filter(!is.na(subtype_LIHTC)) %>%
   mutate(place = rfk_sub_group) %>%
   select(place, Proj_Name, Poa_end_LIHTC, subtype_LIHTC) %>%
   arrange(place, Poa_end_LIHTC, Proj_Name)
 
-poa_end_LIHTC$geometry <- as.character(poa_end_LIHTC$geometry)
+list_LIHTC$geometry <- as.character(list_LIHTC$geometry)
 
-addWorksheet(wb, "poa_end_LIHTC")
-writeData(wb, "poa_end_LIHTC", poa_end_LIHTC)
+addWorksheet(wb, "list_LIHTC")
+writeData(wb, "list_LIHTC", list_LIHTC)
 
-poa_end_HPTF <- subsidized_wide_rfk_shape %>%
+list_HPTF <- subsidized_wide_rfk_shape %>%
   filter(!is.na(rfk_sub_group)) %>%
   filter(!is.na(subtype_DC_housing_production_tr)) %>%
   mutate(place = rfk_sub_group) %>%
   select(place, Proj_Name, subtype_DC_housing_production_tr) %>%
   arrange(place, Proj_Name)
 
-poa_end_HPTF$geometry <- as.character(poa_end_HPTF$geometry)
+list_HPTF$geometry <- as.character(list_HPTF$geometry)
 
-addWorksheet(wb, "poa_end_HPTF")
-writeData(wb, "poa_end_HPTF", poa_end_HPTF)
+addWorksheet(wb, "list_HPTF")
+writeData(wb, "list_HPTF", list_HPTF)
 
-poa_end_Sec8 <- subsidized_wide_rfk_shape %>%
+list_Sec8 <- subsidized_wide_rfk_shape %>%
   filter(!is.na(rfk_sub_group)) %>%
   filter(!is.na(subtype_Project_based_section_8)) %>%
   mutate(place = rfk_sub_group) %>%
   select(place, Proj_Name, Poa_end_Project_based_section_8, subtype_Project_based_section_8) %>%
   arrange(place, Poa_end_Project_based_section_8, Proj_Name)
 
-poa_end_Sec8$geometry <- as.character(poa_end_Sec8$geometry)
+list_Sec8$geometry <- as.character(list_Sec8$geometry)
 
-addWorksheet(wb, "poa_end_Sec8")
-writeData(wb, "poa_end_Sec8", poa_end_Sec8)
+addWorksheet(wb, "list_Sec8")
+writeData(wb, "list_Sec8", list_Sec8)
 
-poa_end_PH <- subsidized_wide_rfk_shape %>%
+list_PH <- subsidized_wide_rfk_shape %>%
   filter(!is.na(rfk_sub_group)) %>%
   filter(!is.na(subtype_Public_housing)) %>%
   mutate(place = rfk_sub_group) %>%
   select(place, Proj_Name, subtype_Public_housing) %>%
   arrange(place, Proj_Name)
 
-poa_end_PH$geometry <- as.character(poa_end_PH$geometry)
+list_PH$geometry <- as.character(list_PH$geometry)
 
-addWorksheet(wb, "poa_end_PH")
-writeData(wb, "poa_end_PH", poa_end_PH)
+addWorksheet(wb, "list_PH")
+writeData(wb, "list_PH", list_PH)
 
-poa_end_LECoop <- subsidized_wide_rfk_shape %>%
+list_LECoop <- subsidized_wide_rfk_shape %>%
   filter(!is.na(rfk_sub_group)) %>%
   filter(!is.na(subtype_Limited_equity_cooperati)) %>%
   mutate(place = rfk_sub_group) %>%
   select(place, Proj_Name, subtype_Limited_equity_cooperati) %>%
   arrange(place, Proj_Name)
 
-poa_end_LECoop$geometry <- as.character(poa_end_LECoop$geometry)
+list_LECoop$geometry <- as.character(list_LECoop$geometry)
 
-addWorksheet(wb, "poa_end_LECoop")
-writeData(wb, "poa_end_LECoop", poa_end_LECoop)
+addWorksheet(wb, "list_LECoop")
+writeData(wb, "list_LECoop", list_LECoop)
 
-poa_end_Sec202811 <- subsidized_wide_rfk_shape %>%
+list_Sec202811 <- subsidized_wide_rfk_shape %>%
   filter(!is.na(rfk_sub_group)) %>%
   filter(!is.na(subtype_Section_202_811)) %>%
   mutate(place = rfk_sub_group) %>%
   select(place, Proj_Name, Poa_end_Section_202_811, subtype_Section_202_811) %>%
   arrange(place, Poa_end_Section_202_811, Proj_Name)
 
-poa_end_Sec202811$geometry <- as.character(poa_end_Sec202811$geometry)
+list_Sec202811$geometry <- as.character(list_Sec202811$geometry)
 
-addWorksheet(wb, "poa_end_Sec202811")
-writeData(wb, "poa_end_Sec202811", poa_end_Sec202811)
+addWorksheet(wb, "list_Sec202811")
+writeData(wb, "list_Sec202811", list_Sec202811)
 
-poa_end_rent_control <- rent_control_props_rfk_shape %>%
+list_rent_control <- rent_control_props_rfk_shape %>%
   filter(!is.na(rfk_sub_group)) %>%
   filter(unit_count >= 5) %>%
   mutate(place = rfk_sub_group) %>%
   select(place, PLACE_NAME, Premiseadd_str, unit_count) %>%
   arrange(place, PLACE_NAME)
 
-poa_end_rent_control$geometry <- as.character(poa_end_rent_control$geometry)
+list_rent_control$geometry <- as.character(list_rent_control$geometry)
 
-addWorksheet(wb, "poa_end_rent_control")
-writeData(wb, "poa_end_rent_control", poa_end_rent_control)
+addWorksheet(wb, "list_rent_control")
+writeData(wb, "list_rent_control", list_rent_control)
 ```
 
 
