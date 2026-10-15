@@ -136,10 +136,10 @@ tract2 <- tracts %>%
          rfk_group = if_else(TRACT == "011100", 0, rfk_group), 
          east_of_anacostia = if_else(TRACT %in% c("007709", "007708", "007601", "007604", "009901", "007703", "009604", "009603", "009602", "007803", "009601", "007806", "007809", "009906"), 1, 0), 
          west_of_anacostia = if_else(rfk_group == 1 & east_of_anacostia == 0, 1, 0), 
-         rfk_sub_group = case_when(east_of_anacostia == 1 ~ "RFK-East of Anacostia", 
-                                   west_of_anacostia == 1 ~ "RFK-West of Anacostia"), 
-         rfk_sub_group2 = case_when(east_of_anacostia == 1 ~ "East of Anacostia", 
-                                   west_of_anacostia == 1 ~ "West of Anacostia"))
+         rfk_sub_group = case_when(east_of_anacostia == 1 ~ "RFK East", 
+                                   west_of_anacostia == 1 ~ "RFK West"), 
+         rfk_sub_group2 = case_when(east_of_anacostia == 1 ~ "RFK East", 
+                                   west_of_anacostia == 1 ~ "RFK West"))
 
 rfk_tracts <- tract2 %>%
   filter(rfk_group == 1)
