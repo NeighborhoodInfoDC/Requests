@@ -495,11 +495,20 @@ ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/subsidy
 LIHTC_rfk <- ggplot() +
   #RFK tracts
   geom_sf(data = rfk_only_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = "black") +
-#ward outline
+  #ward outline
   geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
   #subsidized units
-  geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_LIHTC)) %>% st_filter(rfk_only_shape, .predicate = st_intersects), size=2, aes(geometry = geometry), color = pinks[5]) + 
-  scale_fill_manual(values = c(pinks[1], yellows[1]), name = "" ) +
+  geom_sf(data = subsidized_housing_wide_sf %>% 
+    filter(!is.na(subtype_LIHTC)) %>% 
+    st_filter(rfk_only_shape, .predicate = st_intersects), size=2, aes(geometry = geometry), color = pinks[5]) + 
+  #blank out RFK stadium tract
+  geom_sf(data = rfk_only_tract, aes(geometry = geometry), colour = "black", fill = "white") +
+  #display a star at stadium coordinates
+  geom_sf(data = stadium_sf, aes( geometry = geometry, color = "RFK Stadium" ), shape = "\u2605", size = 10) +
+  #build map legend
+  scale_fill_manual(values = c(pinks[1], yellows[1]), name = NULL ) +
+  scale_color_manual( values = c("RFK Stadium" = "red"), name = NULL ) +
+  #ggtitle("Subsidized Projects with LIHTC") +
   theme( 
     legend.text = element_text( size = 14 ),
     legend.position = "inside",
@@ -507,11 +516,11 @@ LIHTC_rfk <- ggplot() +
     legend.justification = c(1, 0),
     plot.margin = margin(r = 50)            # 3. Add right margin space so the legend has room to sit
   ) +
-  #blank out RFK stadium tract
-  geom_sf(data = rfk_only_tract, aes(geometry = geometry), colour = "black", fill = "white") +
-  #display a star at stadium coordinates
-  geom_sf(data = stadium_sf, shape = "\u2605", size = 10, color = "red", fill = "red") +
-  #ggtitle("Subsidized Projects with LIHTC") +
+  guides(
+    color = guide_legend(
+      override.aes = list(shape = "\u2605", size = 6) # Adjust size to look clean in legend
+    )
+  ) + 
   #Zoom in
   coord_sf(
     xlim = c(xmin, xmax), 
@@ -552,7 +561,14 @@ HPTF_rfk <- ggplot() +
   geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
   #projects
   geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_DC_housing_production_tr)) %>% st_filter(rfk_only_shape, .predicate = st_intersects), size=2, aes(geometry = geometry), color = blues[5]) + 
-  scale_fill_manual(values = c(pinks[1], yellows[1]), name = "" ) +
+  #blank out RFK stadium tract
+  geom_sf(data = rfk_only_tract, aes(geometry = geometry), colour = "black", fill = "white") +
+  #display a star at stadium coordinates
+  geom_sf(data = stadium_sf, aes( geometry = geometry, color = "RFK Stadium" ), shape = "\u2605", size = 10) +
+  #build map legend
+  scale_fill_manual(values = c(pinks[1], yellows[1]), name = NULL ) +
+  scale_color_manual( values = c("RFK Stadium" = "red"), name = NULL ) +
+  #ggtitle("Subsidized Projects with LIHTC") +
   theme( 
     legend.text = element_text( size = 14 ),
     legend.position = "inside",
@@ -560,7 +576,11 @@ HPTF_rfk <- ggplot() +
     legend.justification = c(1, 0),
     plot.margin = margin(r = 50)            # 3. Add right margin space so the legend has room to sit
   ) +
-  #ggtitle("Subsidized Projects with DC HPTF") +
+  guides(
+    color = guide_legend(
+      override.aes = list(shape = "\u2605", size = 6) # Adjust size to look clean in legend
+    )
+  ) + 
   #Zoom in
   coord_sf(
     xlim = c(xmin, xmax), 
@@ -601,7 +621,14 @@ sec8_rfk <- ggplot() +
   geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
   #projects
   geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_Project_based_section_8)) %>% st_filter(rfk_only_shape, .predicate = st_intersects), size=2, aes(geometry = geometry), color = greens[5]) + 
-  scale_fill_manual(values = c(pinks[1], yellows[1]), name = "" ) +
+  #blank out RFK stadium tract
+  geom_sf(data = rfk_only_tract, aes(geometry = geometry), colour = "black", fill = "white") +
+  #display a star at stadium coordinates
+  geom_sf(data = stadium_sf, aes( geometry = geometry, color = "RFK Stadium" ), shape = "\u2605", size = 10) +
+  #build map legend
+  scale_fill_manual(values = c(pinks[1], yellows[1]), name = NULL ) +
+  scale_color_manual( values = c("RFK Stadium" = "red"), name = NULL ) +
+  #ggtitle("Subsidized Projects with LIHTC") +
   theme( 
     legend.text = element_text( size = 14 ),
     legend.position = "inside",
@@ -609,7 +636,11 @@ sec8_rfk <- ggplot() +
     legend.justification = c(1, 0),
     plot.margin = margin(r = 50)            # 3. Add right margin space so the legend has room to sit
   ) +
-  #ggtitle("Subsidized Projects with DC sec8") +
+  guides(
+    color = guide_legend(
+      override.aes = list(shape = "\u2605", size = 6) # Adjust size to look clean in legend
+    )
+  ) + 
   #Zoom in
   coord_sf(
     xlim = c(xmin, xmax), 
@@ -651,7 +682,14 @@ pubH_rfk <- ggplot() +
   geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
   #projects
   geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_Public_housing)) %>% st_filter(rfk_only_shape, .predicate = st_intersects), size=2, aes(geometry = geometry), color = yellows[8]) + 
-  scale_fill_manual(values = c(pinks[1], yellows[1]), name = "" ) +
+  #blank out RFK stadium tract
+  geom_sf(data = rfk_only_tract, aes(geometry = geometry), colour = "black", fill = "white") +
+  #display a star at stadium coordinates
+  geom_sf(data = stadium_sf, aes( geometry = geometry, color = "RFK Stadium" ), shape = "\u2605", size = 10) +
+  #build map legend
+  scale_fill_manual(values = c(pinks[1], yellows[1]), name = NULL ) +
+  scale_color_manual( values = c("RFK Stadium" = "red"), name = NULL ) +
+  #ggtitle("Subsidized Projects with LIHTC") +
   theme( 
     legend.text = element_text( size = 14 ),
     legend.position = "inside",
@@ -659,7 +697,11 @@ pubH_rfk <- ggplot() +
     legend.justification = c(1, 0),
     plot.margin = margin(r = 50)            # 3. Add right margin space so the legend has room to sit
   ) +
-  #ggtitle("Public Housing Projects") +
+  guides(
+    color = guide_legend(
+      override.aes = list(shape = "\u2605", size = 6) # Adjust size to look clean in legend
+    )
+  ) + 
   #Zoom in
   coord_sf(
     xlim = c(xmin, xmax), 
@@ -700,7 +742,14 @@ LECoop_rfk <- ggplot() +
   geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
   #projects
   geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_Limited_equity_cooperati)) %>% st_filter(rfk_only_shape, .predicate = st_intersects), size=2, aes(geometry = geometry), color = greys[4]) + 
-  scale_fill_manual(values = c(pinks[1], yellows[1]), name = "" ) +
+  #blank out RFK stadium tract
+  geom_sf(data = rfk_only_tract, aes(geometry = geometry), colour = "black", fill = "white") +
+  #display a star at stadium coordinates
+  geom_sf(data = stadium_sf, aes( geometry = geometry, color = "RFK Stadium" ), shape = "\u2605", size = 10) +
+  #build map legend
+  scale_fill_manual(values = c(pinks[1], yellows[1]), name = NULL ) +
+  scale_color_manual( values = c("RFK Stadium" = "red"), name = NULL ) +
+  #ggtitle("Subsidized Projects with LIHTC") +
   theme( 
     legend.text = element_text( size = 14 ),
     legend.position = "inside",
@@ -708,7 +757,11 @@ LECoop_rfk <- ggplot() +
     legend.justification = c(1, 0),
     plot.margin = margin(r = 50)            # 3. Add right margin space so the legend has room to sit
   ) +
-  #ggtitle("Limited Equity Cooperatives") +
+  guides(
+    color = guide_legend(
+      override.aes = list(shape = "\u2605", size = 6) # Adjust size to look clean in legend
+    )
+  ) + 
   #Zoom in
   coord_sf(
     xlim = c(xmin, xmax), 
@@ -749,7 +802,14 @@ Sec202811_rfk <- ggplot() +
   geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
   #projects
   geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_Section_202_811)) %>% st_filter(rfk_only_shape, .predicate = st_intersects), size=2, aes(geometry = geometry), color = reds[6]) + 
-  scale_fill_manual(values = c(pinks[1], yellows[1]), name = "" ) +
+  #blank out RFK stadium tract
+  geom_sf(data = rfk_only_tract, aes(geometry = geometry), colour = "black", fill = "white") +
+  #display a star at stadium coordinates
+  geom_sf(data = stadium_sf, aes( geometry = geometry, color = "RFK Stadium" ), shape = "\u2605", size = 10) +
+  #build map legend
+  scale_fill_manual(values = c(pinks[1], yellows[1]), name = NULL ) +
+  scale_color_manual( values = c("RFK Stadium" = "red"), name = NULL ) +
+  #ggtitle("Subsidized Projects with LIHTC") +
   theme( 
     legend.text = element_text( size = 14 ),
     legend.position = "inside",
@@ -757,7 +817,11 @@ Sec202811_rfk <- ggplot() +
     legend.justification = c(1, 0),
     plot.margin = margin(r = 50)            # 3. Add right margin space so the legend has room to sit
   ) +
-  #ggtitle("Section 202/811") +
+  guides(
+    color = guide_legend(
+      override.aes = list(shape = "\u2605", size = 6) # Adjust size to look clean in legend
+    )
+  ) + 
   #Zoom in
   coord_sf(
     xlim = c(xmin, xmax), 
@@ -780,7 +844,14 @@ RentControl_rfk <- ggplot() +
   geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
   #projects
   geom_sf(data = rent_control_props_sf %>% filter(unit_count >= 5) %>% st_filter(rfk_only_shape, .predicate = st_intersects), size=2, aes(geometry = geometry), color = blues[7]) + 
-  scale_fill_manual(values = c(pinks[1], yellows[1]), name = "" ) +
+  #blank out RFK stadium tract
+  geom_sf(data = rfk_only_tract, aes(geometry = geometry), colour = "black", fill = "white") +
+  #display a star at stadium coordinates
+  geom_sf(data = stadium_sf, aes( geometry = geometry, color = "RFK Stadium" ), shape = "\u2605", size = 10) +
+  #build map legend
+  scale_fill_manual(values = c(pinks[1], yellows[1]), name = NULL ) +
+  scale_color_manual( values = c("RFK Stadium" = "red"), name = NULL ) +
+  #ggtitle("Subsidized Projects with LIHTC") +
   theme( 
     legend.text = element_text( size = 14 ),
     legend.position = "inside",
@@ -788,7 +859,11 @@ RentControl_rfk <- ggplot() +
     legend.justification = c(1, 0),
     plot.margin = margin(r = 50)            # 3. Add right margin space so the legend has room to sit
   ) +
-  #ggtitle("Section 202/811") +
+  guides(
+    color = guide_legend(
+      override.aes = list(shape = "\u2605", size = 6) # Adjust size to look clean in legend
+    )
+  ) + 
   #Zoom in
   coord_sf(
     xlim = c(xmin, xmax), 
