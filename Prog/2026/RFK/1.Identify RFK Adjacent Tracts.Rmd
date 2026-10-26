@@ -247,7 +247,7 @@ dcxmax = max(dccoords$X)
 
 
 ```{r export map}
-2full_map <- ggplot() + 
+full_map <- ggplot() + 
   #RFK focus area
   geom_sf(data = rfk_tracts, aes(geometry = geometry, fill = rfk_sub_group2), colour = NA) + 
   #National Parks
