@@ -242,7 +242,67 @@ dcxmin = min(dccoords$X)
 dcxmax = max(dccoords$X)
 
 #Zoomed-in Metro Stops
+```
 
+```{r full map NEW VERSION}
+full_map_new <- ggplot() + 
+  #RFK focus areas
+  geom_sf(data = rfk_tracts, aes(geometry = geometry, fill = rfk_sub_group2), colour = NA) + 
+  #National Parks
+  geom_sf(data = national_parks, aes(geometry = geometry, fill = parks), colour = NA, alpha = 0.5) +
+  #Water
+  geom_sf(data = water, aes(geometry = geometry, fill = water), colour = NA, alpha = 0.5) +
+  #RFK Stadium tract
+  geom_sf(data = rfk, aes(geometry = geometry), colour = "white", fill = "white") +
+  #display a star at stadium coordinates
+  geom_sf(data = stadium_sf, aes( geometry = geometry, color = "RFK Stadium" ), shape = "\u2605", size = 5) +
+  #Metro stations
+  geom_sf(data = dc_metro, aes( geometry = geometry, color = "Metrorail Stations" ), shape = 15, size = 2) +
+  #Wards
+  geom_sf(data = wards, aes(geometry = geometry), colour = "#5c5859", fill = NA)  +
+  #Ward names
+  geom_sf_text(data = wards, aes(geometry = geometry, label = paste0("Ward ", WARD_ID)), colour = "#5c5859", size = 3) + 
+  #assign colors
+  scale_fill_manual(values = c(
+    "RFK West" = "#fdbf11",
+    "RFK East" = "#ec008b",
+    "National Parks" = "#98cf90",
+    "Waterways" = "#73Bfe2"
+    ),
+    breaks = c("RFK East", "RFK West"), #Control what appears in legend
+    name = NULL
+  ) +
+  scale_color_manual(values = c(
+    "RFK Stadium" = "red",
+    "Metrorail Stations" = "#9d9d9d"
+    ),
+    name = NULL
+  ) +
+  #adjust legend appearance
+  guides(
+    fill = guide_legend(direction = "vertical"),
+    color = guide_legend(direction = "vertical")
+  ) +
+  theme(
+    legend.box = "vertical", # Ensures the color box sits below or above the fill box
+    legend.spacing.y = unit(0.05, "cm"),
+    legend.position = c(1.10, 0.05), 
+    legend.justification = c("right", "bottom")
+  ) +
+  #Filter to DC
+  coord_sf(
+    xlim = c(dcxmin, dcxmax), 
+    ylim = c(dcymin, dcymax),
+    expand = FALSE) + 
+  #distance bar (in miles)
+  annotation_scale(unit_category = "imperial")
+full_map_new
+
+ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/Geography & ACS/full_map_new.png",
+       plot = full_map_new,
+       device = "png",
+       width = 6.5,
+       dpi = 1000)
 ```
 
 
