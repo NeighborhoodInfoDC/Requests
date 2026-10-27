@@ -17,7 +17,9 @@ library(urbnthemes)
 library(urbnmapr)
 set_urbn_defaults(style = "map")
 library(openxlsx)
+```
 
+```{r define colors}
 #colorschemes
 blues <- c("#CFE8F3","#A2D4EC","#73BFE2","#46ABDB","#1696D2","#12719E","#0A4C6A","#062635") 
 greys <- c("#f5f5f5", "#D2D2D2","#9D9D9D","#696969","#353535", "#000000")
@@ -25,6 +27,12 @@ yellows <- c("#FFF2CF","#FCE39E","#FDD870","#FCCB41","#FDBF11","#E88E2D","#CA580
 pinks <- c("#F5CBDF","#EB99C2","#E46AA7","#E54096","#EC008B","#AF1F6B","#761548","#351123") 
 greens <- c("#DCEDD9","#BCDEB4","#98CF90","#78C26D","#55B748","#408941","#2C5C2D","#1A2E19") 
 reds <- c("#F8D5D4","#F1AAA9","#E9807D","#E25552","#DB2B27","#A4201D","#6E1614","#370B0A")
+
+rfk_west_color <- "#ec008b"
+rfk_east_color <- "#55b748"
+metro_sta_color <- "#000000"
+rfk_stadium_star_color <- "#fdbf11"
+housing_project_color <- "#000000"
 ```
 
 ```{r load data}
@@ -43,6 +51,14 @@ rent_control_props <- read_xlsx("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/
 ```
 
 ```{r load shapefiles}
+water <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Waterbodies_2023/Waterbodies_2023.shp") %>%
+  mutate(water = "Waterways")
+
+national_parks <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/National_Parks/National_Parks.shp") %>%
+  mutate(parks = "National Parks")
+
+roads <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Roads/Roads.shp")
+
 tract_shape <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Census_Tracts_in_2020/Census_Tracts_in_2020.shp")
 
 ward_shape <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Ward_-_2022/Ward_-_2022.shp")
@@ -114,32 +130,8 @@ rent_control_props_sf <- st_transform(rent_control_props_sf, crs = st_crs(ward_s
 rent_control_props_rfk_shape <- st_join(rent_control_props_sf, rfk_shape, .predicate = st_within) %>%
   mutate(ward7 = if_else(Ward2022 == "7", 1, 0))
 
-#create dataframe with stadium coordinates
-stadium_coord <- data.frame(lon = -76.9718667, lat = 38.8898532)
-
-#convert to sf object and set coordinate system reference
-stadium_sf <- st_as_sf(stadium_coord, coords = c("lon", "lat"), crs = 4326)
-```
-
-```{r map test}
-#test geographies by plotting subsidized housing X Y coords and census tracts
-test_map <- ggplot() +
-  #RFK tracts
-  geom_sf(data = rfk_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = "black") +
-  #subsidized units
-  geom_sf(data = subsidized_housing_sf, aes(geometry = geometry), colour = "red")
-test_map
-
-```
-```{r map test 2}
-#test geographies by plotting rent control X Y coords and census tracts
-test_map2 <- ggplot() +
-  #RFK tracts
-  geom_sf(data = rfk_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = "black") +
-  #subsidized units
-  geom_sf(data = rent_control_props_sf, aes(geometry = geometry), colour = "red")
-test_map2
-
+#create sf object with stadium coordinates
+stadium_sf <- st_as_sf(data.frame(lon = -76.9718667, lat = 38.8898532), coords = c("lon", "lat"), crs = 4326)
 ```
 
 ```{r tables - Unduplicated}
@@ -471,13 +463,13 @@ ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/proj_ty
        dpi = 1000)
 ```
 
+Create separate maps by subsidy types
 ```{r maps - Duplicated}
-#SEPARATE MAPS BY SUBSIDY TYPES
 #LIHTC Map
 LIHTC_DC <- ggplot() +
   #RFK tracts
   geom_sf(data = rfk_only_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = "black") +
-#ward outline
+  #ward outline
   geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
   #projects
   geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_LIHTC)), aes(geometry = geometry), color = pinks[5]) + 
@@ -494,20 +486,32 @@ ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/subsidy
 #LIHTC Map, zoomed in
 LIHTC_rfk <- ggplot() +
   #RFK tracts
-  geom_sf(data = rfk_only_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = "black") +
-  #ward outline
-  geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
+  geom_sf(data = rfk_only_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = NA) +
   #subsidized units
   geom_sf(data = subsidized_housing_wide_sf %>% 
     filter(!is.na(subtype_LIHTC)) %>% 
-    st_filter(rfk_only_shape, .predicate = st_intersects), size=2, aes(geometry = geometry), color = pinks[5]) + 
-  #blank out RFK stadium tract
-  geom_sf(data = rfk_only_tract, aes(geometry = geometry), colour = "black", fill = "white") +
+    st_filter(rfk_only_shape, .predicate = st_intersects), size=2, aes(geometry = geometry), color = housing_project_color) + 
+  #National Parks
+  geom_sf(data = national_parks, aes(geometry = geometry, fill = parks), colour = NA, alpha = 0.5) +
+  #Water
+  geom_sf(data = water, aes(geometry = geometry, fill = water), colour = NA, alpha = 0.5) +
+  #Roads
+  geom_sf(data = roads, aes(geometry = geometry), colour = "#696969", fill = NA, size = 0.05) +
   #display a star at stadium coordinates
   geom_sf(data = stadium_sf, aes( geometry = geometry, color = "RFK Stadium" ), shape = "\u2605", size = 10) +
+  #ward outline
+  geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
   #build map legend
-  scale_fill_manual(values = c(pinks[1], yellows[1]), name = NULL ) +
-  scale_color_manual( values = c("RFK Stadium" = "red"), name = NULL ) +
+  scale_fill_manual(values = c(
+    "RFK West" = rfk_west_color,
+    "RFK East" = rfk_east_color,
+    "National Parks" = "#98cf90",
+    "Waterways" = "#73Bfe2"
+    ),
+    breaks = c("RFK East", "RFK West"), #Control what appears in legend
+    name = NULL
+  ) +
+  scale_color_manual( values = c("RFK Stadium" = rfk_stadium_star_color), name = NULL ) +
   #ggtitle("Subsidized Projects with LIHTC") +
   theme( 
     legend.text = element_text( size = 14 ),
@@ -567,7 +571,7 @@ HPTF_rfk <- ggplot() +
   geom_sf(data = stadium_sf, aes( geometry = geometry, color = "RFK Stadium" ), shape = "\u2605", size = 10) +
   #build map legend
   scale_fill_manual(values = c(pinks[1], yellows[1]), name = NULL ) +
-  scale_color_manual( values = c("RFK Stadium" = "red"), name = NULL ) +
+  scale_color_manual( values = c("RFK Stadium" = rfk_stadium_star_color), name = NULL ) +
   #ggtitle("Subsidized Projects with LIHTC") +
   theme( 
     legend.text = element_text( size = 14 ),
@@ -627,7 +631,7 @@ sec8_rfk <- ggplot() +
   geom_sf(data = stadium_sf, aes( geometry = geometry, color = "RFK Stadium" ), shape = "\u2605", size = 10) +
   #build map legend
   scale_fill_manual(values = c(pinks[1], yellows[1]), name = NULL ) +
-  scale_color_manual( values = c("RFK Stadium" = "red"), name = NULL ) +
+  scale_color_manual( values = c("RFK Stadium" = rfk_stadium_star_color), name = NULL ) +
   #ggtitle("Subsidized Projects with LIHTC") +
   theme( 
     legend.text = element_text( size = 14 ),
@@ -688,7 +692,7 @@ pubH_rfk <- ggplot() +
   geom_sf(data = stadium_sf, aes( geometry = geometry, color = "RFK Stadium" ), shape = "\u2605", size = 10) +
   #build map legend
   scale_fill_manual(values = c(pinks[1], yellows[1]), name = NULL ) +
-  scale_color_manual( values = c("RFK Stadium" = "red"), name = NULL ) +
+  scale_color_manual( values = c("RFK Stadium" = rfk_stadium_star_color), name = NULL ) +
   #ggtitle("Subsidized Projects with LIHTC") +
   theme( 
     legend.text = element_text( size = 14 ),
@@ -748,7 +752,7 @@ LECoop_rfk <- ggplot() +
   geom_sf(data = stadium_sf, aes( geometry = geometry, color = "RFK Stadium" ), shape = "\u2605", size = 10) +
   #build map legend
   scale_fill_manual(values = c(pinks[1], yellows[1]), name = NULL ) +
-  scale_color_manual( values = c("RFK Stadium" = "red"), name = NULL ) +
+  scale_color_manual( values = c("RFK Stadium" = rfk_stadium_star_color), name = NULL ) +
   #ggtitle("Subsidized Projects with LIHTC") +
   theme( 
     legend.text = element_text( size = 14 ),
@@ -808,7 +812,7 @@ Sec202811_rfk <- ggplot() +
   geom_sf(data = stadium_sf, aes( geometry = geometry, color = "RFK Stadium" ), shape = "\u2605", size = 10) +
   #build map legend
   scale_fill_manual(values = c(pinks[1], yellows[1]), name = NULL ) +
-  scale_color_manual( values = c("RFK Stadium" = "red"), name = NULL ) +
+  scale_color_manual( values = c("RFK Stadium" = rfk_stadium_star_color), name = NULL ) +
   #ggtitle("Subsidized Projects with LIHTC") +
   theme( 
     legend.text = element_text( size = 14 ),
@@ -850,7 +854,7 @@ RentControl_rfk <- ggplot() +
   geom_sf(data = stadium_sf, aes( geometry = geometry, color = "RFK Stadium" ), shape = "\u2605", size = 10) +
   #build map legend
   scale_fill_manual(values = c(pinks[1], yellows[1]), name = NULL ) +
-  scale_color_manual( values = c("RFK Stadium" = "red"), name = NULL ) +
+  scale_color_manual( values = c("RFK Stadium" = rfk_stadium_star_color), name = NULL ) +
   #ggtitle("Subsidized Projects with LIHTC") +
   theme( 
     legend.text = element_text( size = 14 ),
@@ -878,6 +882,27 @@ ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/subsidy
        width = 8.5,
        dpi = 1000)
 
+
+```
+
+```{r map test}
+#test geographies by plotting subsidized housing X Y coords and census tracts
+test_map <- ggplot() +
+  #RFK tracts
+  geom_sf(data = rfk_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = "black") +
+  #subsidized units
+  geom_sf(data = subsidized_housing_sf, aes(geometry = geometry), colour = "red")
+test_map
+
+```
+```{r map test 2}
+#test geographies by plotting rent control X Y coords and census tracts
+test_map2 <- ggplot() +
+  #RFK tracts
+  geom_sf(data = rfk_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = "black") +
+  #subsidized units
+  geom_sf(data = rent_control_props_sf, aes(geometry = geometry), colour = "red")
+test_map2
 
 ```
 
