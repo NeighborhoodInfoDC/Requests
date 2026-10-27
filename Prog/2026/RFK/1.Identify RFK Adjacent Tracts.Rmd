@@ -28,10 +28,10 @@ library(ggstar)
 
 ```
 ```{r define colors}
-rfk_east_color <- "#ec008b"
-rfk_west_color <- "#55b748"
+rfk_west_color <- "#ec008b"
+rfk_east_color <- "#55b748"
 metro_sta_color <- "#000000"
-rfk_stadium_star_color <- "#db2b27"
+rfk_stadium_star_color <- "#fdbf11"
 ```
 
 ```{r load data}
