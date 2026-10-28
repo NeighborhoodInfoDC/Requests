@@ -1,22 +1,26 @@
----
-title: "Additional Maps"
-author: "Leah Hendey"
-date: "2026-09-11"
-output: html_document
----
+##title: "Additional Maps"
+##author: "Leah Hendey"
+##date: "2026-09-11"
+##output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-
 library(tidyverse)
-library(tidylog)
-library(openxlsx)
-library(ggplot2)
 library(sf)
+library(ggplot2)
 library(urbnthemes)
 library(urbnmapr)
 set_urbn_defaults(style = "map")
+library(ggspatial)
+library(ggstar)
 ```
+
+```{r define colors}
+rfk_west_color <- "#ec008b"
+rfk_east_color <- "#55b748"
+metro_sta_color <- "#000000"
+rfk_stadium_star_color <- "#fdbf11"
+rfk_stadium_star_color2 <- "#db2b27"
 ```
 
 ## R Markdown
@@ -27,39 +31,36 @@ When you click the **Knit** button a document will be generated that includes bo
 
 ```{r load data}
 rfk_tracts <- read.csv("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/rfk_tracts.csv")
+  rfk_tracts$GEOID <- as.character(rfk_tracts$GEOID)
 
 censustrend <- read.csv("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/census_trends_2000_2020.csv") 
   names(censustrend)[names(censustrend) == "Geo2020"] <- "GEOID"
-  censustrend$GEOID <- as.numeric(censustrend$GEOID)
+  censustrend$GEOID <- as.character(censustrend$GEOID)
+  
+censustrend_rfk <- rfk_tracts %>%
+  left_join( censustrend, by = "GEOID") 
 
+squares <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Square_Boundaries/Square_Boundaries.shp")
 
-tracts <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Census_Tracts_in_2020/Census_Tracts_in_2020.shp") %>%
-  select(GEOID, geometry) %>%
-  mutate(GEOID = as.numeric(GEOID))
+tracts <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Census_Tracts_in_2020/Census_Tracts_in_2020.shp")
 
-rfk_tracts_shape <- rfk_tracts %>%
-  left_join(tracts, by = "GEOID")
+rfk_tracts_shape <- tracts %>%
+  left_join(rfk_tracts, by = "GEOID")
 
 censustrend_shape <- tracts %>%
   left_join(censustrend, by = "GEOID")
 
-censustrend_rfk <- rfk_tracts %>%
-  left_join( censustrend, by = "GEOID") 
- 
-```
-```{r map prep}
-#for outlines of the RFK areas
-west_outline <- rfk_tracts_shape %>%
-  filter(west_of_anacostia == 1)
+wards <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Ward_-_2022/Ward_-_2022.shp")
 
-east_outline <- rfk_tracts_shape %>%
-  filter(east_of_anacostia == 1)
+dc <- wards %>%
+  st_combine()
 
-outlines <- ggplot()+
-  geom_sf(data = west_outline, aes(geometry = geometry, color = rfk_sub_group), fill = NA) +
-  geom_sf(data = east_outline, aes(geometry = geometry, color = rfk_sub_group), fill = NA) +
-  scale_color_manual(values = c("#ec008b", "#fdbf11"), name = "RFK Area")
-outlines
+anc <- st_read("//sas1/dcdata/Libraries/OCTO/Maps/Advisory_Neighborhood_Commissions_from_2023.shp")
+
+roads <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Roads/Roads.shp")
+
+water <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Waterbodies_2023/Waterbodies_2023.shp") %>%
+  mutate(water = "Waterways")
 
 metro <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Metro_Stations_Regional/Metro_Stations_Regional.shp") %>%
   mutate(line1 = case_when(LINE == "blue, yellow"~ "yellow",
@@ -76,43 +77,112 @@ metro <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Metro_Stat
          line_color = if_else(line_name == "silver", "grey", line_name))
 dc_metro <- metro %>%
   st_filter(., dc, .predicate = st_intersects)
+
+bus <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Metro_Bus_Stops_2023_-_2025/Metro_Bus_Stops_2023_-_2025.shp")
+
+national_parks <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/National_Parks/National_Parks.shp") %>%
+  mutate(parks = "National Parks")
+
+build_permits <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Building_Permits_in_2025/Building_Permits_in_2025.shp")
+rfk_permit <- build_permits %>%
+  filter(OBJECTID == 1097829048) %>%
+  #filter(FULL_ADDRE == "2400 EAST CAPITOL ST SE, WASHINGTON, DC 20003") %>%
+  mutate(label = "RFK Stadium")
+
+#create dataframe with stadium coordinates
+#stadium_coord <- data.frame(lon = -76.9718667, lat = 38.8898532)
+
+#convert to sf object and set coordinate system reference
+stadium_sf <- st_as_sf(data.frame(lon = -76.9718667, lat = 38.8898532), coords = c("lon", "lat"), crs = 4326)
 ```
-```{new maps}
 
-format_interval <- function(interval_text) {
+```{r define zoom-in area}
 
-  text <- interval_text %>%
-    str_remove_all("\\(") %>%
-    str_remove_all("\\)") %>%
-    str_remove_all("\\[") %>%
-    str_remove_all("\\]") %>%
-    str_replace_all(",", " — ")
+# Filter to Ward 7
+ward7 <- wards %>%
+  filter(WARD_ID == "7")
 
-  text <- text %>%
-    str_split(" — ") %>%
-    map(~ as.numeric(.x) %>%
-          scales::comma() %>%
-          paste0(collapse = " — ")) %>%
-    unlist() %>%
-    fct_rev()
+ward6 <- wards %>%
+  filter(WARD_ID == "6")
 
-  return(text)
-}
+#Find ward 7 coordinates, for zooming in on area
+ward7coords = as.data.frame(unique(st_coordinates(ward7)))
 
-format_interval <- function(interval_factor) {
+#find x where y is max in ward 6 for x minimum
+ward6coords = as.data.frame(unique(st_coordinates(ward6))) %>%
+  filter(Y == max(Y))
 
-  levs <- levels(interval_factor)
 
-  new_levs <- levs %>%
-    str_remove_all("\\(|\\)|\\[|\\]") %>%
-    str_split(",") %>%
-    map_chr(~ paste(scales::comma(as.numeric(.x)), collapse = " — "))
+#minimmum of Y
+ymin = min(ward7coords$Y)
+ymax = max(ward7coords$Y)
+xmin = ward6coords$X
+xmax = max(ward7coords$X)
 
-  levels(interval_factor) <- new_levs
+#DC Coordinates
+dccoords = as.data.frame(unique(st_coordinates(wards)))
 
-  interval_factor
-}
+dcymin = min(dccoords$Y)
+dcymax = max(dccoords$Y)
+dcxmin = min(dccoords$X)
+dcxmax = max(dccoords$X)
 
+
+#new maps
+full_map_new <- ggplot() + 
+  #RFK focus areas
+  geom_sf(data = rfk_tracts_shape, aes(geometry = geometry, fill = rfk_sub_group2), colour = NA) + 
+  #National Parks
+  geom_sf(data = national_parks, aes(geometry = geometry, fill = parks), colour = NA, alpha = 0.5) +
+  #Water
+  geom_sf(data = water, aes(geometry = geometry, fill = water), colour = NA, alpha = 0.5) +
+  #RFK Stadium square
+  #geom_sf(data = rfk_square, aes(geometry = geometry), colour = "white", fill = "white") +
+  #display a star at stadium coordinates
+  geom_sf(data = stadium_sf, aes( geometry = geometry, color = "RFK Stadium" ), shape = "\u2605", size = 5) +
+  #Metro stations
+  geom_sf(data = dc_metro, aes( geometry = geometry, color = "Metrorail Stations" ), shape = 15, size = 1.5) +
+  #Wards
+  geom_sf(data = wards, aes(geometry = geometry), colour = "#5c5859", fill = NA)  +
+  #Ward names
+  geom_sf_text(data = wards, aes(geometry = geometry, label = paste0("Ward ", WARD_ID)), colour = "#5c5859", size = 3) + 
+  #assign colors
+  scale_fill_manual(values = c(
+    "RFK West" = rfk_west_color,
+    "RFK East" = rfk_east_color,
+    "National Parks" = "#98cf90",
+    "Waterways" = "#73Bfe2"
+    ),
+    breaks = c("RFK East", "RFK West"), #Control what appears in legend
+    name = NULL
+  ) +
+  scale_color_manual(values = c(
+    "RFK Stadium" = rfk_stadium_star_color,
+    "Metrorail Stations" = metro_sta_color
+    ),
+    name = NULL
+  ) +
+  #adjust legend appearance
+  guides(
+    fill = guide_legend(direction = "vertical"),
+    color = guide_legend(direction = "vertical")
+  ) +
+  theme(
+    legend.box = "vertical", # Ensures the color box sits below or above the fill box
+    legend.spacing.y = unit(0.05, "cm"),
+    legend.position = c(1.10, 0.05), 
+    legend.justification = c("right", "bottom")
+  ) +
+  #Filter to DC
+  coord_sf(
+    xlim = c(dcxmin, dcxmax), 
+    ylim = c(dcymin, dcymax),
+    expand = FALSE) + 
+  #distance bar (in miles)
+  annotation_scale(unit_category = "imperial")
+full_map_new
+```
+```{r create breaks}
 censustrend_shape2 <- censustrend_shape %>%
   mutate(chgpop_interval = cut(
     ChgTotPop_2000_2020, 
@@ -142,40 +212,108 @@ censustrend_shape2 <- censustrend_shape %>%
       ordered_result = TRUE
     )
   )
-  
+```
 
-  pop_change <- ggplot() +
-  geom_sf(
-    data = censustrend_shape2,
-    aes(geometry = geometry,
-    # Color in tracts by the change in pop 2000-2020
-    fill = chgpop_interval
-  )) +
-  # Default is to use main urban palette, which assumes unrelated groups. We
-  # adjust colors manually to be on Urban diverging palate
-  # run view_palette() to see the colors
-  scale_fill_manual(
-    values = palette_urbn_diverging[c(2, 4, 5, 7, 8)],
-    name = "Change in Population 2000-2020"
-  )+
+```{r create outlines}
+
+# for outlines of RFK areas
+west_outline <- rfk_tracts_shape %>%
+  filter(west_of_anacostia == 1)
+
+east_outline <- rfk_tracts_shape %>%
+  filter(east_of_anacostia == 1)
+
+outlines <- ggplot() +
   geom_sf(
     data = west_outline,
-    aes(geometry = geometry, color = rfk_sub_group),
+    aes(color = rfk_sub_group),
     fill = NA
   ) +
   geom_sf(
     data = east_outline,
-    aes(geometry = geometry, color = rfk_sub_group),
+    aes(color = rfk_sub_group),
     fill = NA
   ) +
   scale_color_manual(
-    values = c("#ec008b", "#fdbf11"),
-    name = "RFK Area"
-  )+
-  theme(
-    legend.position = "right",
-    legend.box = "vertical"
+    values = c(
+      "RFK East" = rfk_east_color,
+      "RFK West" = rfk_west_color
+    ),
+    name = NULL
   )
+
+outlines
+
+```
+
+```{r change maps}
+pop_change <- ggplot() +
+  geom_sf(
+    data = censustrend_shape2,
+    aes(fill = chgpop_interval)
+  ) +
+  # Default is to use main urban palette, which assumes unrelated groups.
+  # We adjust colors manually to be on Urban diverging palette.
+  scale_fill_manual(
+    values = palette_urbn_diverging[c(2, 4, 5, 7, 8)],
+    name = "Change in Population 2000-2020"
+  ) +
+  geom_sf(
+    data = west_outline,
+    aes(color = rfk_sub_group),
+    fill = NA
+  ) +
+  geom_sf(
+    data = east_outline,
+    aes(color = rfk_sub_group),
+    fill = NA
+  ) +
+  # Display a star at stadium coordinates
+  geom_sf(
+    data = stadium_sf,
+    aes(color = "RFK Stadium"),
+    shape = "\u2605",
+    size = 5
+  ) +
+  # Metro stations
+  geom_sf(
+    data = dc_metro,
+    aes(color = "Metrorail Stations"),
+    shape = 15,
+    size = 1.5
+  ) +
+  scale_color_manual(
+    values = c(
+      "RFK East" = rfk_east_color,
+      "RFK West" = rfk_west_color,
+      "RFK Stadium" = rfk_stadium_star_color2,
+      "Metrorail Stations" = metro_sta_color
+    ),
+    limits = c(
+    "RFK East",
+    "RFK West",
+    "RFK Stadium",
+    "Metrorail Stations"
+  ),
+    name = NULL
+  ) +
+  guides(
+    fill = guide_legend(order = 1),
+    color = guide_legend(order = 2)
+  ) +
+  theme(
+    legend.box = "vertical",
+    legend.spacing.y = unit(0.05, "cm"),
+    legend.position = c(1.3, 0.0),
+    legend.justification = c("right", "bottom")
+  ) +
+  coord_sf(
+    xlim = c(dcxmin, dcxmax),
+    ylim = c(dcymin, dcymax),
+    expand = FALSE
+  ) +
+  annotation_scale(unit_category = "imperial")
+
 pop_change
 
 ggsave(filename = "C:/Users/lhendey/Box/Greater DC/Projects/RFK Stadium Analysis/Results/CensusTrends/population change.png",
@@ -199,22 +337,59 @@ ggsave(filename = "C:/Users/lhendey/Box/Greater DC/Projects/RFK Stadium Analysis
   )+
   geom_sf(
     data = west_outline,
-    aes(geometry = geometry, color = rfk_sub_group),
+    aes(color = rfk_sub_group),
     fill = NA
   ) +
   geom_sf(
     data = east_outline,
-    aes(geometry = geometry, color = rfk_sub_group),
+    aes(color = rfk_sub_group),
     fill = NA
   ) +
+  # Display a star at stadium coordinates
+  geom_sf(
+    data = stadium_sf,
+    aes(color = "RFK Stadium"),
+    shape = "\u2605",
+    size = 5
+  ) +
+  # Metro stations
+  geom_sf(
+    data = dc_metro,
+    aes(color = "Metrorail Stations"),
+    shape = 15,
+    size = 1.5
+  ) +
   scale_color_manual(
-    values = c("#ec008b", "#fdbf11"),
-    name = "RFK Area"
-  )+
+    values = c(
+      "RFK East" = rfk_east_color,
+      "RFK West" = rfk_west_color,
+      "RFK Stadium" = rfk_stadium_star_color2,
+      "Metrorail Stations" = metro_sta_color
+    ),
+    limits = c(
+    "RFK East",
+    "RFK West",
+    "RFK Stadium",
+    "Metrorail Stations"
+  ),
+    name = NULL
+  ) +
+  guides(
+    fill = guide_legend(order = 1),
+    color = guide_legend(order = 2)
+  ) +
   theme(
-    legend.position = "right",
-    legend.box = "vertical"
-  )
+    legend.box = "vertical",
+    legend.spacing.y = unit(0.05, "cm"),
+    legend.position = c(1.35, 0.0),
+    legend.justification = c("right", "bottom")
+  ) +
+  coord_sf(
+    xlim = c(dcxmin, dcxmax),
+    ylim = c(dcymin, dcymax),
+    expand = FALSE
+  ) +
+  annotation_scale(unit_category = "imperial")
 blk_change
 
 ggsave(filename = "C:/Users/lhendey/Box/Greater DC/Projects/RFK Stadium Analysis/Results/CensusTrends/blk population change.png",
@@ -222,5 +397,5 @@ ggsave(filename = "C:/Users/lhendey/Box/Greater DC/Projects/RFK Stadium Analysis
        device = "png",
        width = 6.5,
        dpi = 1000)
-
+```
 
