@@ -6,33 +6,55 @@ output: html_document
 ---
 
 ```{r set up}
+knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
-library(tidylog)
-library(openxlsx)
-library(ggplot2)
 library(sf)
+library(ggplot2)
 library(urbnthemes)
 library(urbnmapr)
 set_urbn_defaults(style = "map")
+library(ggspatial)
+library(ggstar)
 ```
+```
+
+```{r define colors}
+rfk_west_color <- "#ec008b"
+rfk_east_color <- "#55b748"
+metro_sta_color <- "#db2b27"
+rfk_stadium_star_color <- "#fdbf11"
+rfk_stadium_star_color2 <- "#db2b27"
+```
+
 
 ```{r load data}
 rfk_tracts <- read.csv("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/rfk_tracts.csv")
+ rfk_tracts$GEOID <- as.character(rfk_tracts$GEOID)
 
 cat_order <- c("Highest", "Higher", "Intermediate", "Lower", "Lowest")
 
 displacement_risk <- read.xlsx("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Displacement Risk and Neighborhood Change.xlsx") %>%
-  mutate(across(c(population_vulnerability_cat, housing_condition_cat, market_pressure_cat, displacement_cat), ~ordered(.x, levels = cat_order)))
+  mutate(
+    GEOID = as.character(GEOID),
+    across(
+      c(population_vulnerability_cat, housing_condition_cat, market_pressure_cat, displacement_cat), ~ordered(.x, levels = cat_order)))
 
-tracts <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Census_Tracts_in_2020/Census_Tracts_in_2020.shp") %>%
-  select(GEOID, geometry) %>%
-  mutate(GEOID = as.numeric(GEOID))
+tracts <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Census_Tracts_in_2020/Census_Tracts_in_2020.shp")
 
-rfk_tracts_shape <- rfk_tracts %>%
-  left_join(tracts, by = "GEOID")
+rfk_tracts_shape <- tracts %>%
+  left_join(rfk_tracts, by = "GEOID")
 
-displacement_risk_shape <- displacement_risk %>%
-  left_join(tracts, by = "GEOID")
+displacement_risk_shape <- tracts %>%
+  left_join( displacement_risk, by = "GEOID") %>%
+  mutate(
+    neighborhoodtype = recode(
+      neighborhoodtype,
+      "Exclusion of Households with Low Income" = "Exclusion of HHs with Low Incomes",
+      "Gain of Households with Low Income" = "Gain of HHs with Low Incomes",
+      "Loss of Households with Low Income" = "Loss of HHs with Low Incomes",
+      "no change" = "No Change")
+  )
+  
 
 displacement_risk_rfk <- displacement_risk %>%
   left_join(rfk_tracts, by = "GEOID") %>%
@@ -40,6 +62,80 @@ displacement_risk_rfk <- displacement_risk %>%
 ```
 
 ```{r map prep}
+
+wards <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Ward_-_2022/Ward_-_2022.shp")
+
+dc <- wards %>%
+  st_combine()
+
+anc <- st_read("//sas1/dcdata/Libraries/OCTO/Maps/Advisory_Neighborhood_Commissions_from_2023.shp")
+
+roads <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Roads/Roads.shp")
+
+water <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Waterbodies_2023/Waterbodies_2023.shp") %>%
+  mutate(water = "Waterways")
+
+metro <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Metro_Stations_Regional/Metro_Stations_Regional.shp") %>%
+  mutate(line1 = case_when(LINE == "blue, yellow"~ "yellow",
+                           LINE == "blue, orange, silver"~ "blue",
+                           LINE == "blue, silver"~ "blue",
+                           LINE == "green, yellow, orange, blue, silver"~ "green",
+                           LINE == "green, yellow"~ "green",
+                           LINE == "red, green, yellow" ~ "green",
+                           LINE == "red, blue, orange, silver"~ "red", 
+                           LINE == "red, green" ~ "green", 
+                           LINE == "orange, silver" ~ "orange"
+                           ),
+         line_name = if_else(is.na(line1), LINE, line1), 
+         line_color = if_else(line_name == "silver", "grey", line_name))
+dc_metro <- metro %>%
+  st_filter(., dc, .predicate = st_intersects)
+
+bus <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Metro_Bus_Stops_2023_-_2025/Metro_Bus_Stops_2023_-_2025.shp")
+
+national_parks <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/National_Parks/National_Parks.shp") %>%
+  mutate(parks = "National Parks")
+
+build_permits <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Building_Permits_in_2025/Building_Permits_in_2025.shp")
+rfk_permit <- build_permits %>%
+  filter(OBJECTID == 1097829048) %>%
+  #filter(FULL_ADDRE == "2400 EAST CAPITOL ST SE, WASHINGTON, DC 20003") %>%
+  mutate(label = "RFK Stadium")
+
+#create dataframe with stadium coordinates
+#stadium_coord <- data.frame(lon = -76.9718667, lat = 38.8898532)
+
+#convert to sf object and set coordinate system reference
+stadium_sf <- st_as_sf(data.frame(lon = -76.9718667, lat = 38.8898532), coords = c("lon", "lat"), crs = 4326)
+
+ward7 <- wards %>%
+  filter(WARD_ID == "7")
+
+ward6 <- wards %>%
+  filter(WARD_ID == "6")
+
+#Find ward 7 coordinates, for zooming in on area
+ward7coords = as.data.frame(unique(st_coordinates(ward7)))
+
+#find x where y is max in ward 6 for x minimum
+ward6coords = as.data.frame(unique(st_coordinates(ward6))) %>%
+  filter(Y == max(Y))
+
+
+#minimmum of Y
+ymin = min(ward7coords$Y)
+ymax = max(ward7coords$Y)
+xmin = ward6coords$X
+xmax = max(ward7coords$X)
+
+#DC Coordinates
+dccoords = as.data.frame(unique(st_coordinates(wards)))
+
+dcymin = min(dccoords$Y)
+dcymax = max(dccoords$Y)
+dcxmin = min(dccoords$X)
+dcxmax = max(dccoords$X)
+
 #for outlines of the RFK areas
 west_outline <- rfk_tracts_shape %>%
   filter(west_of_anacostia == 1)
@@ -50,59 +146,95 @@ east_outline <- rfk_tracts_shape %>%
 outlines <- ggplot()+
   geom_sf(data = west_outline, aes(geometry = geometry, color = rfk_sub_group), fill = NA) +
   geom_sf(data = east_outline, aes(geometry = geometry, color = rfk_sub_group), fill = NA) +
-  scale_color_manual(values = c("#ec008b", "#fdbf11"), name = "RFK Area Sub-Group")
+  scale_color_manual(values = c(rfk_east_color, rfk_west_color), name = NULL)
 outlines
 ```
 
 ```{r}
-population_vulnerability <- ggplot() +
-  geom_sf(data = displacement_risk_shape, aes(geometry = geometry, fill = factor(population_vulnerability_cat, levels = cat_order)), color = NA) +
-  scale_fill_manual(name = "Population Vulnerability", values = c("#062635","#12719E","#1696D2","#73BFE2","#CFE8F3")) +
-  geom_sf(data = west_outline, aes(geometry = geometry, color = rfk_sub_group), fill = NA) +
-  geom_sf(data = east_outline, aes(geometry = geometry, color = rfk_sub_group), fill = NA) +
-  scale_color_manual(values = c("#ec008b", "#fdbf11"), name = "RFK Area Sub-Group")
-population_vulnerability
 
-ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/displacement vulnerability/map population_vulnerability.png",
-       plot = population_vulnerability,
-       device = "png",
-       width = 6.5,
-       dpi = 1000)
+#population_vulnerability <- ggplot() +
+#  geom_sf(data = displacement_risk_shape, aes(geometry = geometry, fill = factor(population_vulnerability_cat, levels = cat_order)), color = NA) +
+#  scale_fill_manual(name = "Population Vulnerability", values = c("#062635","#12719E","#1696D2","#73BFE2","#CFE8F3")) +
+#  geom_sf(data = west_outline, aes(geometry = geometry, color = rfk_sub_group), fill = NA) +
+#  geom_sf(data = east_outline, aes(geometry = geometry, color = rfk_sub_group), fill = NA) +
+#  scale_color_manual(values = c("#ec008b", "#fdbf11"), name = "RFK Area Sub-Group")
+#population_vulnerability
 
-housing_condition <- ggplot() +
-  geom_sf(data = displacement_risk_shape, aes(geometry = geometry, fill = factor(housing_condition_cat, levels = cat_order)), color = NA) +
-  scale_fill_manual(name = "Housing Condition", values = c("#062635","#12719E","#1696D2","#73BFE2","#CFE8F3")) +
-  geom_sf(data = west_outline, aes(geometry = geometry, color = rfk_sub_group), fill = NA) +
-  geom_sf(data = east_outline, aes(geometry = geometry, color = rfk_sub_group), fill = NA) +
-  scale_color_manual(values = c("#ec008b", "#fdbf11"), name = "RFK Area Sub-Group")
-housing_condition
+#ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/displacement vulnerability/map population_vulnerability.png",
+#       plot = population_vulnerability,
+#       device = "png",
+#       width = 6.5,
+#       dpi = 1000)
 
-ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/displacement vulnerability/map housing_condition.png",
-       plot = housing_condition,
-       device = "png",
-       width = 6.5,
-       dpi = 1000)
-
-market_pressure <- ggplot() +
-  geom_sf(data = displacement_risk_shape, aes(geometry = geometry, fill = factor(market_pressure_cat, levels = cat_order)), color = NA) +
-  scale_fill_manual(name = "Market Pressure", values = c("#062635","#12719E","#1696D2","#73BFE2","#CFE8F3")) +
-  geom_sf(data = west_outline, aes(geometry = geometry, color = rfk_sub_group), fill = NA) +
-  geom_sf(data = east_outline, aes(geometry = geometry, color = rfk_sub_group), fill = NA) +
-  scale_color_manual(values = c("#ec008b", "#fdbf11"), name = "RFK Area Sub-Group")
-market_pressure
-
-ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/displacement vulnerability/map market_pressure.png",
-       plot = market_pressure,
-       device = "png",
-       width = 6.5,
-       dpi = 1000)
+# housing_condition <- ggplot() +
+#   geom_sf(data = displacement_risk_shape, aes(geometry = geometry, fill = factor(housing_condition_cat, levels = cat_order)), color = NA) +
+#   scale_fill_manual(name = "Housing Condition", values = c("#062635","#12719E","#1696D2","#73BFE2","#CFE8F3")) +
+#   geom_sf(data = west_outline, aes(geometry = geometry, color = rfk_sub_group), fill = NA) +
+#   geom_sf(data = east_outline, aes(geometry = geometry, color = rfk_sub_group), fill = NA) +
+#   scale_color_manual(values = c("#ec008b", "#fdbf11"), name = "RFK Area Sub-Group")
+# housing_condition
+# 
+# ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/displacement vulnerability/map housing_condition.png",
+#        plot = housing_condition,
+#        device = "png",
+#        width = 6.5,
+#        dpi = 1000)
+# 
+# market_pressure <- ggplot() +
+#   geom_sf(data = displacement_risk_shape, aes(geometry = geometry, fill = factor(market_pressure_cat, levels = cat_order)), color = NA) +
+#   scale_fill_manual(name = "Market Pressure", values = c("#062635","#12719E","#1696D2","#73BFE2","#CFE8F3")) +
+#   geom_sf(data = west_outline, aes(geometry = geometry, color = rfk_sub_group), fill = NA) +
+#   geom_sf(data = east_outline, aes(geometry = geometry, color = rfk_sub_group), fill = NA) +
+#   scale_color_manual(values = c("#ec008b", "#fdbf11"), name = "RFK Area Sub-Group")
+# market_pressure
+# 
+# ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/displacement vulnerability/map market_pressure.png",
+#        plot = market_pressure,
+#        device = "png",
+#        width = 6.5,
+#        dpi = 1000)
 
 displacement <- ggplot() +
   geom_sf(data = displacement_risk_shape, aes(geometry = geometry, fill = factor(displacement_cat, levels = cat_order)), color = NA) +
-  scale_fill_manual(name = "Displacement", values = c("#062635","#12719E","#1696D2","#73BFE2","#CFE8F3")) +
-  geom_sf(data = west_outline, aes(geometry = geometry, color = rfk_sub_group), fill = NA) +
-  geom_sf(data = east_outline, aes(geometry = geometry, color = rfk_sub_group), fill = NA) +
-  scale_color_manual(values = c("#ec008b", "#fdbf11"), name = "RFK Area Sub-Group")
+   scale_fill_manual(name = "Displacement Risk", values = c("#062635","#12719E","#1696D2","#73BFE2","#CFE8F3")) +
+  #display a star at stadium coordinates
+  geom_sf(data = stadium_sf, aes( geometry = geometry, color = "RFK Stadium" ), shape = "\u2605", size = 5) +
+  #Metro stations
+  geom_sf(data = dc_metro, aes( geometry = geometry, color = "Metrorail Stations" ), shape = 15, size = 1.5) +
+  geom_sf(data = west_outline, aes(color = rfk_sub_group), fill = NA) +
+  geom_sf(data = east_outline, aes(color = rfk_sub_group), fill = NA) +
+  scale_color_manual(
+    values = c(
+      "RFK East" = rfk_east_color,
+      "RFK West" = rfk_west_color,
+      "RFK Stadium" = rfk_stadium_star_color,
+      "Metrorail Stations" = metro_sta_color
+    ),
+    limits = c(
+    "RFK East",
+    "RFK West",
+    "RFK Stadium",
+    "Metrorail Stations"
+  ),
+    name = NULL
+  ) +
+  guides(
+    fill = guide_legend(order = 1),
+    color = guide_legend(order = 2)
+  ) +
+  theme(
+    legend.box = "vertical",
+    legend.spacing.y = unit(0.05, "cm"),
+    legend.position = c(1.3, 0.0),
+    legend.justification = c("right", "bottom")
+  ) +
+  coord_sf(
+    xlim = c(dcxmin, dcxmax),
+    ylim = c(dcymin, dcymax),
+    expand = FALSE
+  ) +
+  annotation_scale(unit_category = "imperial")
+
 displacement
 
 ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/displacement vulnerability/map displacement.png",
@@ -113,10 +245,46 @@ ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/displac
 
 neighborhood_type <- ggplot() +
   geom_sf(data = displacement_risk_shape, aes(geometry = geometry, fill = neighborhoodtype), color = NA) +
-  scale_fill_manual(name = "Neighborhood Type", values = c("#1696D2","#A2D4EC", "#000000", "#9D9D9D")) +
-  geom_sf(data = west_outline, aes(geometry = geometry, color = rfk_sub_group), fill = NA) +
-  geom_sf(data = east_outline, aes(geometry = geometry, color = rfk_sub_group), fill = NA) +
-  scale_color_manual(values = c("#ec008b", "#fdbf11"), name = "RFK Area Sub-Group")
+  scale_fill_manual(name = "Neighborhood Type", values = c("#000000","#1696d2", "#fdbf11", "#5c5859"),
+    na.value = "#d2d2d2") +
+   #display a star at stadium coordinates
+  geom_sf(data = stadium_sf, aes( geometry = geometry, color = "RFK Stadium" ), shape = "\u2605", size = 5) +
+  #Metro stations
+  geom_sf(data = dc_metro, aes( geometry = geometry, color = "Metrorail Stations" ), shape = 15, size = 1.5) +
+  geom_sf(data = west_outline, aes(color = rfk_sub_group), fill = NA) +
+  geom_sf(data = east_outline, aes(color = rfk_sub_group), fill = NA) +
+  scale_color_manual(
+    values = c(
+      "RFK East" = rfk_east_color,
+      "RFK West" = rfk_west_color,
+      "RFK Stadium" = rfk_stadium_star_color,
+      "Metrorail Stations" = metro_sta_color
+    ),
+    limits = c(
+    "RFK East",
+    "RFK West",
+    "RFK Stadium",
+    "Metrorail Stations"
+  ),
+    name = NULL
+  ) +
+  guides(
+    fill = guide_legend(order = 1),
+    color = guide_legend(order = 2)
+  ) +
+  theme(
+    legend.box = "vertical",
+    legend.spacing.y = unit(0.05, "cm"),
+    legend.position = c(1.3, 0.0),
+    legend.justification = c("right", "bottom")
+  ) +
+  coord_sf(
+    xlim = c(dcxmin, dcxmax),
+    ylim = c(dcymin, dcymax),
+    expand = FALSE
+  ) +
+  annotation_scale(unit_category = "imperial")
+  
 neighborhood_type
 
 ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/displacement vulnerability/map neighborhood_type.png",
