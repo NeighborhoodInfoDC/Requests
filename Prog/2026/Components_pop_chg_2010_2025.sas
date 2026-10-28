@@ -42,7 +42,7 @@ run;
 proc print data=Co_est2020;
   where state = 11 and county = 1;
   id state county;
-  var POPESTIMATE2020 BIRTHS2020 DEATHS2020 INTERNATIONALMIG2020 DOMESTICMIG2020;
+  var POPESTIMATE2020 BIRTHS2020 DEATHS2020 INTERNATIONALMIG2020 DOMESTICMIG2020 RESIDUAL2020;
   title2 'Co_est2020';
 run;
 
@@ -68,7 +68,7 @@ run;
 proc print data=Co_est2025;
   where state = 11 and county = 1;
   id state county;
-  var POPESTIMATE2020 BIRTHS2020 DEATHS2020 INTERNATIONALMIG2020 DOMESTICMIG2020;
+  var POPESTIMATE2020 BIRTHS2020 DEATHS2020 INTERNATIONALMIG2020 DOMESTICMIG2020 RESIDUAL2020;
   title2 'Co_est2025';
 run;
 
@@ -128,6 +128,7 @@ data Components_tr;
   array aint{&start_yr.:&end_yr.} internationalmig&start_yr.-internationalmig&end_yr.; 
   array adom{&start_yr.:&end_yr.} domesticmig&start_yr.-domesticmig&end_yr.; 
   array anet{&start_yr.:&end_yr.} netmig&start_yr.-netmig&end_yr.; 
+  array ares{&start_yr.:&end_yr.} residual&start_yr.-residual&end_yr.;
 
   do Year = &start_yr. to &end_yr.;
 
@@ -135,19 +136,21 @@ data Components_tr;
     internationalmig = aint{Year};
     domesticmig = adom{Year};
     netmig = anet{Year};
-    totalchg = naturalchg + netmig;
+    residual = ares{Year};
+    totalchg = naturalchg + netmig + residual;
     
     output;
     
   end;
 
-  keep ucounty Year totalchg naturalchg internationalmig domesticmig netmig;
+  keep ucounty Year totalchg naturalchg internationalmig domesticmig netmig residual;
 
   label
     naturalchg = 'Natural'
     internationalmig = 'International'
     domesticmig = 'Domestic'
     netmig = 'Net migration'
+    residual = 'Residual change'
     totalchg = 'Total change';
 
 run;
@@ -179,13 +182,13 @@ run;
 ods csvall body="&_dcdata_default_path\Requests\Prog\2026\Components_pop_chg_2010_2025.csv";
 
 proc tabulate data=Components_tr format=comma10.0 noseps missing;
-  var totalchg naturalchg netmig internationalmig domesticmig;
+  var totalchg naturalchg netmig internationalmig domesticmig residual;
   class year ucounty;  
   table 
     /** Pages **/
     ( all='Greater DC Region' ucounty=' ' ) * sum=' ',
     /** Rows **/
-    totalchg naturalchg netmig internationalmig domesticmig,
+    totalchg naturalchg netmig internationalmig domesticmig residual,
     /** Columns **/
     year=' '
     / condense box='Components of population change';
