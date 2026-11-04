@@ -40,7 +40,15 @@ housing_project_color <- "#000000"
 subsidized_housing_data <- read_xlsx("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/assisted_living_units.xlsx")
 
 #version of subsidized data with duplicated units allowed - prioritizing looking at all subsidy types
-subsidized_housing_wide <- read_xlsx("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/assisted_living_wide.xlsx")
+subsidized_housing_wide <- 
+  read_xlsx("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/assisted_living_wide.xlsx") %>%
+  rename( 
+    subtype_HPTF = subtype_DC_housing_production_tr,
+    subtype_sec8 = subtype_Project_based_section_8,
+    subtype_pubH = subtype_Public_housing,
+    subtype_LECoop = subtype_Limited_equity_cooperati,
+    subtype_Sec202811 = subtype_Section_202_811
+    )
 
 #RFK areas
 rfk_tracts <- read.csv("//Sas1/dcdata/Libraries/Requests/Prog/2026/RFK/result/rfk_tracts.csv")
@@ -84,11 +92,6 @@ subsidized_housing_sf <- subsidized_housing_data %>%
   filter(!is.na(Proj_x) & !is.na(Proj_y)) %>%
   st_as_sf(coords = c("Proj_lon", "Proj_lat"), crs = "EPSG:4326")
 
-#same with wide data
-subsidized_housing_wide_sf <- subsidized_housing_wide %>%
-  filter(!is.na(Proj_x) & !is.na(Proj_y)) %>%
-  st_as_sf(coords = c("Proj_lon", "Proj_lat"), crs = "EPSG:4326")
-
 st_crs(subsidized_housing_sf)$epsg
 
 #transform crs to match 
@@ -104,6 +107,12 @@ subsidized_housing_sf <- st_transform(subsidized_housing_sf, crs = st_crs(ward_s
                                  ProgCat == 6 ~ 'DC HPTF only',
                                  ProgCat == 10 ~ 'Section 202/811 only',
                                  ProgCat %in% c(7, 20, 30) ~ 'Other subsidies/combinations'))
+
+#same with wide data
+subsidized_housing_wide_sf <- subsidized_housing_wide %>%
+  filter(!is.na(Proj_x) & !is.na(Proj_y)) %>%
+  st_as_sf(coords = c("Proj_lon", "Proj_lat"), crs = "EPSG:4326")
+
 #align wide data's crs
 subsidized_housing_wide_sf <- st_transform(subsidized_housing_wide_sf, crs = st_crs(ward_shape))
 
@@ -134,10 +143,11 @@ rent_control_props_rfk_shape <- st_join(rent_control_props_sf, rfk_shape, .predi
 stadium_sf <- st_as_sf(data.frame(lon = -76.9718667, lat = 38.8898532), coords = c("lon", "lat"), crs = 4326)
 ```
 
-```{r tables - Unduplicated}
-
-
+```{r create Excel workbook for output}
 wb <- createWorkbook()
+```
+
+```{r tables - Unduplicated}
 
 #Number and type of Units by area
 #RFK groups
@@ -257,8 +267,12 @@ all_subsidy_types_projects <- rbind(allsub_p_dc, allsub_p_rfk, allsub_p_subg, al
 addWorksheet(wb, "all_subsidy_types_projects")
 writeData(wb, "all_subsidy_types_projects", all_subsidy_types_projects)
 ```
-```{r project lists by subsidy and by expiration (if applicable)}
 
+Create lists of projects by subsidy and expiration date (if applicable)
+Output used in PPT slides
+```{r project lists by subsidy and expiration}
+
+#Low income housing tax credit
 list_LIHTC <- subsidized_wide_rfk_shape %>%
   filter(!is.na(rfk_sub_group)) %>%
   filter(!is.na(subtype_LIHTC)) %>%
@@ -271,11 +285,12 @@ list_LIHTC$geometry <- as.character(list_LIHTC$geometry)
 addWorksheet(wb, "list_LIHTC")
 writeData(wb, "list_LIHTC", list_LIHTC)
 
+#DC Housing Production Trust Fund
 list_HPTF <- subsidized_wide_rfk_shape %>%
   filter(!is.na(rfk_sub_group)) %>%
-  filter(!is.na(subtype_DC_housing_production_tr)) %>%
+  filter(!is.na(subtype_HPTF)) %>%
   mutate(place = rfk_sub_group) %>%
-  select(place, Proj_Name, subtype_DC_housing_production_tr) %>%
+  select(place, Proj_Name, subtype_HPTF) %>%
   arrange(place, Proj_Name)
 
 list_HPTF$geometry <- as.character(list_HPTF$geometry)
@@ -283,11 +298,12 @@ list_HPTF$geometry <- as.character(list_HPTF$geometry)
 addWorksheet(wb, "list_HPTF")
 writeData(wb, "list_HPTF", list_HPTF)
 
+#Project-based section 8
 list_Sec8 <- subsidized_wide_rfk_shape %>%
   filter(!is.na(rfk_sub_group)) %>%
-  filter(!is.na(subtype_Project_based_section_8)) %>%
+  filter(!is.na(subtype_sec8)) %>%
   mutate(place = rfk_sub_group) %>%
-  select(place, Proj_Name, Poa_end_Project_based_section_8, subtype_Project_based_section_8) %>%
+  select(place, Proj_Name, Poa_end_Project_based_section_8, subtype_sec8) %>%
   arrange(place, Poa_end_Project_based_section_8, Proj_Name)
 
 list_Sec8$geometry <- as.character(list_Sec8$geometry)
@@ -295,11 +311,12 @@ list_Sec8$geometry <- as.character(list_Sec8$geometry)
 addWorksheet(wb, "list_Sec8")
 writeData(wb, "list_Sec8", list_Sec8)
 
+#Public housing
 list_PH <- subsidized_wide_rfk_shape %>%
   filter(!is.na(rfk_sub_group)) %>%
-  filter(!is.na(subtype_Public_housing)) %>%
+  filter(!is.na(subtype_pubH)) %>%
   mutate(place = rfk_sub_group) %>%
-  select(place, Proj_Name, subtype_Public_housing) %>%
+  select(place, Proj_Name, subtype_pubH) %>%
   arrange(place, Proj_Name)
 
 list_PH$geometry <- as.character(list_PH$geometry)
@@ -307,11 +324,12 @@ list_PH$geometry <- as.character(list_PH$geometry)
 addWorksheet(wb, "list_PH")
 writeData(wb, "list_PH", list_PH)
 
+#Limited equity coops
 list_LECoop <- subsidized_wide_rfk_shape %>%
   filter(!is.na(rfk_sub_group)) %>%
-  filter(!is.na(subtype_Limited_equity_cooperati)) %>%
+  filter(!is.na(subtype_LECoop)) %>%
   mutate(place = rfk_sub_group) %>%
-  select(place, Proj_Name, subtype_Limited_equity_cooperati) %>%
+  select(place, Proj_Name, subtype_LECoop) %>%
   arrange(place, Proj_Name)
 
 list_LECoop$geometry <- as.character(list_LECoop$geometry)
@@ -319,11 +337,12 @@ list_LECoop$geometry <- as.character(list_LECoop$geometry)
 addWorksheet(wb, "list_LECoop")
 writeData(wb, "list_LECoop", list_LECoop)
 
+#Section 202/811
 list_Sec202811 <- subsidized_wide_rfk_shape %>%
   filter(!is.na(rfk_sub_group)) %>%
-  filter(!is.na(subtype_Section_202_811)) %>%
+  filter(!is.na(subtype_Sec202811)) %>%
   mutate(place = rfk_sub_group) %>%
-  select(place, Proj_Name, Poa_end_Section_202_811, subtype_Section_202_811) %>%
+  select(place, Proj_Name, Poa_end_Section_202_811, subtype_Sec202811) %>%
   arrange(place, Poa_end_Section_202_811, Proj_Name)
 
 list_Sec202811$geometry <- as.character(list_Sec202811$geometry)
@@ -331,6 +350,7 @@ list_Sec202811$geometry <- as.character(list_Sec202811$geometry)
 addWorksheet(wb, "list_Sec202811")
 writeData(wb, "list_Sec202811", list_Sec202811)
 
+#Rent control
 list_rent_control <- rent_control_props_rfk_shape %>%
   filter(!is.na(rfk_sub_group)) %>%
   filter(unit_count >= 5) %>%
@@ -376,6 +396,116 @@ xmax = max(ward7coords$X)
 
 ```
 
+
+Create separate maps by subsidy types
+Images used in PPT deck
+```{r maps - individual by subsidy type}
+
+#Function to make RFK area maps
+make_project_zoomed_map <- function( subsidy, dat_sf ) {
+
+map <- ggplot() +
+  #RFK tracts
+  geom_sf(data = rfk_only_shape, aes(geometry = geometry, fill = rfk_sub_group), colour = NA) +
+  #subsidized units
+  geom_sf(data = dat_sf %>% st_filter(rfk_only_shape, .predicate = st_intersects), 
+          size=2, 
+          aes(geometry = geometry), 
+          color = housing_project_color) + 
+  #National Parks
+  geom_sf(data = national_parks, aes(geometry = geometry, fill = parks), colour = NA, alpha = 0.5) +
+  #Water
+  geom_sf(data = water, aes(geometry = geometry, fill = water), colour = NA, alpha = 0.5) +
+  #Roads
+  geom_sf(data = roads, aes(geometry = geometry), colour = "#696969", fill = NA, size = 0.05) +
+  #display a star at stadium coordinates
+  geom_sf(data = stadium_sf, aes( geometry = geometry, color = "RFK Stadium" ), shape = "\u2605", size = 10) +
+  #ward outline
+  geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
+  #build map legend
+  scale_fill_manual(values = c(
+    "RFK West" = rfk_west_color,
+    "RFK East" = rfk_east_color,
+    "National Parks" = "#98cf90",
+    "Waterways" = "#73Bfe2"
+  ),
+  breaks = c("RFK East", "RFK West"), #Control what appears in legend
+  name = NULL
+  ) +
+  scale_color_manual( values = c("RFK Stadium" = rfk_stadium_star_color), name = NULL ) +
+  theme( 
+    legend.text = element_text( size = 14 ),
+    legend.position = "inside",
+    legend.position.inside = c(1.10, 0.05), # 2. Increase the X coordinate past 1.0 (e.g., 1.10)
+    legend.justification = c(1, 0),
+    plot.margin = margin(r = 50)            # 3. Add right margin space so the legend has room to sit
+  ) +
+  guides(
+    color = guide_legend(
+      override.aes = list(shape = "\u2605", size = 6) # Adjust size to look clean in legend
+    )
+  ) + 
+  #Zoom in
+  coord_sf(
+    xlim = c(xmin, xmax), 
+    ylim = c(ymin, ymax),
+    expand = FALSE)
+
+#display map  
+map
+
+ggsave(filename = paste0("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/subsidy maps/", subsidy, "_rfk.png" ),
+       plot = map,
+       device = "png",
+       height = 5,
+       width = 8.5,
+       dpi = 1000)
+
+}
+
+subsidized_housing_LIHTC <- 
+  subsidized_housing_wide_sf %>% 
+  filter(!is.na(subtype_LIHTC))
+
+make_project_zoomed_map("LIHTC", subsidized_housing_LIHTC)
+
+subsidized_housing_HPTF <- 
+  subsidized_housing_wide_sf %>% 
+  filter(!is.na(subtype_HPTF))
+
+make_project_zoomed_map("HPTF", subsidized_housing_HPTF)
+
+subsidized_housing_sec8 <- 
+  subsidized_housing_wide_sf %>% 
+  filter(!is.na(subtype_sec8))
+
+make_project_zoomed_map("sec8", subsidized_housing_sec8)
+
+subsidized_housing_pubH <- 
+  subsidized_housing_wide_sf %>% 
+  filter(!is.na(subtype_pubH))
+
+make_project_zoomed_map("pubH", subsidized_housing_pubH)
+
+subsidized_housing_LECoop <- 
+  subsidized_housing_wide_sf %>% 
+  filter(!is.na(subtype_LECoop))
+
+make_project_zoomed_map("LECoop", subsidized_housing_LECoop)
+
+subsidized_housing_Sec202811 <- 
+  subsidized_housing_wide_sf %>% 
+  filter(!is.na(subtype_Sec202811))
+
+make_project_zoomed_map("Sec202811", subsidized_housing_Sec202811)
+
+rent_control_5plus <- rent_control_props_sf %>% filter(unit_count >= 5)
+
+make_project_zoomed_map("RentControl", rent_control_5plus)
+```
+
+```{r OBSOLETE CODE BELOW THIS LINE}
+```
 
 ```{r maps - Unduplicated}
 #show subsidized units
@@ -463,7 +593,6 @@ ggsave(filename = "//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/proj_ty
        dpi = 1000)
 ```
 
-Create separate maps by subsidy types
 ```{r maps - Duplicated}
 #LIHTC Map
 LIHTC_DC <- ggplot() +
@@ -546,7 +675,7 @@ HPTF_DC <- ggplot() +
 #ward outline
   geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
   #projects
-  geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_DC_housing_production_tr)), aes(geometry = geometry), color = blues[5]) + 
+  geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_HPTF)), aes(geometry = geometry), color = blues[5]) + 
   scale_fill_manual(values = c(pinks[1], yellows[1]), name = "RFK Adjacent Area") +
   ggtitle("Subsidized Projects with DC HPTF")
 HPTF_DC
@@ -564,7 +693,7 @@ HPTF_rfk <- ggplot() +
 #ward outline
   geom_sf(data = ward_shape, aes(geometry = geometry), fill = NA, colour = "black") +
   #projects
-  geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_DC_housing_production_tr)) %>% st_filter(rfk_only_shape, .predicate = st_intersects), size=2, aes(geometry = geometry), color = blues[5]) + 
+  geom_sf(data = subsidized_housing_wide_sf %>% filter(!is.na(subtype_HPTF)) %>% st_filter(rfk_only_shape, .predicate = st_intersects), size=2, aes(geometry = geometry), color = blues[5]) + 
   #blank out RFK stadium tract
   geom_sf(data = rfk_only_tract, aes(geometry = geometry), colour = "black", fill = "white") +
   #display a star at stadium coordinates
