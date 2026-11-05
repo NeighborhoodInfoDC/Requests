@@ -30,7 +30,8 @@ metro_sta_color <- "#000000"
 rfk_stadium_star_color <- "#fdbf11"
 
 blue_scale5 <- c("#CFE8F3", "#73BFE2", "#1696D2", "#0a4c6a", "#000000")
-divergent_scale24 <- c("#FDD870","#FFF2CF","#CFE8F3","#73BFE2","#1696D2")
+divergent_scale14 <- c("#FFF2CF","#CFE8F3","#73BFE2","#1696D2","#0a4c6a")
+divergent_scale23 <- c("#FDD870","#FFF2CF","#CFE8F3","#73BFE2","#1696D2")
 divergent_scale41 <- c("#CA5800","#FDBF11","#FDD870","#FFF2CF","#CFE8F3")
 NA_color <- "#D2D2D2"
 ```
@@ -82,6 +83,7 @@ stadium_sf <- st_as_sf(data.frame(lon = -76.9718667, lat = 38.8898532), coords =
 sales_tract_sf <- left_join(tract_shape, sales_tract, by = c("GEOID" = "Geo2020")) |>
   mutate(r_chg_mprice_sf_10yr = 100 * ( ( r_mprice_sf_2025 / r_mprice_sf_2015 ) - 1 )) |>
   mutate(r_chg_mprice_sf_20yr = 100 * ( ( r_mprice_sf_2025 / r_mprice_sf_2005 ) -  1 )) |>
+  mutate(r_chg_mprice_sf_2005_10yr = 100 * ( ( r_mprice_sf_2015 / r_mprice_sf_2005 ) - 1 )) |>
   mutate(r_chg_mprice_condo_10yr = 100 * ( ( r_mprice_condo_2025 / r_mprice_condo_2015 ) - 1 )) |>
   mutate(r_chg_mprice_condo_20yr = 100 * ( ( r_mprice_condo_2025 / r_mprice_condo_2005 ) - 1 ))
 
@@ -122,6 +124,7 @@ east_outline_outer <- rfk_shape %>%
 quantile(sales_tract_sf$r_mprice_sf_2025, probs = seq(0, 1, by = 0.2), na.rm = TRUE)
 quantile(sales_tract_sf$r_chg_mprice_sf_10yr, probs = seq(0, 1, by = 0.2), na.rm = TRUE)
 quantile(sales_tract_sf$r_chg_mprice_sf_20yr, probs = seq(0, 1, by = 0.2), na.rm = TRUE)
+quantile(sales_tract_sf$r_chg_mprice_sf_2005_10yr, probs = seq(0, 1, by = 0.2), na.rm = TRUE)
 ```
 ```{r quantiles condos}
 quantile(sales_tract_sf$r_mprice_condo_2025, probs = seq(0, 1, by = 0.2), na.rm = TRUE)
@@ -243,10 +246,11 @@ price_map("r_mprice_sf_2015","Median sales price, 2015 ($ 2025)",c( 500000, 7750
 price_map("r_mprice_condo_2025","Median sales price, 2025 ($ 2025)",c( 300000, 400000, 500000, 600000 ),blue_scale5)
 price_map("r_mprice_condo_2015","Median sales price, 2015 ($ 2025)",c( 300000, 400000, 500000, 600000 ),blue_scale5)
 
-percent_map("r_chg_mprice_sf_10yr","Change in median sales price, 2015 - 2025", c(-10,0,10,20), divergent_scale24)
-percent_map("r_chg_mprice_sf_20yr","Change in median sales price, 2005 - 2025", c(0,10,20,30), blue_scale5)
+percent_map("r_chg_mprice_sf_10yr","Change in median sales price, 2015 - 2025 ($ 2025)", c(-10,0,10,20), divergent_scale23)
+percent_map("r_chg_mprice_sf_20yr","Change in median sales price, 2005 - 2025 ($ 2025)", c(0,10,20,30), divergent_scale14)
+percent_map("r_chg_mprice_sf_2005_10yr","Change in median sales price, 2005 - 2015 ($ 2025)", c(0,10,20,30), divergent_scale14)
 
-percent_map("r_chg_mprice_condo_10yr","Change in median sales price, 2015 - 2025", c(-30,-20,-10,0), divergent_scale41)
-percent_map("r_chg_mprice_condo_20yr","Change in median sales price, 2005 - 2025", c(-30,-20,-10,0), divergent_scale41)
+percent_map("r_chg_mprice_condo_10yr","Change in median sales price, 2015 - 2025 ($ 2025)", c(-30,-20,-10,0), divergent_scale41)
+percent_map("r_chg_mprice_condo_20yr","Change in median sales price, 2005 - 2025 ($ 2025)", c(-30,-20,-10,0), divergent_scale41)
 
 ```
