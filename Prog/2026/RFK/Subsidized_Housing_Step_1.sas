@@ -51,7 +51,7 @@ Since the file also has the latitude/longitude and x/y coordinates, we can also 
  Modifications:
 **************************************************************************/
 
-%include "\\sas1\DCdata\SAS\Inc\StdRemote.sas";
+%include "F:\DCData\SAS\Inc\StdRemote.sas";
 
 ** Define libraries **;
 %DCData_lib( PresCat )
@@ -241,7 +241,7 @@ run;
 
 *export to .csv to put in R;
 proc export data=project_assisted_units
-	outfile='\\sas1\dcdata\Libraries\Requests\Prog\2026\RFK\Data\assisted_living_units.xlsx'
+	outfile="&_dcdata_default_path\Requests\Prog\2026\RFK\Data\assisted_living_units.xlsx"
 	dbms=xlsx
 	replace;
 run;
@@ -251,10 +251,19 @@ run;
 
 ** pivot the subsidy types from long to wide format, 
 for one observation per project and multiple variables for Subsidy Types **;
+** number of assisted units **;
 proc transpose data = Subsidy_unique out= subsidy_wide prefix= subtype_;
 	by NLIHC_ID;
 	id Portfolio;
 	var Units_Assist;
+run;
+
+** subsidy expiration date **;
+proc transpose data = Subsidy_unique out= subsidy_poa_end_wide prefix= Poa_end_;
+  where Portfolio in ( "202/811", "PB8", "LIHTC" );
+	by NLIHC_ID;
+	id Portfolio;
+	var Poa_end;
 run;
 
 *merge subsidies with project data;
@@ -265,16 +274,45 @@ data Project_subsidy_wide;
     Prescat.Project_category_view
       (in=inProject)
     Subsidy_wide
-      (in=inSubsidy);
+      (in=inSubsidy)
+    Subsidy_poa_end_wide;
   by NLIHC_ID;
   
   if inProject and inSubsidy;
   
 run;
 
+%File_info( data=Project_subsidy_wide, printobs=0 )
+
 *export to .csv to put in R;
 proc export data=Project_subsidy_wide
-	outfile='\\sas1\dcdata\Libraries\Requests\Prog\2026\RFK\Data\assisted_living_wide.xlsx'
+	outfile="&_dcdata_default_path\Requests\Prog\2026\RFK\Data\assisted_living_wide.xlsx"
 	dbms=xlsx
 	replace;
 run;
+
+
+** Summary tables **;
+
+proc tabulate data=Project_subsidy_wide format=comma12.0 noseps missing;
+  var subtype_:;
+  table 
+    /** Rows **/
+    subtype_LIHTC 
+    subtype_DC_housing_production_tr 
+    subtype_Project_based_section_8 
+    subtype_Limited_equity_cooperati
+    subtype_Section_202_811
+    subtype_Public_housing,
+    /** Columns **/
+    n='Projects' sum='Assisted units'
+  ;
+  label
+    subtype_LIHTC = "LIHTC"
+    subtype_DC_housing_production_tr = "DC HPTF"
+    subtype_Project_based_section_8 = "Project-based Sec 8"
+    subtype_Limited_equity_cooperati = "LE Coop"
+    subtype_Section_202_811 = "202/811"
+    subtype_Public_housing = "Public housing";
+run;
+
