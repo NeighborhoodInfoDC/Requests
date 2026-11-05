@@ -1,0 +1,256 @@
+---
+title: "House Price Sales Map"
+author: "P. Tatian"
+date: "2026-11-04"
+output: html_document
+---
+
+Create choropleth maps showing median sales prices and numbers of sales 
+by census tract
+
+```{r set up}
+library(tidyverse)
+library(tidylog)
+library(readxl)
+library(sf)
+library(ggplot2)
+library(ggspatial)
+library(urbnthemes)
+#devtools::install_github("UrbanInstitute/urbnmapr")
+library(urbnmapr)
+set_urbn_defaults(style = "map")
+library(openxlsx)
+library(haven)
+```
+
+```{r define colors}
+rfk_west_color <- "#ec008b"
+rfk_east_color <- "#55b748"
+metro_sta_color <- "#000000"
+rfk_stadium_star_color <- "#fdbf11"
+
+blue_scale5 <- c("#CFE8F3", "#73BFE2", "#1696D2", "#0a4c6a", "#000000")
+divergent_scale14 <- c("#FFF2CF","#CFE8F3","#73BFE2","#1696D2","#0a4c6a")
+divergent_scale23 <- c("#FDD870","#FFF2CF","#CFE8F3","#73BFE2","#1696D2")
+divergent_scale41 <- c("#CA5800","#FDBF11","#FDD870","#FFF2CF","#CFE8F3")
+NA_color <- "#D2D2D2"
+```
+
+```{r load data}
+
+#RFK areas
+rfk_tracts <- read.csv("//Sas1/dcdata/Libraries/Requests/Prog/2026/RFK/result/rfk_tracts.csv")
+
+#House sales by tract
+sales_tract <- read_sas("//sas1/DCDATA/Libraries/Realprop/Data/sales_sum_tr20.sas7bdat")
+
+```
+
+```{r load shapefiles}
+water <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Waterbodies_2023/Waterbodies_2023.shp") %>%
+  mutate(water = "Waterways")
+
+national_parks <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/National_Parks/National_Parks.shp") %>%
+  mutate(parks = "National Parks")
+
+roads <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Roads/Roads.shp")
+
+tract_shape <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Census_Tracts_in_2020/Census_Tracts_in_2020.shp") |> 
+  select(GEOID)
+
+ward_shape <- st_read("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Data/Ward_-_2022/Ward_-_2022.shp")
+
+#re-attach geometry to RFK tracts
+rfk_shape <- tract_shape %>%
+  mutate(GEOID=as.numeric(GEOID)) %>%
+  select(GEOID) %>%
+  left_join(rfk_tracts, by = "GEOID")
+
+#shape file with only RFK area
+rfk_only_shape <- rfk_shape %>%
+  filter(rfk_group == 1)
+
+#shape file with only RFK tract
+rfk_only_tract <- rfk_only_shape %>% filter(GEOID == "11001006804")
+
+#confirm CRS of census tract date
+st_crs(ward_shape)$epsg
+
+#create sf object with stadium coordinates
+stadium_sf <- st_as_sf(data.frame(lon = -76.9718667, lat = 38.8898532), coords = c("lon", "lat"), crs = 4326)
+
+#join sales data to tract shapefile, calculate change vars
+sales_tract_sf <- left_join(tract_shape, sales_tract, by = c("GEOID" = "Geo2020")) |>
+  mutate(r_chg_mprice_sf_10yr = 100 * ( ( r_mprice_sf_2025 / r_mprice_sf_2015 ) - 1 )) |>
+  mutate(r_chg_mprice_sf_20yr = 100 * ( ( r_mprice_sf_2025 / r_mprice_sf_2005 ) -  1 )) |>
+  mutate(r_chg_mprice_sf_2005_10yr = 100 * ( ( r_mprice_sf_2015 / r_mprice_sf_2005 ) - 1 )) |>
+  mutate(r_chg_mprice_condo_10yr = 100 * ( ( r_mprice_condo_2025 / r_mprice_condo_2015 ) - 1 )) |>
+  mutate(r_chg_mprice_condo_20yr = 100 * ( ( r_mprice_condo_2025 / r_mprice_condo_2005 ) - 1 ))
+
+sales_tract_sf$r_chg_mprice_sf_10yr
+sales_tract_sf$r_chg_mprice_sf_20yr
+sales_tract_sf$r_chg_mprice_condo_10yr
+sales_tract_sf$r_chg_mprice_condo_20yr
+
+#DC Coordinates
+dccoords = as.data.frame(unique(st_coordinates(ward_shape)))
+
+dcymin = min(dccoords$Y)
+dcymax = max(dccoords$Y)
+dcxmin = min(dccoords$X)
+dcxmax = max(dccoords$X)
+
+#for outlines of the RFK areas
+west_outline <- rfk_shape %>%
+  filter(west_of_anacostia == 1)
+
+east_outline <- rfk_shape %>%
+  filter(east_of_anacostia == 1)
+
+#for outlines of the RFK areas
+west_outline_outer <- rfk_shape %>%
+  filter(west_of_anacostia == 1) %>%
+  group_by(rfk_sub_group) %>%
+  summarise()
+
+east_outline_outer <- rfk_shape %>%
+  filter(east_of_anacostia == 1) %>%
+  group_by(rfk_sub_group)%>%
+  summarise()
+
+
+```
+```{r quantiles single family}
+quantile(sales_tract_sf$r_mprice_sf_2025, probs = seq(0, 1, by = 0.2), na.rm = TRUE)
+quantile(sales_tract_sf$r_chg_mprice_sf_10yr, probs = seq(0, 1, by = 0.2), na.rm = TRUE)
+quantile(sales_tract_sf$r_chg_mprice_sf_20yr, probs = seq(0, 1, by = 0.2), na.rm = TRUE)
+quantile(sales_tract_sf$r_chg_mprice_sf_2005_10yr, probs = seq(0, 1, by = 0.2), na.rm = TRUE)
+```
+```{r quantiles condos}
+quantile(sales_tract_sf$r_mprice_condo_2025, probs = seq(0, 1, by = 0.2), na.rm = TRUE)
+quantile(sales_tract_sf$r_chg_mprice_condo_10yr, probs = seq(0, 1, by = 0.2), na.rm = TRUE)
+quantile(sales_tract_sf$r_chg_mprice_condo_20yr, probs = seq(0, 1, by = 0.2), na.rm = TRUE)
+```
+
+```{r create maps}
+
+#function for creating price maps
+price_map <- function( mapvar, legend_label, break_pts, color_scale ) {
+
+currency_labels <- scales::label_currency(accuracy = 1)(break_pts)
+thousands_labels <- scales::label_comma(accuracy = 1)(break_pts)
+
+break_pts_labels <- c(
+  paste("Under", currency_labels[1]), 
+  paste(currency_labels[1], "-", thousands_labels[2]), 
+  paste(currency_labels[2], "-", thousands_labels[3]), 
+  paste(currency_labels[3], "-", thousands_labels[4]), 
+  paste("Over", currency_labels[4])
+)
+
+#call main map making function
+make_map(mapvar, legend_label, break_pts, color_scale, break_pts_labels)
+
+}
+
+#function for creating percentage maps
+percent_map <- function( mapvar, legend_label, break_pts, color_scale ) {
+
+percent_labels <- scales::label_percent(scale = 1)(break_pts)
+thousands_labels <- scales::label_comma(accuracy = 1)(break_pts)
+
+break_pts_labels <- c(
+  paste("Less than", percent_labels[1]), 
+  paste(thousands_labels[1], "to", percent_labels[2]), 
+  paste(thousands_labels[2], "to", percent_labels[3]), 
+  paste(thousands_labels[3], "to", percent_labels[4]), 
+  paste("Greater than", percent_labels[4])
+)
+
+#call main map making function
+make_map(mapvar, legend_label, break_pts, color_scale, break_pts_labels)
+
+}
+
+#main map making function
+make_map <- function(mapvar, legend_label, break_pts, color_scale, break_pts_labels) {
+
+NA_label <- "Data unavailable"
+
+# Combine  label vector with the hard coded NA label
+all_labels <- c(break_pts_labels, NA_label)
+
+# Pre-bin continuous data and explicitly name NA values
+sales_tract_sf_binned <- sales_tract_sf %>%
+  mutate(
+    # Create the initial 5 bins
+    price_bin = cut(
+      get(mapvar),
+      breaks = c(-Inf, break_pts, Inf),
+      labels = break_pts_labels,
+      include.lowest = TRUE
+    ),
+    # Convert NA values into an explicit 6th category level
+    price_bin = fct_na_value_to_level(price_bin, level = NA_label)
+  )
+
+# Map the custom NA color inside scale_fill_manual
+map <- ggplot() +
+  geom_sf(data = sales_tract_sf_binned, aes(geometry = geometry, fill = price_bin), color = "white") +
+  geom_sf(data = west_outline, aes(color = rfk_sub_group), fill = NA, size = 0.5) +
+  geom_sf(data = east_outline, aes(color = rfk_sub_group), fill = NA, size = 0.5) +
+  # Display a star at stadium coordinates
+  geom_sf(data = stadium_sf, aes(geometry = geometry, color = "RFK Stadium"), shape = "\u2605", size = 5) +
+  scale_fill_manual(
+    name = legend_label,
+    values = setNames( c(color_scale, NA_color), all_labels ),
+    drop = FALSE 
+  ) + 
+  scale_color_manual(
+    values = c(
+      "RFK East" = rfk_east_color,
+      "RFK West" = rfk_west_color,
+      "RFK Stadium" = rfk_stadium_star_color
+    ),
+    limits = c("RFK East", "RFK West", "RFK Stadium"),
+    name = NULL
+  ) +
+  guides(
+    fill = guide_legend(order = 1),
+    color = guide_legend(order = 2)
+  ) +
+  theme(
+    legend.box = "vertical",
+    legend.justification = c("right", "bottom"),
+    legend.text = element_text(vjust = 0.5) # Force vertical text center alignment
+  ) +
+  coord_sf(
+    xlim = c(dcxmin, dcxmax),
+    ylim = c(dcymin, dcymax),
+    expand = FALSE
+  ) +
+  annotation_scale(unit_category = "imperial")
+
+ggsave(filename = paste0("//sas1/dcdata/Libraries/Requests/Prog/2026/RFK/Result/sales maps/", mapvar, ".png" ),
+       plot = map,
+       device = "png",
+       height = 5,
+       width = 8.5,
+       dpi = 1000)
+
+}
+
+price_map("r_mprice_sf_2025","Median sales price, 2025 ($ 2025)",c( 500000, 775000, 1000000, 1500000 ),blue_scale5)
+price_map("r_mprice_sf_2015","Median sales price, 2015 ($ 2025)",c( 500000, 775000, 1000000, 1500000 ),blue_scale5)
+
+price_map("r_mprice_condo_2025","Median sales price, 2025 ($ 2025)",c( 300000, 400000, 500000, 600000 ),blue_scale5)
+price_map("r_mprice_condo_2015","Median sales price, 2015 ($ 2025)",c( 300000, 400000, 500000, 600000 ),blue_scale5)
+
+percent_map("r_chg_mprice_sf_10yr","Change in median sales price, 2015 - 2025 ($ 2025)", c(-10,0,10,20), divergent_scale23)
+percent_map("r_chg_mprice_sf_20yr","Change in median sales price, 2005 - 2025 ($ 2025)", c(0,10,20,30), divergent_scale14)
+percent_map("r_chg_mprice_sf_2005_10yr","Change in median sales price, 2005 - 2015 ($ 2025)", c(0,10,20,30), divergent_scale14)
+
+percent_map("r_chg_mprice_condo_10yr","Change in median sales price, 2015 - 2025 ($ 2025)", c(-30,-20,-10,0), divergent_scale41)
+percent_map("r_chg_mprice_condo_20yr","Change in median sales price, 2005 - 2025 ($ 2025)", c(-30,-20,-10,0), divergent_scale41)
+
+```
